@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -93,6 +94,7 @@ fun IncomeModal(
     expenses: List<ExpenseEntity>,
     incomes: List<IncomeEntity>,
     existingIncome: IncomeEntity?,
+    systemNavBarBottomPadding: Dp = 0.dp,
     onSaveIncome: (IncomeEntity, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -100,6 +102,30 @@ fun IncomeModal(
     val isEn = LocalAppLanguage.current.isEnglish()
     val isEdit = existingIncome != null
     val symbol = CurrencyCatalog.getSymbol(trip.baseCurrency)
+
+    val navBottomFromSystem = remember(context, systemNavBarBottomPadding) {
+        if (systemNavBarBottomPadding > 0.dp) {
+            systemNavBarBottomPadding
+        } else {
+            val activity = context as? androidx.activity.ComponentActivity
+            val decorView = activity?.window?.decorView
+            val insets = if (decorView != null) androidx.core.view.ViewCompat.getRootWindowInsets(decorView) else null
+            val bottomPx = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+            if (bottomPx > 0) {
+                (bottomPx / context.resources.displayMetrics.density).dp
+            } else {
+                0.dp
+            }
+        }
+    }
+
+    // Si los botones de navegación del sistema están activos (>= 36.dp), guarda espacio suficiente por encima (+ 36.dp).
+    // Si no están en uso o están ocultos (< 36.dp), se suben a una altura cómoda de al menos 52.dp para que no queden bajos.
+    val bottomSpacing = if (navBottomFromSystem >= 36.dp) {
+        navBottomFromSystem + 36.dp
+    } else {
+        maxOf(52.dp, navBottomFromSystem + 32.dp)
+    }
 
     val initialFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
@@ -256,10 +282,9 @@ fun IncomeModal(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
                 .padding(horizontal = 10.dp)
-                .padding(top = 8.dp, bottom = 28.dp),
+                .padding(top = 10.dp, bottom = bottomSpacing)
+                .imePadding(),
             shape = RoundedCornerShape(22.dp),
             color = Color.White
         ) {
@@ -826,7 +851,9 @@ fun IncomeModal(
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = grayAmountAndNameColor),
                         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                         shape = RoundedCornerShape(12.dp)
@@ -883,6 +910,7 @@ fun IncomeModal(
                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreenDark),
                         modifier = Modifier
                             .weight(1.35f)
+                            .height(48.dp)
                             .testTag("save_income_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {

@@ -78,6 +78,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -129,11 +130,36 @@ fun AddExpenseModal(
     onClearPlaceSuggestions: () -> Unit,
     onSaveExpense: (ExpenseEntity, Boolean) -> Unit,
     onDeleteExpense: (String) -> Unit,
+    systemNavBarBottomPadding: Dp = 0.dp,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     val isEn = LocalAppLanguage.current == AppLanguage.EN
     val isEdit = existingExpense != null
+
+    val navBottomFromSystem = remember(context, systemNavBarBottomPadding) {
+        if (systemNavBarBottomPadding > 0.dp) {
+            systemNavBarBottomPadding
+        } else {
+            val activity = context as? androidx.activity.ComponentActivity
+            val decorView = activity?.window?.decorView
+            val insets = if (decorView != null) androidx.core.view.ViewCompat.getRootWindowInsets(decorView) else null
+            val bottomPx = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+            if (bottomPx > 0) {
+                (bottomPx / context.resources.displayMetrics.density).dp
+            } else {
+                0.dp
+            }
+        }
+    }
+
+    // Si los botones de navegación del sistema están activos (>= 36.dp), guarda espacio suficiente por encima (+ 36.dp).
+    // Si no están en uso o están ocultos (< 36.dp), se suben a una altura cómoda de al menos 52.dp para que no queden bajos.
+    val bottomSpacing = if (navBottomFromSystem >= 36.dp) {
+        navBottomFromSystem + 36.dp
+    } else {
+        maxOf(52.dp, navBottomFromSystem + 32.dp)
+    }
 
     var amountText by remember {
         mutableStateOf(existingExpense?.amount?.let { String.format(Locale.US, "%.2f", it) } ?: "")
@@ -390,10 +416,9 @@ fun AddExpenseModal(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
                 .padding(horizontal = 10.dp)
-                .padding(top = 8.dp, bottom = 28.dp),
+                .padding(top = 10.dp, bottom = bottomSpacing)
+                .imePadding(),
             shape = RoundedCornerShape(22.dp),
             color = Color.White
         ) {
@@ -1486,8 +1511,10 @@ fun AddExpenseModal(
                                 onDeleteExpense(existingExpense.id)
                                 onDismiss()
                             },
+                            modifier = Modifier.height(48.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = CoralRed),
                             border = BorderStroke(1.dp, CoralRed),
+                            shape = RoundedCornerShape(12.dp),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
@@ -1498,7 +1525,10 @@ fun AddExpenseModal(
 
                     OutlinedButton(
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(if (isEn) "Cancel" else "Cancelar", maxLines = 1)
@@ -1643,7 +1673,9 @@ fun AddExpenseModal(
                         colors = ButtonDefaults.buttonColors(containerColor = TravelBlue),
                         modifier = Modifier
                             .weight(if (existingExpense != null) 1.35f else 1.5f)
+                            .height(48.dp)
                             .testTag("save_expense_button"),
+                        shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
