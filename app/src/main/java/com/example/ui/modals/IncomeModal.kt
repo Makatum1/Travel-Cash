@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -253,9 +255,11 @@ fun IncomeModal(
         Surface(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 10.dp)
-                .padding(top = 16.dp, bottom = 16.dp)
-                .imePadding(),
+                .padding(top = 8.dp, bottom = 28.dp),
             shape = RoundedCornerShape(22.dp),
             color = Color.White
         ) {
@@ -816,18 +820,19 @@ fun IncomeModal(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFFF8FAFC))
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.End,
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = grayAmountAndNameColor),
-                        border = BorderStroke(1.dp, Color(0xFFCBD5E1))
+                        border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isEn) "Cancel" else "Cancelar", fontWeight = FontWeight.Bold)
+                        Text(if (isEn) "Cancel" else "Cancelar", fontWeight = FontWeight.Bold, maxLines = 1)
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
                             val activePartList = participants.filter { selectedMap[it.id] == true }
@@ -876,11 +881,14 @@ fun IncomeModal(
                             onDismiss()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreenDark),
-                        modifier = Modifier.testTag("save_income_button")
+                        modifier = Modifier
+                            .weight(1.35f)
+                            .testTag("save_income_button"),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (isEn) "Save Pot" else "Guardar Bote", fontWeight = FontWeight.Bold)
+                        Text(if (isEn) "Save Pot" else "Guardar Bote", fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }
