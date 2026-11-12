@@ -1,0 +1,11 @@
+# Travel-Cash — Reglas del Proyecto
+
+## Generación de APK
+
+- **Nombre fijo del APK**: Cada vez que el usuario pida generar una APK, el archivo final generado debe llamarse siempre `TravelCash.apk` (para release, en `app/build/outputs/apk/release/TravelCash.apk`, mediante la tarea `copyTravelCashReleaseApk` configurada en `app/build.gradle.kts`).
+- **Versión fija hasta nuevo aviso**: Siempre que se genere una APK, mantener exactamente `versionCode = 1` y `versionName = "1.0"` en `app/build.gradle.kts`. No incrementar, autogenerar ni modificar la versión salvo que el usuario lo indique explícitamente.
+- **Firma de Release**: Las credenciales del keystore (`TRAVEL_CASH_STORE_FILE`, `TRAVEL_CASH_STORE_PASSWORD`, `TRAVEL_CASH_KEY_ALIAS`, `TRAVEL_CASH_KEY_PASSWORD`) se leen desde el `gradle.properties` del usuario (fuera del repositorio) y nunca deben escribirse ni subirse a archivos rastreados por Git.
+
+## Navegación de pestañas
+
+- **Sin desplazamiento lateral**: Mantener desactivado el desplazamiento lateral tipo swipe entre pestañas principales en `MainActivity.kt` (no usar `HorizontalPager`), navegando únicamente al pulsar las pestañas, salvo petición explícita del usuario.
