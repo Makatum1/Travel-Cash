@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Travel Cash</string>
+    <string name="app_subtitle">Gestor de gastos de viajes</string>
+    <string name="tab_expenses">Gastos</string>
+    <string name="tab_map">Mapa</string>
+    <string name="tab_stats">Datos</string>
+    <string name="tab_splits">Cuentas</string>
+    <string name="tab_trips">Viajes</string>
+    <string name="btn_backup">Backup</string>
+    <string name="btn_suggestions">Sugerencias</string>
+    <string name="btn_csv">CSV</string>
+    <string name="btn_pdf">PDF</string>
+    <string name="btn_import_csv">Importar CSV</string>
+    <string name="btn_add_income">+ Ingreso (Bote)</string>
+    <string name="label_spent">Gastado</string>
+    <string name="label_income">Ingresos</string>
+    <string name="label_extra_balance">Saldo Extra</string>
+</resources>

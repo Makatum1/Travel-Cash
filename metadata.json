@@ -1,0 +1,6 @@
+{
+  "name": "Travel Cash",
+  "description": "Gestor completo de gastos de viajes con soporte multidivisa, bote común, liquidación de deudas, mapas interactivos, estadísticas detalladas y exportación CSV/PDF/JSON.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
