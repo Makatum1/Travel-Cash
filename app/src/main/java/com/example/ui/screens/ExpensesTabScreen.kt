@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -580,7 +581,7 @@ private fun ExpenseItemCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Etiquetas de quién pagó, método de pago, prorrateo, ubicación y fotos
+                // Etiquetas de quién pagó, método de pago, ubicación y fotos
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -595,23 +596,10 @@ private fun ExpenseItemCard(
                             text = "$payerIcon $payerName · $methodIcon$translatedPaymentMethod",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = Color(0xFF334155),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
-                    }
-
-                    if (expense.prorationDays != null && expense.prorationDays > 1) {
-                        val perDay = expense.amountInBaseCurrency / expense.prorationDays
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Color(0xFFEDE9FE)
-                        ) {
-                            Text(
-                                text = "🗓️ ${expense.prorationDays}d (${FormatUtils.formatCurrency(perDay, baseCurrency)}/${if (isEn) "day" else "día"})",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF6D28D9),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
                     }
 
                     if (expense.photos.isNotEmpty()) {
@@ -652,28 +640,62 @@ private fun ExpenseItemCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Importe en moneda base + divisa extranjera si aplica
+            // Bloque derecho: Precio total, Categoría y Prorrateo
             Column(horizontalAlignment = Alignment.End) {
+                // Arriba: El precio total (en moneda base + divisa extranjera si aplica)
                 Text(
                     text = FormatUtils.formatCurrency(expense.amountInBaseCurrency, baseCurrency),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Black,
                         fontSize = 16.sp
                     ),
-                    color = OceanNavy
+                    color = OceanNavy,
+                    textAlign = TextAlign.End,
+                    maxLines = 1
                 )
                 if (!expense.currency.equals(baseCurrency, ignoreCase = true)) {
                     Text(
                         text = FormatUtils.formatCurrency(expense.amount, expense.currency),
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = TravelBlue
+                        color = TravelBlue,
+                        textAlign = TextAlign.End,
+                        maxLines = 1
                     )
-                } else {
-                    Text(
-                        text = translatedCategory.substringBefore(" "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF94A3B8)
-                    )
+                }
+
+                // En medio: La categoría
+                Text(
+                    text = translatedCategory,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 11.5.sp
+                    ),
+                    color = Color(0xFF64748B),
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Abajo: El texto del prorrateo con fuente más pequeña y color morado
+                if (expense.prorationDays != null && expense.prorationDays > 1) {
+                    val perDay = expense.amountInBaseCurrency / expense.prorationDays
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFFEDE9FE)
+                    ) {
+                        Text(
+                            text = "📅 ${expense.prorationDays} d (${FormatUtils.formatCurrency(perDay, baseCurrency)}/${if (isEn) "day" else "día"})",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.5.sp
+                            ),
+                            color = Color(0xFF6D28D9),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
         }
