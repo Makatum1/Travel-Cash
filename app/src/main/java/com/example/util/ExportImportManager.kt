@@ -878,21 +878,25 @@ object ExportImportManager {
             canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency), margin + 445f, y + 13f, bodyBoldPaint)
             y += 18f
 
-            // 1. Adjuntos que NO son imagen: lista de nombres bajo 'Archivos Adjuntos'
+            // 1. Adjuntos que NO son imagen: sección 'Archivos Adjuntos' con formato 'Archivo adjunto: [Nombre]'
             if (nonImageUris.isNotEmpty()) {
-                ensureSpace(16f)
-                val label = "Archivos Adjuntos: "
-                val fileNames = nonImageUris.joinToString(", ") { getAttachmentDisplayName(context, it) }
-                val maxTextWidth = pageWidth - margin * 2 - 20f
-                var line = label + fileNames
-                if (bodyPaint.measureText(line) > maxTextWidth) {
-                    while (line.length > 3 && bodyPaint.measureText("$line...") > maxTextWidth) {
-                        line = line.dropLast(1)
+                ensureSpace(14f + nonImageUris.size * 14f)
+                canvas.drawText("Archivos Adjuntos", margin + 14f, y + 11f, bodyBoldPaint)
+                y += 14f
+                val maxTextWidth = pageWidth - margin * 2 - 28f
+                nonImageUris.forEach { nonImgUri ->
+                    ensureSpace(14f)
+                    val fileName = getAttachmentDisplayName(context, nonImgUri)
+                    var line = "Archivo adjunto: $fileName"
+                    if (bodyPaint.measureText(line) > maxTextWidth) {
+                        while (line.length > 3 && bodyPaint.measureText("$line...") > maxTextWidth) {
+                            line = line.dropLast(1)
+                        }
+                        line = "$line..."
                     }
-                    line = "$line..."
+                    canvas.drawText(line, margin + 22f, y + 11f, bodyPaint)
+                    y += 14f
                 }
-                canvas.drawText(line, margin + 14f, y + 11f, bodyPaint)
-                y += 16f
             }
 
             // 2. Adjuntos de tipo imagen: inserción centrada, proporcionada y con control de altura máxima
