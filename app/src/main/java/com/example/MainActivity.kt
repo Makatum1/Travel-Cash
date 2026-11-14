@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -272,59 +274,8 @@ fun TravelCashApp(
         }
     }
 
-    // Estado auxiliar para exportaciones / importaciones con SAF
-    var tripForPendingExport by remember { mutableStateOf<TripEntity?>(null) }
+    // Estado auxiliar para importaciones
     var csvImportCreatesNewTrip by remember { mutableStateOf(false) }
-
-    // Launcher para exportar CSV de un viaje
-    val exportTripCsvLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv")
-    ) { uri: Uri? ->
-        val targetTrip = tripForPendingExport ?: uiState.activeTrip
-        if (uri != null && targetTrip != null) {
-            try {
-                val parts = uiState.allParticipants.filter { it.tripId == targetTrip.id }
-                val exps = uiState.allExpenses.filter { it.tripId == targetTrip.id }
-                val csvStr = ExportImportManager.generateTripExpensesCsv(targetTrip, parts, exps)
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    out.write(csvStr.toByteArray(Charsets.UTF_8))
-                }
-                viewModel.showToast(
-                    if (isEn) "CSV file for \"${targetTrip.title}\" exported" else "Archivo CSV de \"${targetTrip.title}\" exportado"
-                )
-            } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error exporting CSV" else "Error al exportar CSV",
-                    isError = true
-                )
-            }
-        }
-    }
-
-    // Launcher para exportar Reporte PDF multipágina
-    val exportTripPdfLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri: Uri? ->
-        val targetTrip = tripForPendingExport ?: uiState.activeTrip
-        if (uri != null && targetTrip != null) {
-            try {
-                val parts = uiState.allParticipants.filter { it.tripId == targetTrip.id }
-                val exps = uiState.allExpenses.filter { it.tripId == targetTrip.id }
-                val incs = uiState.allIncomes.filter { it.tripId == targetTrip.id }
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    ExportImportManager.writeTripPdfReport(out, targetTrip, parts, exps, incs, context)
-                }
-                viewModel.showToast(
-                    if (isEn) "PDF report for \"${targetTrip.title}\" generated" else "Reporte PDF de \"${targetTrip.title}\" generado"
-                )
-            } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error generating PDF report" else "Error al generar el reporte PDF",
-                    isError = true
-                )
-            }
-        }
-    }
 
     // Launcher para importar archivo CSV
     val importCsvLauncher = rememberLauncherForActivityResult(
@@ -349,20 +300,6 @@ fun TravelCashApp(
         }
     }
 
-    var tripIdForPendingZipExport by rememberSaveable { mutableStateOf<String?>(null) }
-    var isExportingAllTripsZip by rememberSaveable { mutableStateOf(false) }
-    var tripIdForPendingJsonExport by rememberSaveable { mutableStateOf<String?>(null) }
-
-    // Launcher para exportar archivo ZIP (todos los viajes o un viaje individual)
-    val exportZipLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/zip")
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val targetId = if (isExportingAllTripsZip) null else tripIdForPendingZipExport
-            viewModel.exportTripsToZipUri(uri, targetTripId = targetId)
-        }
-    }
-
     // Launcher para importar archivo ZIP o JSON de viaje
     val importZipLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -372,13 +309,158 @@ fun TravelCashApp(
         }
     }
 
-    // Launcher para exportar un viaje individual como JSON
-    val exportSingleTripJsonLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri: Uri? ->
-        val targetId = tripIdForPendingJsonExport ?: tripForPendingExport?.id ?: uiState.activeTrip?.id
-        if (uri != null && targetId != null) {
-            viewModel.exportSingleTripJsonToUri(uri, targetTripId = targetId)
+    // Función para invocar el selector nativo de compartir de Android (Share Sheet)
+    fun shareGeneratedFile(file: File, mimeType: String, subject: String) {
+        try {
+            val uri: Uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, subject)
+                putExtra(Intent.EXTRA_TEXT, subject)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooserIntent = Intent.createChooser(sendIntent, subject).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(chooserIntent)
+        } catch (e: Exception) {
+            viewModel.showToast(
+                if (isEn) "Error sharing file: ${e.message}" else "Error al compartir archivo: ${e.message}",
+                isError = true
+            )
+        }
+    }
+
+    fun exportAndShareTripPdf(trip: TripEntity) {
+        try {
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val fileName = sanitizeTripFileName(trip.title, "pdf")
+            val targetFile = File(exportDir, fileName)
+            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
+            val exps = uiState.allExpenses.filter { it.tripId == trip.id }
+            val incs = uiState.allIncomes.filter { it.tripId == trip.id }
+            FileOutputStream(targetFile).use { out ->
+                ExportImportManager.writeTripPdfReport(out, trip, parts, exps, incs, context)
+            }
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "application/pdf",
+                subject = if (isEn) "PDF Report - ${trip.title}" else "Reporte PDF - ${trip.title}"
+            )
+        } catch (e: Exception) {
+            viewModel.showToast(
+                if (isEn) "Error generating PDF report" else "Error al generar el reporte PDF",
+                isError = true
+            )
+        }
+    }
+
+    fun exportAndShareTripCsv(trip: TripEntity) {
+        try {
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val fileName = sanitizeTripFileName(trip.title, "csv")
+            val targetFile = File(exportDir, fileName)
+            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
+            val exps = uiState.allExpenses.filter { it.tripId == trip.id }
+            val csvStr = ExportImportManager.generateTripExpensesCsv(trip, parts, exps)
+            targetFile.writeText(csvStr, Charsets.UTF_8)
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "text/csv",
+                subject = if (isEn) "CSV Expenses - ${trip.title}" else "Gastos CSV - ${trip.title}"
+            )
+        } catch (e: Exception) {
+            viewModel.showToast(
+                if (isEn) "Error exporting CSV" else "Error al exportar CSV",
+                isError = true
+            )
+        }
+    }
+
+    fun exportAndShareTripJson(trip: TripEntity) {
+        try {
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
+            val safeName = if (clean.isEmpty()) "Viaje" else clean
+            val targetFile = File(exportDir, "Viaje_${safeName}.json")
+            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
+            val exps = uiState.allExpenses.filter { it.tripId == trip.id }
+            val incs = uiState.allIncomes.filter { it.tripId == trip.id }
+            val jsonStr = ExportImportManager.exportFullBackupJson(
+                trips = listOf(trip),
+                participants = parts,
+                expenses = exps,
+                incomes = incs
+            )
+            targetFile.writeText(jsonStr, Charsets.UTF_8)
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "application/json",
+                subject = if (isEn) "Trip JSON - ${trip.title}" else "Viaje JSON - ${trip.title}"
+            )
+        } catch (e: Exception) {
+            viewModel.showToast(
+                if (isEn) "Error exporting JSON" else "Error al exportar JSON",
+                isError = true
+            )
+        }
+    }
+
+    fun exportAndShareZip(targetTrip: TripEntity?) {
+        try {
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val fileName = if (targetTrip != null) {
+                val clean = targetTrip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
+                val safeName = if (clean.isEmpty()) "viaje" else clean
+                "viaje_${safeName}.zip"
+            } else {
+                "travel_cash_todos_los_viajes.zip"
+            }
+            val targetFile = File(exportDir, fileName)
+            val tripsToExport = if (targetTrip != null) {
+                uiState.trips.filter { it.id == targetTrip.id }
+            } else {
+                uiState.trips
+            }
+            val parts = if (targetTrip != null) {
+                uiState.allParticipants.filter { it.tripId == targetTrip.id }
+            } else {
+                uiState.allParticipants
+            }
+            val exps = if (targetTrip != null) {
+                uiState.allExpenses.filter { it.tripId == targetTrip.id }
+            } else {
+                uiState.allExpenses
+            }
+            val incs = if (targetTrip != null) {
+                uiState.allIncomes.filter { it.tripId == targetTrip.id }
+            } else {
+                uiState.allIncomes
+            }
+            FileOutputStream(targetFile).use { out ->
+                ExportImportManager.writeTripsToZip(out, tripsToExport, parts, exps, incs)
+            }
+            val subject = if (targetTrip != null) {
+                if (isEn) "Trip ZIP - ${targetTrip.title}" else "Viaje ZIP - ${targetTrip.title}"
+            } else {
+                if (isEn) "Travel Cash Full Backup ZIP" else "Copia de Seguridad Travel Cash ZIP"
+            }
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "application/zip",
+                subject = subject
+            )
+        } catch (e: Exception) {
+            viewModel.showToast(
+                if (isEn) "Error exporting ZIP" else "Error al exportar ZIP",
+                isError = true
+            )
         }
     }
 
@@ -510,12 +592,10 @@ fun TravelCashApp(
                             tripForIconPhotoDialog = activeTrip
                         },
                         onExportCsvClick = {
-                            tripForPendingExport = activeTrip
-                            exportTripCsvLauncher.launch(sanitizeTripFileName(activeTrip.title, "csv"))
+                            exportAndShareTripCsv(activeTrip)
                         },
                         onExportPdfClick = {
-                            tripForPendingExport = activeTrip
-                            exportTripPdfLauncher.launch(sanitizeTripFileName(activeTrip.title, "pdf"))
+                            exportAndShareTripPdf(activeTrip)
                         },
                         onImportCsvToTripClick = {
                             csvImportCreatesNewTrip = false
@@ -542,23 +622,13 @@ fun TravelCashApp(
                         onLanguageChange = viewModel::setLanguage,
                         onReminderNotificationsChange = viewModel::setReminderNotificationsEnabled,
                         onExportZipClick = { trip ->
-                            if (trip == null) {
-                                if (uiState.trips.isEmpty()) {
-                                    viewModel.showToast(
-                                        if (isEn) "No trips to export" else "No hay viajes para exportar",
-                                        isError = true
-                                    )
-                                } else {
-                                    isExportingAllTripsZip = true
-                                    tripIdForPendingZipExport = null
-                                    exportZipLauncher.launch("travel_cash_todos_los_viajes.zip")
-                                }
+                            if (trip == null && uiState.trips.isEmpty()) {
+                                viewModel.showToast(
+                                    if (isEn) "No trips to export" else "No hay viajes para exportar",
+                                    isError = true
+                                )
                             } else {
-                                isExportingAllTripsZip = false
-                                tripIdForPendingZipExport = trip.id
-                                val cleanTitle = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
-                                val safeName = if (cleanTitle.isEmpty()) "viaje" else cleanTitle
-                                exportZipLauncher.launch("viaje_${safeName}.zip")
+                                exportAndShareZip(trip)
                             }
                         },
                         onImportZipClick = {
@@ -717,15 +787,10 @@ fun TravelCashApp(
                                     showCreateTripModal = true
                                 },
                                 onExportSingleTripJsonClick = { trip ->
-                                    tripForPendingExport = trip
-                                    tripIdForPendingJsonExport = trip.id
-                                    val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
-                                    val safeName = if (clean.isEmpty()) "Viaje" else clean
-                                    exportSingleTripJsonLauncher.launch("Viaje_${safeName}.json")
+                                    exportAndShareTripJson(trip)
                                 },
                                 onExportSingleTripPdfClick = { trip ->
-                                    tripForPendingExport = trip
-                                    exportTripPdfLauncher.launch(sanitizeTripFileName(trip.title, "pdf"))
+                                    exportAndShareTripPdf(trip)
                                 },
                                 onDeleteTripConfirmed = viewModel::deleteTrip,
                                 topHeader = activeTripHeaderContent
@@ -758,15 +823,10 @@ fun TravelCashApp(
                             showCreateTripModal = true
                         },
                         onExportSingleTripJsonClick = { trip ->
-                            tripForPendingExport = trip
-                            tripIdForPendingJsonExport = trip.id
-                            val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
-                            val safeName = if (clean.isEmpty()) "Viaje" else clean
-                            exportSingleTripJsonLauncher.launch("Viaje_${safeName}.json")
+                            exportAndShareTripJson(trip)
                         },
                         onExportSingleTripPdfClick = { trip ->
-                            tripForPendingExport = trip
-                            exportTripPdfLauncher.launch(sanitizeTripFileName(trip.title, "pdf"))
+                            exportAndShareTripPdf(trip)
                         },
                         onDeleteTripConfirmed = viewModel::deleteTrip
                     )
