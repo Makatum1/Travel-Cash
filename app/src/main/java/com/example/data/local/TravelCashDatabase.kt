@@ -52,7 +52,7 @@ abstract class TravelCashDatabase : RoomDatabase() {
                     "travel_cash_db"
                 )
                     .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance

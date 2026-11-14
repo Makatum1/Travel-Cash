@@ -34,7 +34,7 @@ import androidx.compose.material.icons.filled.FlightTakeoff
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -439,7 +439,7 @@ fun TravelCashApp(
             ) {
                 // Barra de navegación: Gastos, Cuentas, Estadística, Mapa, Viajes, Ajustes
                 val navItems = listOf(
-                    MainTab.EXPENSES to Icons.Default.ReceiptLong,
+                    MainTab.EXPENSES to Icons.AutoMirrored.Filled.ReceiptLong,
                     MainTab.SPLITS to Icons.Default.Group,
                     MainTab.STATS to Icons.Default.BarChart,
                     MainTab.MAP to Icons.Default.Map,

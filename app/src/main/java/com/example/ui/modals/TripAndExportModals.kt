@@ -37,7 +37,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -1210,7 +1210,7 @@ fun SuggestionsModal(onDismiss: () -> Unit) {
                             )
                         }
                         Icon(
-                            imageVector = Icons.Default.Send,
+                            imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = if (isEn) "Send email" else "Enviar correo",
                             tint = TravelBlue,
                             modifier = Modifier.size(18.dp)

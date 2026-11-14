@@ -8,7 +8,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 object FormatUtils {
-    private val spanishLocale = Locale("es", "ES")
+    private val spanishLocale = Locale.forLanguageTag("es-ES")
     private val englishLocale = Locale.US
 
     private val shortDateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", spanishLocale)

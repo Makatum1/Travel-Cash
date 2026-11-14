@@ -192,6 +192,7 @@ object NominatimService {
      * Resuelve el nombre del lugar y el país para unas coordenadas GPS dadas (lat, lon).
      * Utiliza primero Geocoder del sistema y como respaldo la API pública de Nominatim.
      */
+    @Suppress("DEPRECATION")
     suspend fun reverseGeocodeLocation(context: Context, lat: Double, lon: Double): Pair<String, String>? = withContext(Dispatchers.IO) {
         // 1. Intentar con Geocoder nativo de Android
         try {

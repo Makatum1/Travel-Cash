@@ -1014,6 +1014,7 @@ object ExportImportManager {
         }
     }
 
+    @android.annotation.SuppressLint("ExifInterface")
     private fun decodeScaledBitmap(
         context: Context?,
         uriString: String,
