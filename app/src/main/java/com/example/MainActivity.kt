@@ -312,7 +312,7 @@ fun TravelCashApp(
                 val exps = uiState.allExpenses.filter { it.tripId == targetTrip.id }
                 val incs = uiState.allIncomes.filter { it.tripId == targetTrip.id }
                 context.contentResolver.openOutputStream(uri)?.use { out ->
-                    ExportImportManager.writeTripPdfReport(out, targetTrip, parts, exps, incs)
+                    ExportImportManager.writeTripPdfReport(out, targetTrip, parts, exps, incs, context)
                 }
                 viewModel.showToast(
                     if (isEn) "PDF report for \"${targetTrip.title}\" generated" else "Reporte PDF de \"${targetTrip.title}\" generado"

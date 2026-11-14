@@ -1,11 +1,20 @@
 package com.example.util
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
+import android.media.ExifInterface
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.util.Log
+import android.webkit.MimeTypeMap
 import com.example.data.model.AvatarColorPalette
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
@@ -19,8 +28,10 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+import java.net.URL
 import java.text.Normalizer
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -584,7 +595,8 @@ object ExportImportManager {
         trip: TripEntity,
         participants: List<ParticipantEntity>,
         expenses: List<ExpenseEntity>,
-        incomes: List<IncomeEntity>
+        incomes: List<IncomeEntity>,
+        context: Context? = null
     ) {
         val pdfDocument = PdfDocument()
         val pageWidth = 595 // A4 standard points
@@ -838,7 +850,25 @@ object ExportImportManager {
 
         val partNames = participants.associate { it.id to it.name }
         expenses.sortedByDescending { it.date }.forEach { exp ->
-            ensureSpace(20f)
+            val hasAttachments = exp.photos.isNotEmpty()
+            val imageUris = mutableListOf<String>()
+            val nonImageUris = mutableListOf<String>()
+
+            if (hasAttachments) {
+                exp.photos.forEach { uriStr ->
+                    if (isImageAttachment(context, uriStr)) {
+                        imageUris.add(uriStr)
+                    } else {
+                        nonImageUris.add(uriStr)
+                    }
+                }
+            }
+
+            // Preservar la estética: si el bloque tiene imágenes o adjuntos, garantizamos espacio
+            // suficiente para no dejar el texto del gasto huérfano al final de la página.
+            val initialSpaceNeeded = if (imageUris.isNotEmpty()) 100f else (if (nonImageUris.isNotEmpty()) 36f else 20f)
+            ensureSpace(initialSpaceNeeded)
+
             val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) "Bote Común" else partNames[exp.paidById] ?: "-"
             val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { exp.category } }.take(28)
             canvas.drawText(FormatUtils.formatShortDate(exp.date), margin + 6f, y + 13f, bodyPaint)
@@ -847,11 +877,206 @@ object ExportImportManager {
             canvas.drawText(payer.take(14), margin + 370f, y + 13f, bodyPaint)
             canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency), margin + 445f, y + 13f, bodyBoldPaint)
             y += 18f
+
+            // 1. Adjuntos que NO son imagen: lista de nombres bajo 'Archivos Adjuntos'
+            if (nonImageUris.isNotEmpty()) {
+                ensureSpace(16f)
+                val label = "Archivos Adjuntos: "
+                val fileNames = nonImageUris.joinToString(", ") { getAttachmentDisplayName(context, it) }
+                val maxTextWidth = pageWidth - margin * 2 - 20f
+                var line = label + fileNames
+                if (bodyPaint.measureText(line) > maxTextWidth) {
+                    while (line.length > 3 && bodyPaint.measureText("$line...") > maxTextWidth) {
+                        line = line.dropLast(1)
+                    }
+                    line = "$line..."
+                }
+                canvas.drawText(line, margin + 14f, y + 11f, bodyPaint)
+                y += 16f
+            }
+
+            // 2. Adjuntos de tipo imagen: inserción centrada, proporcionada y con control de altura máxima
+            if (imageUris.isNotEmpty()) {
+                val maxImgW = pageWidth - (margin * 2)
+                val maxImgH = (pageHeight - (margin * 2)) * 0.40f
+
+                imageUris.forEach { imgUri ->
+                    val bitmap = decodeScaledBitmap(context, imgUri, maxImgW.toInt(), maxImgH.toInt())
+                    if (bitmap != null) {
+                        try {
+                            val bw = bitmap.width.toFloat()
+                            val bh = bitmap.height.toFloat()
+                            if (bw > 0 && bh > 0) {
+                                val scale = minOf(maxImgW / bw, maxImgH / bh, 1.0f)
+                                val drawW = bw * scale
+                                val drawH = bh * scale
+                                val drawX = margin + (maxImgW - drawW) / 2f
+
+                                // Regla estricta: la imagen nunca se corta entre páginas.
+                                // Si no cabe entera en el espacio restante de la página actual, salta a la siguiente.
+                                ensureSpace(drawH + 16f)
+
+                                val imgRect = RectF(drawX, y + 4f, drawX + drawW, y + 4f + drawH)
+                                canvas.drawBitmap(bitmap, null, imgRect, null)
+
+                                // Borde fino sutil para acabado nítido y limpio tipo recibo/miniatura
+                                fillPaint.style = Paint.Style.STROKE
+                                fillPaint.strokeWidth = 0.8f
+                                fillPaint.color = Color.parseColor("#CBD5E1")
+                                canvas.drawRoundRect(imgRect, 4f, 4f, fillPaint)
+                                fillPaint.style = Paint.Style.FILL
+
+                                y += drawH + 12f
+                            }
+                        } finally {
+                            bitmap.recycle()
+                        }
+                    }
+                }
+            }
         }
 
         pdfDocument.finishPage(currentPage)
         pdfDocument.writeTo(outputStream)
         pdfDocument.close()
+    }
+
+    private fun isImageAttachment(context: Context?, uriString: String): Boolean {
+        try {
+            val uri = Uri.parse(uriString)
+            if (context != null && uri.scheme == "content") {
+                val mimeType = context.contentResolver.getType(uri)
+                if (mimeType?.startsWith("image/", ignoreCase = true) == true) {
+                    return true
+                }
+            }
+            val ext = MimeTypeMap.getFileExtensionFromUrl(uriString).lowercase()
+            if (ext.isNotEmpty()) {
+                val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+                if (mime?.startsWith("image/", ignoreCase = true) == true) {
+                    return true
+                }
+            }
+        } catch (_: Exception) {}
+
+        val lower = uriString.lowercase().substringBefore('?').substringBefore('#')
+        return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") ||
+                lower.endsWith(".webp") || lower.endsWith(".bmp") || lower.endsWith(".heic") ||
+                lower.endsWith(".gif")
+    }
+
+    private fun getAttachmentDisplayName(context: Context?, uriString: String): String {
+        try {
+            val uri = Uri.parse(uriString)
+            if (context != null && uri.scheme == "content") {
+                val cursor = context.contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null
+                )
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val nameIdx = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIdx >= 0) {
+                            val name = it.getString(nameIdx)
+                            if (!name.isNullOrBlank()) return name
+                        }
+                    }
+                }
+            }
+            val segment = uri.lastPathSegment
+            if (!segment.isNullOrBlank()) {
+                return segment.substringAfterLast('/')
+            }
+        } catch (_: Exception) {}
+        return uriString.substringAfterLast('/').ifBlank { "adjunto" }
+    }
+
+    private fun openAttachmentInputStream(context: Context?, uriString: String): InputStream? {
+        val uri = Uri.parse(uriString)
+        return when {
+            uri.scheme == "content" -> context?.contentResolver?.openInputStream(uri)
+            uri.scheme == "file" || uri.scheme == null -> {
+                val path = uri.path ?: uriString
+                val file = File(path)
+                if (file.exists() && file.canRead()) file.inputStream() else null
+            }
+            uri.scheme == "http" || uri.scheme == "https" -> {
+                URL(uriString).openStream()
+            }
+            else -> null
+        }
+    }
+
+    private fun decodeScaledBitmap(
+        context: Context?,
+        uriString: String,
+        targetWidth: Int,
+        targetHeight: Int
+    ): Bitmap? {
+        return try {
+            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            openAttachmentInputStream(context, uriString)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, boundsOptions)
+            } ?: return null
+
+            if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0) return null
+
+            var inSampleSize = 1
+            val halfH = boundsOptions.outHeight / 2
+            val halfW = boundsOptions.outWidth / 2
+            while ((halfH / inSampleSize) >= targetHeight && (halfW / inSampleSize) >= targetWidth) {
+                inSampleSize *= 2
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+
+            var decodedBitmap = openAttachmentInputStream(context, uriString)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null, decodeOptions)
+            } ?: return null
+
+            try {
+                openAttachmentInputStream(context, uriString)?.use { stream ->
+                    val exif = ExifInterface(stream)
+                    val orientation = exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL
+                    )
+                    val rotation = when (orientation) {
+                        ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                        else -> 0f
+                    }
+                    if (rotation != 0f) {
+                        val matrix = Matrix().apply { postRotate(rotation) }
+                        val rotated = Bitmap.createBitmap(
+                            decodedBitmap,
+                            0,
+                            0,
+                            decodedBitmap.width,
+                            decodedBitmap.height,
+                            matrix,
+                            true
+                        )
+                        if (rotated != decodedBitmap) {
+                            decodedBitmap.recycle()
+                            decodedBitmap = rotated
+                        }
+                    }
+                }
+            } catch (_: Throwable) {}
+
+            decodedBitmap
+        } catch (e: Throwable) {
+            Log.w("ExportImportManager", "Error al procesar imagen para PDF: $uriString", e)
+            null
+        }
     }
 
     /**
