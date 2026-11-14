@@ -96,9 +96,28 @@ abstract class CopyTravelCashApkTask : org.gradle.api.DefaultTask() {
   @get:org.gradle.api.tasks.OutputFile
   abstract val targetApk: org.gradle.api.file.RegularFileProperty
 
+  @get:org.gradle.api.tasks.Internal
+  abstract val customDestinationDir: org.gradle.api.provider.Property<String>
+
   @org.gradle.api.tasks.TaskAction
   fun copyApk() {
-    sourceApk.get().asFile.copyTo(targetApk.get().asFile, overwrite = true)
+    val src = sourceApk.get().asFile
+    val dest = targetApk.get().asFile
+    dest.parentFile?.mkdirs()
+    src.copyTo(dest, overwrite = true)
+
+    val customDirStr = customDestinationDir.orNull
+    if (!customDirStr.isNullOrBlank()) {
+      try {
+        val customDir = file(customDirStr)
+        customDir.mkdirs()
+        val customApk = file("${customDir.absolutePath}/TravelCash.apk")
+        src.copyTo(customApk, overwrite = true)
+        logger.lifecycle("TravelCash.apk guardado y sobreescrito con éxito en: ${customApk.absolutePath}")
+      } catch (e: Exception) {
+        logger.warn("No se pudo copiar el APK al directorio personalizado: ${e.message}")
+      }
+    }
   }
 }
 
@@ -106,6 +125,10 @@ val copyTravelCashReleaseApk =
   tasks.register("copyTravelCashReleaseApk", CopyTravelCashApkTask::class.java) {
     sourceApk.set(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
     targetApk.set(layout.buildDirectory.file("outputs/apk/release/TravelCash.apk"))
+    val defaultCustomDir =
+      providers.gradleProperty("TRAVEL_CASH_CUSTOM_APK_DIR").orNull
+        ?: "C:/Users/perez/Desktop/basura/Aplicaciones/TravelCash"
+    customDestinationDir.set(defaultCustomDir)
     dependsOn("packageRelease")
   }
 
