@@ -178,6 +178,19 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             if (_activeTripId.value == null && seedTripId != null) {
                 _activeTripId.value = seedTripId
             }
+            // Asegurar que si existe el viaje de prueba (Viaje a Roma), el gasto del restaurante tenga la imagen de ejemplo
+            try {
+                val allTrips = dao.getAllTripsOnce()
+                val romaTrip = allTrips.find { it.title.contains("Roma", ignoreCase = true) }
+                if (romaTrip != null) {
+                    val romaExps = dao.getAllExpensesOnce().filter { it.tripId == romaTrip.id }
+                    val trattoriaExp = romaExps.find { (it.placeName.contains("Coliseo", ignoreCase = true) || it.notes.contains("Trattoria", ignoreCase = true)) && it.photos.isEmpty() }
+                    if (trattoriaExp != null) {
+                        val receiptUri = com.example.util.SampleReceiptGenerator.getOrCreateSampleReceipt(getApplication())
+                        repository.updateExpense(trattoriaExp.copy(photos = listOf(receiptUri)))
+                    }
+                }
+            } catch (_: Exception) {}
         }
     }
 
@@ -340,6 +353,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             val participants = listOf(p1, p2, p3)
 
             val exp1Id = "exp-${UUID.randomUUID().toString().take(8)}"
+            val receiptUri = com.example.util.SampleReceiptGenerator.getOrCreateSampleReceipt(getApplication())
             val exp1 = ExpenseEntity(
                 id = exp1Id,
                 tripId = tripId,
@@ -359,6 +373,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 originLatitude = null,
                 originLongitude = null,
                 paidById = p1Id,
+                photos = listOf(receiptUri),
                 splits = listOf(
                     ExpenseSplit("$exp1Id-1", exp1Id, p1Id, 21.50, 33.33),
                     ExpenseSplit("$exp1Id-2", exp1Id, p2Id, 21.50, 33.33),

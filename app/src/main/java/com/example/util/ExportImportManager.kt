@@ -601,7 +601,7 @@ object ExportImportManager {
         val pdfDocument = PdfDocument()
         val pageWidth = 595 // A4 standard points
         val pageHeight = 842
-        val margin = 36f
+        val margin = 32f
 
         val debtResult = DebtCalculator.calculateDebtBalances(participants, expenses, incomes)
         val totalSpent = expenses.sumOf { it.amountInBaseCurrency }
@@ -622,20 +622,39 @@ object ExportImportManager {
         var canvas: Canvas = currentPage.canvas
         var y = margin
 
-        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        // Pinceles tipográficos
+        val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textSize = 17f
+            textSize = 17.5f
             color = Color.WHITE
         }
-        val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val headerBadgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 8.5f
+            color = Color.parseColor("#38BDF8")
+        }
+        val headerSubPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             textSize = 9.5f
             color = Color.parseColor("#E2E8F0")
+        }
+        val headerMetaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textSize = 8.5f
+            color = Color.parseColor("#94A3B8")
         }
         val sectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textSize = 12.5f
             color = Color.parseColor("#0F172A")
+        }
+        val cardLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 8f
+        }
+        val cardValuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 12f
         }
         val bodyBoldPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -647,10 +666,29 @@ object ExportImportManager {
             textSize = 8.5f
             color = Color.parseColor("#334155")
         }
+        val bodySubPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textSize = 8f
+            color = Color.parseColor("#64748B")
+        }
+        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textSize = 8f
+            color = Color.parseColor("#94A3B8")
+            textAlign = Paint.Align.CENTER
+        }
         val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+        }
+
+        fun drawFooter() {
+            canvas.drawText("Página $pageNumber   •   Reporte Financiero Oficial de Travel Cash", pageWidth / 2f, pageHeight - 16f, footerPaint)
+        }
 
         fun ensureSpace(requiredHeight: Float) {
-            if (y + requiredHeight > pageHeight - margin) {
+            if (y + requiredHeight > pageHeight - margin - 22f) {
+                drawFooter()
                 pdfDocument.finishPage(currentPage)
                 pageNumber++
                 currentPage = pdfDocument.startPage(
@@ -661,68 +699,167 @@ object ExportImportManager {
             }
         }
 
-        // Encabezado principal del informe con fecha y hora de generación
+        // =====================================================================
+        // ENCABEZADO EJECUTIVO CON ICONO/FOTO DEL VIAJE
+        // =====================================================================
+        val headerH = 88f
         fillPaint.color = Color.parseColor("#0F172A")
-        canvas.drawRoundRect(
-            RectF(margin, y, pageWidth - margin, y + 74f),
-            12f,
-            12f,
-            fillPaint
-        )
-        canvas.drawText("TRAVEL CASH — Reporte Financiero Completo", margin + 16f, y + 24f, titlePaint)
-        canvas.drawText(
-            "Viaje: ${trip.title}  |  Fechas: ${FormatUtils.formatShortDate(trip.startDate)} - ${FormatUtils.formatShortDate(trip.endDate)}  |  Moneda Base: ${trip.baseCurrency}",
-            margin + 16f,
-            y + 45f,
-            subtitlePaint
-        )
-        canvas.drawText(
-            "Generado: $genTime  |  Viajeros: ${participants.size}  |  Gastos registrados: ${expenses.size}",
-            margin + 16f,
-            y + 62f,
-            subtitlePaint
-        )
-        y += 88f
+        val headerRect = RectF(margin, y, pageWidth - margin, y + headerH)
+        canvas.drawRoundRect(headerRect, 14f, 14f, fillPaint)
 
-        // 1. Resumen Financiero y Estadísticas (2 filas x 3 cajas)
-        canvas.drawText("1. Resumen Financiero y Estadísticas", margin, y, sectionPaint)
-        y += 12f
+        // Línea sutil decorativa en el borde superior del encabezado
+        fillPaint.color = Color.parseColor("#0284C7")
+        canvas.drawRoundRect(RectF(margin + 16f, y, margin + 80f, y + 3.5f), 2f, 2f, fillPaint)
+
+        // Icono o foto del viaje
+        val iconSize = 58f
+        val iconX = margin + 14f
+        val iconY = y + 15f
+        var tripIconRendered = false
+
+        if (!trip.headerPhotoUri.isNullOrBlank()) {
+            val tripBitmap = decodeScaledBitmap(context, trip.headerPhotoUri, 120, 120)
+            if (tripBitmap != null) {
+                try {
+                    val iconRect = RectF(iconX, iconY, iconX + iconSize, iconY + iconSize)
+                    canvas.save()
+                    val clipPath = android.graphics.Path().apply {
+                        addRoundRect(iconRect, 10f, 10f, android.graphics.Path.Direction.CW)
+                    }
+                    canvas.clipPath(clipPath)
+                    canvas.drawBitmap(tripBitmap, null, iconRect, null)
+                    canvas.restore()
+                    strokePaint.color = Color.parseColor("#38BDF8")
+                    strokePaint.strokeWidth = 1.5f
+                    canvas.drawRoundRect(iconRect, 10f, 10f, strokePaint)
+                    tripIconRendered = true
+                } catch (_: Throwable) {
+                } finally {
+                    tripBitmap.recycle()
+                }
+            }
+        }
+
+        if (!tripIconRendered) {
+            // Icono distintivo de Travel Cash con pin de viaje
+            val iconRect = RectF(iconX, iconY, iconX + iconSize, iconY + iconSize)
+            fillPaint.color = Color.parseColor("#0284C7")
+            canvas.drawRoundRect(iconRect, 10f, 10f, fillPaint)
+
+            fillPaint.color = Color.parseColor("#38BDF8")
+            canvas.drawCircle(iconX + iconSize / 2f, iconY + 23f, 11f, fillPaint)
+
+            fillPaint.color = Color.WHITE
+            val pinPath = android.graphics.Path().apply {
+                moveTo(iconX + iconSize / 2f, iconY + 45f)
+                lineTo(iconX + iconSize / 2f - 11f, iconY + 25f)
+                lineTo(iconX + iconSize / 2f + 11f, iconY + 25f)
+                close()
+            }
+            canvas.drawPath(pinPath, fillPaint)
+
+            fillPaint.color = Color.parseColor("#0284C7")
+            canvas.drawCircle(iconX + iconSize / 2f, iconY + 23f, 4.5f, fillPaint)
+
+            strokePaint.color = Color.parseColor("#7DD3FC")
+            strokePaint.strokeWidth = 1.2f
+            canvas.drawRoundRect(iconRect, 10f, 10f, strokePaint)
+        }
+
+        // Textos del encabezado
+        val textLeft = iconX + iconSize + 14f
+        canvas.drawText("TRAVEL CASH • INFORME FINANCIERO Y LIQUIDACIÓN", textLeft, y + 23f, headerBadgePaint)
+        canvas.drawText(trip.title.take(36), textLeft, y + 44f, headerTitlePaint)
+        canvas.drawText(
+            "Fechas: ${FormatUtils.formatShortDate(trip.startDate)} - ${FormatUtils.formatShortDate(trip.endDate)}   •   Moneda Base: ${trip.baseCurrency}",
+            textLeft,
+            y + 61f,
+            headerSubPaint
+        )
+        canvas.drawText(
+            "Generado: $genTime   •   Viajeros: ${participants.size}   •   Gastos registrados: ${expenses.size}",
+            textLeft,
+            y + 76f,
+            headerMetaPaint
+        )
+        y += headerH + 16f
+
+        // =====================================================================
+        // 1. RESUMEN FINANCIERO Y ESTADÍSTICAS (TARJETAS ESTILIZADAS CON COLORES)
+        // =====================================================================
+        canvas.drawText("1. Resumen Financiero y Métricas Clave", margin, y, sectionPaint)
+        y += 14f
         val boxW = (pageWidth - margin * 2 - 16f) / 3f
 
-        // Fila 1: Presupuesto, Gastado Total, Saldo Extra
-        val row1Items = listOf(
-            Triple("Presupuesto", trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency) } ?: "Flexible", "#EFF6FF"),
-            Triple("Gastado Total", FormatUtils.formatCurrency(totalSpent, trip.baseCurrency), "#F8FAFC"),
-            Triple("SALDO EXTRA", FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency), if (extraBalance >= 0) "#DCFCE7" else "#FEE2E2")
+        data class MetricCard(
+            val label: String,
+            val value: String,
+            val bgHex: String,
+            val borderHex: String,
+            val labelColorHex: String,
+            val valueColorHex: String
         )
-        row1Items.forEachIndexed { idx, (label, valStr, bgHex) ->
-            val left = margin + idx * (boxW + 8f)
-            fillPaint.color = Color.parseColor(bgHex)
-            canvas.drawRoundRect(RectF(left, y, left + boxW, y + 44f), 8f, 8f, fillPaint)
-            canvas.drawText(label, left + 10f, y + 16f, bodyPaint)
-            canvas.drawText(valStr, left + 10f, y + 34f, bodyBoldPaint)
-        }
-        y += 50f
 
-        // Fila 2: Aportaciones Bote, Gastos con Bote, Saldo Actual del Bote
-        val row2Items = listOf(
-            Triple("Aportaciones Bote", "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency)}", "#ECFDF5"),
-            Triple("Gastado desde Bote", FormatUtils.formatCurrency(boteExpenses, trip.baseCurrency), "#F8FAFC"),
-            Triple("SALDO ACTUAL BOTE", FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency), if (commonPotBalance >= 0) "#D1FAE5" else "#FEE2E2")
+        val row1Cards = listOf(
+            MetricCard("PRESUPUESTO TOTAL", trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency) } ?: "Sin Límite", "#F0F9FF", "#BAE6FD", "#0369A1", "#0C4A6E"),
+            MetricCard("GASTADO TOTAL", FormatUtils.formatCurrency(totalSpent, trip.baseCurrency), "#F8FAFC", "#CBD5E1", "#475569", "#0F172A"),
+            if (extraBalance >= 0) {
+                MetricCard("SALDO EXTRA DISPONIBLE", FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
+            } else {
+                MetricCard("SOBRECOSTE PRESUPUESTO", FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
+            }
         )
-        row2Items.forEachIndexed { idx, (label, valStr, bgHex) ->
-            val left = margin + idx * (boxW + 8f)
-            fillPaint.color = Color.parseColor(bgHex)
-            canvas.drawRoundRect(RectF(left, y, left + boxW, y + 44f), 8f, 8f, fillPaint)
-            canvas.drawText(label, left + 10f, y + 16f, bodyPaint)
-            canvas.drawText(valStr, left + 10f, y + 34f, bodyBoldPaint)
-        }
-        y += 56f
 
-        // 2. Desglose por Categoría con Porcentajes
+        row1Cards.forEachIndexed { idx, card ->
+            val left = margin + idx * (boxW + 8f)
+            val rect = RectF(left, y, left + boxW, y + 46f)
+            fillPaint.color = Color.parseColor(card.bgHex)
+            canvas.drawRoundRect(rect, 7f, 7f, fillPaint)
+            strokePaint.color = Color.parseColor(card.borderHex)
+            strokePaint.strokeWidth = 1f
+            canvas.drawRoundRect(rect, 7f, 7f, strokePaint)
+
+            cardLabelPaint.color = Color.parseColor(card.labelColorHex)
+            canvas.drawText(card.label, left + 10f, y + 16f, cardLabelPaint)
+
+            cardValuePaint.color = Color.parseColor(card.valueColorHex)
+            canvas.drawText(card.value, left + 10f, y + 36f, cardValuePaint)
+        }
+        y += 52f
+
+        val row2Cards = listOf(
+            MetricCard("APORTACIONES AL BOTE", "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency)}", "#F0FDF4", "#86EFAC", "#15803D", "#14532D"),
+            MetricCard("GASTADO DESDE BOTE", FormatUtils.formatCurrency(boteExpenses, trip.baseCurrency), "#FFFBEB", "#FDE68A", "#B45309", "#78350F"),
+            if (commonPotBalance >= 0) {
+                MetricCard("SALDO ACTUAL DEL BOTE", FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
+            } else {
+                MetricCard("DÉFICIT DEL BOTE", FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
+            }
+        )
+
+        row2Cards.forEachIndexed { idx, card ->
+            val left = margin + idx * (boxW + 8f)
+            val rect = RectF(left, y, left + boxW, y + 46f)
+            fillPaint.color = Color.parseColor(card.bgHex)
+            canvas.drawRoundRect(rect, 7f, 7f, fillPaint)
+            strokePaint.color = Color.parseColor(card.borderHex)
+            strokePaint.strokeWidth = 1f
+            canvas.drawRoundRect(rect, 7f, 7f, strokePaint)
+
+            cardLabelPaint.color = Color.parseColor(card.labelColorHex)
+            canvas.drawText(card.label, left + 10f, y + 16f, cardLabelPaint)
+
+            cardValuePaint.color = Color.parseColor(card.valueColorHex)
+            canvas.drawText(card.value, left + 10f, y + 36f, cardValuePaint)
+        }
+        y += 58f
+
+        // =====================================================================
+        // 2. DESGLOSE POR CATEGORÍA CON GRÁFICA VISUAL DE PORCENTAJES
+        // =====================================================================
         ensureSpace(70f)
-        canvas.drawText("2. Desglose por Categoría y Porcentajes", margin, y, sectionPaint)
-        y += 12f
+        canvas.drawText("2. Desglose por Categoría y Distribución", margin, y, sectionPaint)
+        y += 14f
 
         val catStats = expenses.groupBy { it.category }
             .map { (cat, list) ->
@@ -734,121 +871,212 @@ object ExportImportManager {
             .sortedByDescending { it.third.first }
 
         if (catStats.isEmpty()) {
-            canvas.drawText("No hay gastos registrados para categorizar.", margin, y + 12f, bodyPaint)
+            canvas.drawText("No hay gastos registrados para categorizar.", margin + 10f, y + 12f, bodyPaint)
             y += 24f
         } else {
-            fillPaint.color = Color.parseColor("#E2E8F0")
-            canvas.drawRect(margin, y, pageWidth - margin, y + 18f, fillPaint)
-            canvas.drawText("Categoría", margin + 8f, y + 13f, bodyBoldPaint)
-            canvas.drawText("Nº Gastos", margin + 200f, y + 13f, bodyBoldPaint)
-            canvas.drawText("Importe Total", margin + 310f, y + 13f, bodyBoldPaint)
-            canvas.drawText("% del Total", margin + 430f, y + 13f, bodyBoldPaint)
-            y += 20f
+            fillPaint.color = Color.parseColor("#F1F5F9")
+            canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 19f), 4f, 4f, fillPaint)
+            strokePaint.color = Color.parseColor("#E2E8F0")
+            strokePaint.strokeWidth = 0.8f
+            canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 19f), 4f, 4f, strokePaint)
+
+            canvas.drawText("Categoría", margin + 12f, y + 13f, bodyBoldPaint)
+            canvas.drawText("Nº Gastos", margin + 180f, y + 13f, bodyBoldPaint)
+            canvas.drawText("Importe Total", margin + 270f, y + 13f, bodyBoldPaint)
+            canvas.drawText("% y Proporción Visual", margin + 380f, y + 13f, bodyBoldPaint)
+            y += 22f
 
             catStats.forEach { (cat, count, sumAndPct) ->
-                ensureSpace(18f)
+                ensureSpace(19f)
                 val (sum, pct) = sumAndPct
-                canvas.drawText(cat.take(28), margin + 8f, y + 12f, bodyBoldPaint)
-                canvas.drawText("$count gastos", margin + 200f, y + 12f, bodyPaint)
-                canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency), margin + 310f, y + 12f, bodyBoldPaint)
-                canvas.drawText(String.format(Locale.US, "%.1f%%", pct), margin + 430f, y + 12f, bodyBoldPaint)
-                y += 17f
+                val catInfo = CategoryCatalog.getCategory(cat)
+
+                // Círculo de color de categoría
+                fillPaint.color = Color.parseColor(catInfo.hexColor)
+                canvas.drawCircle(margin + 16f, y + 8.5f, 4f, fillPaint)
+
+                canvas.drawText(cat.take(24), margin + 26f, y + 12f, bodyBoldPaint)
+                canvas.drawText("$count gastos", margin + 180f, y + 12f, bodyPaint)
+                canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency), margin + 270f, y + 12f, bodyBoldPaint)
+                canvas.drawText(String.format(Locale.US, "%.1f%%", pct), margin + 380f, y + 12f, bodyBoldPaint)
+
+                // Barra visual de porcentaje proporcional
+                val maxBarW = 75f
+                val barW = (maxBarW * (pct.toFloat() / 100f)).coerceIn(1.5f, maxBarW)
+                fillPaint.color = Color.parseColor("#E2E8F0")
+                canvas.drawRoundRect(RectF(margin + 425f, y + 4f, margin + 425f + maxBarW, y + 12f), 3f, 3f, fillPaint)
+                fillPaint.color = Color.parseColor(catInfo.hexColor)
+                canvas.drawRoundRect(RectF(margin + 425f, y + 4f, margin + 425f + barW, y + 12f), 3f, 3f, fillPaint)
+
+                y += 18f
             }
-            y += 10f
+            y += 12f
         }
 
-        // 3. Liquidación de Cuentas (Deudas Pendientes)
+        // =====================================================================
+        // 3. LIQUIDACIÓN DE CUENTAS (TRANSFERENCIAS PENDIENTES)
+        // =====================================================================
         ensureSpace(70f)
-        canvas.drawText("3. Liquidación de Cuentas (Deudas Pendientes)", margin, y, sectionPaint)
-        y += 12f
+        canvas.drawText("3. Liquidación de Cuentas (Transferencias entre Viajeros)", margin, y, sectionPaint)
+        y += 14f
+
         if (debtResult.transactions.isEmpty()) {
-            canvas.drawText("No hay deudas pendientes. Todas las cuentas están saldadas al 100%.", margin, y + 12f, bodyPaint)
-            y += 26f
+            val okRect = RectF(margin, y, pageWidth - margin, y + 28f)
+            fillPaint.color = Color.parseColor("#ECFDF5")
+            canvas.drawRoundRect(okRect, 6f, 6f, fillPaint)
+            strokePaint.color = Color.parseColor("#6EE7B7")
+            strokePaint.strokeWidth = 1f
+            canvas.drawRoundRect(okRect, 6f, 6f, strokePaint)
+
+            val okPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#047857")
+                textSize = 9.5f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            }
+            canvas.drawText("✓ ¡Cuentas totalmente saldadas al 100%! No existen transferencias pendientes.", margin + 14f, y + 18f, okPaint)
+            y += 38f
         } else {
             debtResult.transactions.forEach { tx ->
-                ensureSpace(22f)
-                fillPaint.color = Color.parseColor("#F1F5F9")
-                canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 20f), 4f, 4f, fillPaint)
-                canvas.drawText(
-                    "${tx.fromName}  →  paga a  →  ${tx.toName}",
-                    margin + 10f,
-                    y + 14f,
-                    bodyBoldPaint
-                )
-                canvas.drawText(
-                    FormatUtils.formatCurrency(tx.amount, trip.baseCurrency),
-                    pageWidth - margin - 110f,
-                    y + 14f,
-                    bodyBoldPaint
-                )
-                y += 24f
+                ensureSpace(28f)
+                val txRect = RectF(margin, y, pageWidth - margin, y + 26f)
+                fillPaint.color = Color.parseColor("#F8FAFC")
+                canvas.drawRoundRect(txRect, 6f, 6f, fillPaint)
+                strokePaint.color = Color.parseColor("#E2E8F0")
+                strokePaint.strokeWidth = 1f
+                canvas.drawRoundRect(txRect, 6f, 6f, strokePaint)
+
+                // Texto quién paga a quién
+                canvas.drawText(tx.fromName, margin + 12f, y + 17f, bodyBoldPaint)
+                val fromW = bodyBoldPaint.measureText(tx.fromName)
+                canvas.drawText("  →  debe transferir a  →  ", margin + 12f + fromW, y + 17f, bodySubPaint)
+                val arrowW = bodySubPaint.measureText("  →  debe transferir a  →  ")
+
+                val receiverPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    textSize = 9f
+                    color = Color.parseColor("#047857")
+                }
+                canvas.drawText(tx.toName, margin + 12f + fromW + arrowW, y + 17f, receiverPaint)
+
+                // Píldora de importe destacada
+                val pillW = 90f
+                val pillRect = RectF(pageWidth - margin - pillW - 8f, y + 4f, pageWidth - margin - 8f, y + 22f)
+                fillPaint.color = Color.parseColor("#EFF6FF")
+                canvas.drawRoundRect(pillRect, 4f, 4f, fillPaint)
+                strokePaint.color = Color.parseColor("#BFDBFE")
+                strokePaint.strokeWidth = 1f
+                canvas.drawRoundRect(pillRect, 4f, 4f, strokePaint)
+
+                val pillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = Color.parseColor("#1E40AF")
+                    textSize = 9.5f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    textAlign = Paint.Align.CENTER
+                }
+                canvas.drawText(FormatUtils.formatCurrency(tx.amount, trip.baseCurrency), pillRect.centerX(), y + 16.5f, pillPaint)
+
+                y += 32f
             }
             y += 8f
         }
 
-        // 4. Balance Detallado por Participante
+        // =====================================================================
+        // 4. BALANCE DETALLADO POR PARTICIPANTE
+        // =====================================================================
         ensureSpace(80f)
-        canvas.drawText("4. Balance Detallado por Participante", margin, y, sectionPaint)
+        canvas.drawText("4. Balance Individual por Participante", margin, y, sectionPaint)
         y += 14f
-        fillPaint.color = Color.parseColor("#E2E8F0")
-        canvas.drawRect(margin, y, pageWidth - margin, y + 20f, fillPaint)
-        canvas.drawText("Participante", margin + 8f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Pagó Bolsillo", margin + 140f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Puso Bote", margin + 240f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Le Correspondía", margin + 330f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Balance Neto", margin + 435f, y + 14f, bodyBoldPaint)
-        y += 22f
 
-        debtResult.participantBalances.forEach { b ->
+        fillPaint.color = Color.parseColor("#F1F5F9")
+        canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 20f), 4f, 4f, fillPaint)
+        strokePaint.color = Color.parseColor("#E2E8F0")
+        strokePaint.strokeWidth = 0.8f
+        canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 20f), 4f, 4f, strokePaint)
+
+        canvas.drawText("Participante", margin + 10f, y + 14f, bodyBoldPaint)
+        canvas.drawText("Pagó Bolsillo", margin + 130f, y + 14f, bodyBoldPaint)
+        canvas.drawText("Aportó al Bote", margin + 220f, y + 14f, bodyBoldPaint)
+        canvas.drawText("Le Correspondía", margin + 315f, y + 14f, bodyBoldPaint)
+        canvas.drawText("Balance Neto Final", margin + 420f, y + 14f, bodyBoldPaint)
+        y += 24f
+
+        debtResult.participantBalances.forEachIndexed { idx, b ->
             ensureSpace(20f)
-            canvas.drawText(b.participantName, margin + 8f, y + 13f, bodyBoldPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesPaid, trip.baseCurrency), margin + 140f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalBoteContributed, trip.baseCurrency), margin + 240f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesOwed, trip.baseCurrency), margin + 330f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatSignedCurrency(b.netBalance, trip.baseCurrency), margin + 435f, y + 13f, bodyBoldPaint)
+            if (idx % 2 == 1) {
+                fillPaint.color = Color.parseColor("#F8FAFC")
+                canvas.drawRect(margin, y, pageWidth - margin, y + 18f, fillPaint)
+            }
+            canvas.drawText(b.participantName, margin + 10f, y + 13f, bodyBoldPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesPaid, trip.baseCurrency), margin + 130f, y + 13f, bodyPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalBoteContributed, trip.baseCurrency), margin + 220f, y + 13f, bodyPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesOwed, trip.baseCurrency), margin + 315f, y + 13f, bodyPaint)
+
+            // Balance neto con color semántico según resultado
+            val netColorHex = when {
+                b.netBalance > 0.005 -> "#047857"
+                b.netBalance < -0.005 -> "#B91C1C"
+                else -> "#64748B"
+            }
+            val netPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textSize = 9.5f
+                color = Color.parseColor(netColorHex)
+            }
+            canvas.drawText(FormatUtils.formatSignedCurrency(b.netBalance, trip.baseCurrency), margin + 420f, y + 13f, netPaint)
             y += 19f
         }
         y += 14f
 
-        // 5. Listado de Aportaciones al Bote Común
+        // =====================================================================
+        // 5. APORTACIONES AL BOTE COMÚN
+        // =====================================================================
         if (incomes.isNotEmpty()) {
             ensureSpace(60f)
-            canvas.drawText("5. Aportaciones al Bote Común (${incomes.size})", margin, y, sectionPaint)
+            canvas.drawText("5. Aportaciones Registradas al Bote Común (${incomes.size})", margin, y, sectionPaint)
             y += 14f
+
             incomes.forEach { inc ->
-                ensureSpace(20f)
+                ensureSpace(22f)
+                val incRect = RectF(margin, y, pageWidth - margin, y + 20f)
+                fillPaint.color = Color.parseColor("#F8FAFC")
+                canvas.drawRoundRect(incRect, 4f, 4f, fillPaint)
+                strokePaint.color = Color.parseColor("#E2E8F0")
+                strokePaint.strokeWidth = 0.8f
+                canvas.drawRoundRect(incRect, 4f, 4f, strokePaint)
+
                 canvas.drawText(
-                    "${FormatUtils.formatShortDate(inc.date)} — ${inc.description.ifEmpty { "Aportación al bote" }}",
-                    margin + 8f,
-                    y + 13f,
+                    "${FormatUtils.formatShortDate(inc.date)}  •  ${inc.description.ifEmpty { "Aportación al bote común" }}",
+                    margin + 10f,
+                    y + 14f,
                     bodyPaint
                 )
+                val greenIncomePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    textSize = 9.5f
+                    color = Color.parseColor("#047857")
+                    textAlign = Paint.Align.RIGHT
+                }
                 canvas.drawText(
                     "+${FormatUtils.formatCurrency(inc.amount, trip.baseCurrency)}",
-                    pageWidth - margin - 100f,
-                    y + 13f,
-                    bodyBoldPaint
+                    pageWidth - margin - 12f,
+                    y + 14f,
+                    greenIncomePaint
                 )
-                y += 18f
+                y += 24f
             }
-            y += 14f
+            y += 12f
         }
 
-        // 6. Listado Completo de Gastos
+        // =====================================================================
+        // 6. DESGLOSE COMPLETO DE GASTOS CON ADJUNTOS E IMÁGENES
+        // =====================================================================
         ensureSpace(60f)
         val sectionIndex = if (incomes.isNotEmpty()) 6 else 5
-        canvas.drawText("$sectionIndex. Desglose Completo de Gastos (${expenses.size})", margin, y, sectionPaint)
+        canvas.drawText("$sectionIndex. Desglose Detallado de Gastos (${expenses.size})", margin, y, sectionPaint)
         y += 14f
-        fillPaint.color = Color.parseColor("#E2E8F0")
-        canvas.drawRect(margin, y, pageWidth - margin, y + 20f, fillPaint)
-        canvas.drawText("Fecha", margin + 6f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Lugar / Concepto", margin + 70f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Categoría", margin + 245f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Pagó", margin + 370f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Importe", margin + 445f, y + 14f, bodyBoldPaint)
-        y += 22f
 
         val partNames = participants.associate { it.id to it.name }
+
         expenses.sortedByDescending { it.date }.forEach { exp ->
             val hasAttachments = exp.photos.isNotEmpty()
             val imageUris = mutableListOf<String>()
@@ -864,26 +1092,70 @@ object ExportImportManager {
                 }
             }
 
-            // Preservar la estética: si el bloque tiene imágenes o adjuntos, garantizamos espacio
-            // suficiente para no dejar el texto del gasto huérfano al final de la página.
-            val initialSpaceNeeded = if (imageUris.isNotEmpty()) 100f else (if (nonImageUris.isNotEmpty()) 36f else 20f)
+            // Estimación de espacio para no romper la estética ni dejar textos huérfanos
+            val initialSpaceNeeded = if (imageUris.isNotEmpty()) 110f else (if (nonImageUris.isNotEmpty()) 48f else 28f)
             ensureSpace(initialSpaceNeeded)
 
-            val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) "Bote Común" else partNames[exp.paidById] ?: "-"
-            val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { exp.category } }.take(28)
-            canvas.drawText(FormatUtils.formatShortDate(exp.date), margin + 6f, y + 13f, bodyPaint)
-            canvas.drawText(placeText, margin + 70f, y + 13f, bodyPaint)
-            canvas.drawText(exp.category.take(20), margin + 245f, y + 13f, bodyPaint)
-            canvas.drawText(payer.take(14), margin + 370f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency), margin + 445f, y + 13f, bodyBoldPaint)
+            val catInfo = CategoryCatalog.getCategory(exp.category)
+            val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { exp.category } }
+            val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) "🏺 Bote Común" else partNames[exp.paidById] ?: "-"
+
+            // Fila principal del gasto: Tarjeta con borde sutil
+            val rowTop = y
+            val rowW = pageWidth - margin * 2
+            val isBote = exp.paidById == DebtCalculator.BOTE_COMUN_ID
+
+            // Círculo de color de la categoría
+            fillPaint.color = Color.parseColor(catInfo.hexColor)
+            canvas.drawCircle(margin + 12f, y + 10f, 4.5f, fillPaint)
+
+            // Concepto / Lugar
+            canvas.drawText(placeText.take(30), margin + 22f, y + 14f, bodyBoldPaint)
+            val titleW = bodyBoldPaint.measureText(placeText.take(30))
+
+            // Badge de categoría
+            val badgeX = margin + 28f + titleW
+            val badgeText = catInfo.name
+            val badgeW = bodySubPaint.measureText(badgeText) + 12f
+            fillPaint.color = Color.parseColor("#F1F5F9")
+            canvas.drawRoundRect(RectF(badgeX, y + 2f, badgeX + badgeW, y + 16f), 3f, 3f, fillPaint)
+            canvas.drawText(badgeText, badgeX + 6f, y + 12.5f, bodySubPaint)
+
+            // Importe a la derecha
+            val pricePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textSize = 10.5f
+                color = Color.parseColor("#0F172A")
+                textAlign = Paint.Align.RIGHT
+            }
+            canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency), pageWidth - margin - 8f, y + 14f, pricePaint)
             y += 18f
+
+            // Fila de metadatos del gasto (Fecha y Quién pagó)
+            canvas.drawText("📅 ${FormatUtils.formatShortDate(exp.date)}", margin + 22f, y + 11f, bodySubPaint)
+            val dateW = bodySubPaint.measureText("📅 ${FormatUtils.formatShortDate(exp.date)}")
+
+            val payerColor = if (isBote) "#B45309" else "#334155"
+            val payerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = Typeface.create(Typeface.DEFAULT, if (isBote) Typeface.BOLD else Typeface.NORMAL)
+                textSize = 8.5f
+                color = Color.parseColor(payerColor)
+            }
+            canvas.drawText("  •  Pagado por: $payer", margin + 22f + dateW, y + 11f, payerPaint)
+
+            // Si tiene notas descriptivas diferentes del lugar
+            if (exp.notes.isNotBlank() && exp.notes != exp.placeName) {
+                y += 13f
+                canvas.drawText("Notas: ${exp.notes.take(50)}", margin + 22f, y + 10f, bodySubPaint)
+            }
+            y += 16f
 
             // 1. Adjuntos que NO son imagen: sección 'Archivos Adjuntos' con formato 'Archivo adjunto: [Nombre]'
             if (nonImageUris.isNotEmpty()) {
                 ensureSpace(14f + nonImageUris.size * 14f)
-                canvas.drawText("Archivos Adjuntos", margin + 14f, y + 11f, bodyBoldPaint)
+                canvas.drawText("Archivos Adjuntos", margin + 22f, y + 11f, bodyBoldPaint)
                 y += 14f
-                val maxTextWidth = pageWidth - margin * 2 - 28f
+                val maxTextWidth = pageWidth - margin * 2 - 36f
                 nonImageUris.forEach { nonImgUri ->
                     ensureSpace(14f)
                     val fileName = getAttachmentDisplayName(context, nonImgUri)
@@ -894,14 +1166,14 @@ object ExportImportManager {
                         }
                         line = "$line..."
                     }
-                    canvas.drawText(line, margin + 22f, y + 11f, bodyPaint)
+                    canvas.drawText(line, margin + 30f, y + 11f, bodyPaint)
                     y += 14f
                 }
             }
 
             // 2. Adjuntos de tipo imagen: inserción centrada, proporcionada y con control de altura máxima
             if (imageUris.isNotEmpty()) {
-                val maxImgW = pageWidth - (margin * 2)
+                val maxImgW = pageWidth - (margin * 2) - 20f
                 val maxImgH = (pageHeight - (margin * 2)) * 0.40f
 
                 imageUris.forEach { imgUri ->
@@ -914,7 +1186,7 @@ object ExportImportManager {
                                 val scale = minOf(maxImgW / bw, maxImgH / bh, 1.0f)
                                 val drawW = bw * scale
                                 val drawH = bh * scale
-                                val drawX = margin + (maxImgW - drawW) / 2f
+                                val drawX = margin + 10f + (maxImgW - drawW) / 2f
 
                                 // Regla estricta: la imagen nunca se corta entre páginas.
                                 // Si no cabe entera en el espacio restante de la página actual, salta a la siguiente.
@@ -923,11 +1195,11 @@ object ExportImportManager {
                                 val imgRect = RectF(drawX, y + 4f, drawX + drawW, y + 4f + drawH)
                                 canvas.drawBitmap(bitmap, null, imgRect, null)
 
-                                // Borde fino sutil para acabado nítido y limpio tipo recibo/miniatura
+                                // Borde fino sutil para acabado de recibo/ticket limpio
                                 fillPaint.style = Paint.Style.STROKE
                                 fillPaint.strokeWidth = 0.8f
                                 fillPaint.color = Color.parseColor("#CBD5E1")
-                                canvas.drawRoundRect(imgRect, 4f, 4f, fillPaint)
+                                canvas.drawRoundRect(imgRect, 5f, 5f, fillPaint)
                                 fillPaint.style = Paint.Style.FILL
 
                                 y += drawH + 12f
@@ -938,8 +1210,15 @@ object ExportImportManager {
                     }
                 }
             }
+
+            // Separador sutil entre gastos
+            strokePaint.color = Color.parseColor("#E2E8F0")
+            strokePaint.strokeWidth = 0.8f
+            canvas.drawLine(margin + 6f, y, pageWidth - margin - 6f, y, strokePaint)
+            y += 10f
         }
 
+        drawFooter()
         pdfDocument.finishPage(currentPage)
         pdfDocument.writeTo(outputStream)
         pdfDocument.close()
