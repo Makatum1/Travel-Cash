@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
@@ -631,17 +632,17 @@ object ExportImportManager {
         val headerBadgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textSize = 8.5f
-            color = Color.parseColor("#38BDF8")
+            color = Color.parseColor("#7DD3FC")
         }
         val headerSubPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             textSize = 9.5f
-            color = Color.parseColor("#E2E8F0")
+            color = Color.parseColor("#E0F2FE")
         }
         val headerMetaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             textSize = 8.5f
-            color = Color.parseColor("#94A3B8")
+            color = Color.parseColor("#BAE6FD")
         }
         val sectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -682,6 +683,8 @@ object ExportImportManager {
             style = Paint.Style.STROKE
         }
 
+        val sectionSpacing = 28f // 2 líneas en blanco de separación entre cada apartado
+
         fun drawFooter() {
             canvas.drawText("Página $pageNumber   •   Reporte Financiero Oficial de Travel Cash", pageWidth / 2f, pageHeight - 16f, footerPaint)
         }
@@ -703,45 +706,73 @@ object ExportImportManager {
         // ENCABEZADO EJECUTIVO CON ICONO/FOTO DEL VIAJE
         // =====================================================================
         val headerH = 88f
-        fillPaint.color = Color.parseColor("#0F172A")
+        // Fondo armónico elegante con el resto de la app (Deep Ocean Petrol / Navy #033E5C)
+        fillPaint.color = Color.parseColor("#033E5C")
         val headerRect = RectF(margin, y, pageWidth - margin, y + headerH)
         canvas.drawRoundRect(headerRect, 14f, 14f, fillPaint)
 
-        // Línea sutil decorativa en el borde superior del encabezado
-        fillPaint.color = Color.parseColor("#0284C7")
-        canvas.drawRoundRect(RectF(margin + 16f, y, margin + 80f, y + 3.5f), 2f, 2f, fillPaint)
+        // Borde fino decorativo para acabado prémium
+        strokePaint.color = Color.parseColor("#0E5E8A")
+        strokePaint.strokeWidth = 1f
+        canvas.drawRoundRect(headerRect, 14f, 14f, strokePaint)
 
-        // Icono o foto del viaje
+        // Línea sutil decorativa en el borde superior del encabezado
+        fillPaint.color = Color.parseColor("#38BDF8")
+        canvas.drawRoundRect(RectF(margin + 16f, y, margin + 84f, y + 3.5f), 2f, 2f, fillPaint)
+
+        // Icono o foto del viaje: si no se cambia utiliza por defecto el de portada adaptado a esas medidas
         val iconSize = 58f
         val iconX = margin + 14f
         val iconY = y + 15f
         var tripIconRendered = false
 
-        if (!trip.headerPhotoUri.isNullOrBlank()) {
-            val tripBitmap = decodeScaledBitmap(context, trip.headerPhotoUri, 120, 120)
-            if (tripBitmap != null) {
-                try {
-                    val iconRect = RectF(iconX, iconY, iconX + iconSize, iconY + iconSize)
-                    canvas.save()
-                    val clipPath = android.graphics.Path().apply {
-                        addRoundRect(iconRect, 10f, 10f, android.graphics.Path.Direction.CW)
+        val tripBitmap = if (!trip.headerPhotoUri.isNullOrBlank()) {
+            decodeScaledBitmap(context, trip.headerPhotoUri, 140, 140)
+        } else {
+            // Portada por defecto de Travel Cash
+            decodeResourceScaledBitmap(context, com.example.R.drawable.app_splash_screen, 160, 160)
+        } ?: run {
+            decodeResourceScaledBitmap(context, com.example.R.drawable.app_splash_screen, 160, 160)
+        }
+
+        if (tripBitmap != null) {
+            try {
+                val iconRect = RectF(iconX, iconY, iconX + iconSize, iconY + iconSize)
+                val bw = tripBitmap.width
+                val bh = tripBitmap.height
+                // Adaptado a las medidas exactas del cuadro manteniendo proporción (center-crop)
+                val srcRect = if (bw > 0 && bh > 0) {
+                    if (bw > bh) {
+                        val offset = (bw - bh) / 2
+                        Rect(offset, 0, offset + bh, bh)
+                    } else if (bh > bw) {
+                        val offset = (bh - bw) / 2
+                        Rect(0, offset, bw, offset + bw)
+                    } else {
+                        Rect(0, 0, bw, bh)
                     }
-                    canvas.clipPath(clipPath)
-                    canvas.drawBitmap(tripBitmap, null, iconRect, null)
-                    canvas.restore()
-                    strokePaint.color = Color.parseColor("#38BDF8")
-                    strokePaint.strokeWidth = 1.5f
-                    canvas.drawRoundRect(iconRect, 10f, 10f, strokePaint)
-                    tripIconRendered = true
-                } catch (_: Throwable) {
-                } finally {
-                    tripBitmap.recycle()
+                } else null
+
+                canvas.save()
+                val clipPath = android.graphics.Path().apply {
+                    addRoundRect(iconRect, 10f, 10f, android.graphics.Path.Direction.CW)
                 }
+                canvas.clipPath(clipPath)
+                canvas.drawBitmap(tripBitmap, srcRect, iconRect, null)
+                canvas.restore()
+
+                strokePaint.color = Color.parseColor("#38BDF8")
+                strokePaint.strokeWidth = 1.5f
+                canvas.drawRoundRect(iconRect, 10f, 10f, strokePaint)
+                tripIconRendered = true
+            } catch (_: Throwable) {
+            } finally {
+                tripBitmap.recycle()
             }
         }
 
         if (!tripIconRendered) {
-            // Icono distintivo de Travel Cash con pin de viaje
+            // Icono distintivo de Travel Cash con pin de viaje (fallback vectorial sin recursos)
             val iconRect = RectF(iconX, iconY, iconX + iconSize, iconY + iconSize)
             fillPaint.color = Color.parseColor("#0284C7")
             canvas.drawRoundRect(iconRect, 10f, 10f, fillPaint)
@@ -782,7 +813,8 @@ object ExportImportManager {
             y + 76f,
             headerMetaPaint
         )
-        y += headerH + 16f
+        // Dos líneas en blanco desde el título a donde empieza 1. Resumen Financiero
+        y += headerH + sectionSpacing
 
         // =====================================================================
         // 1. RESUMEN FINANCIERO Y ESTADÍSTICAS (TARJETAS ESTILIZADAS CON COLORES)
@@ -852,7 +884,7 @@ object ExportImportManager {
             cardValuePaint.color = Color.parseColor(card.valueColorHex)
             canvas.drawText(card.value, left + 10f, y + 36f, cardValuePaint)
         }
-        y += 58f
+        y += 46f + sectionSpacing
 
         // =====================================================================
         // 2. DESGLOSE POR CATEGORÍA CON GRÁFICA VISUAL DE PORCENTAJES
@@ -872,7 +904,7 @@ object ExportImportManager {
 
         if (catStats.isEmpty()) {
             canvas.drawText("No hay gastos registrados para categorizar.", margin + 10f, y + 12f, bodyPaint)
-            y += 24f
+            y += 20f
         } else {
             fillPaint.color = Color.parseColor("#F1F5F9")
             canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 19f), 4f, 4f, fillPaint)
@@ -910,8 +942,8 @@ object ExportImportManager {
 
                 y += 18f
             }
-            y += 12f
         }
+        y += sectionSpacing
 
         // =====================================================================
         // 3. LIQUIDACIÓN DE CUENTAS (TRANSFERENCIAS PENDIENTES)
@@ -934,7 +966,7 @@ object ExportImportManager {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
             canvas.drawText("✓ ¡Cuentas totalmente saldadas al 100%! No existen transferencias pendientes.", margin + 14f, y + 18f, okPaint)
-            y += 38f
+            y += 28f
         } else {
             debtResult.transactions.forEach { tx ->
                 ensureSpace(28f)
@@ -977,8 +1009,8 @@ object ExportImportManager {
 
                 y += 32f
             }
-            y += 8f
         }
+        y += sectionSpacing
 
         // =====================================================================
         // 4. BALANCE DETALLADO POR PARTICIPANTE
@@ -1025,12 +1057,12 @@ object ExportImportManager {
             canvas.drawText(FormatUtils.formatSignedCurrency(b.netBalance, trip.baseCurrency), margin + 420f, y + 13f, netPaint)
             y += 19f
         }
-        y += 14f
 
         // =====================================================================
         // 5. APORTACIONES AL BOTE COMÚN
         // =====================================================================
         if (incomes.isNotEmpty()) {
+            y += sectionSpacing
             ensureSpace(60f)
             canvas.drawText("5. Aportaciones Registradas al Bote Común (${incomes.size})", margin, y, sectionPaint)
             y += 14f
@@ -1064,12 +1096,12 @@ object ExportImportManager {
                 )
                 y += 24f
             }
-            y += 12f
         }
 
         // =====================================================================
         // 6. DESGLOSE COMPLETO DE GASTOS CON ADJUNTOS E IMÁGENES
         // =====================================================================
+        y += sectionSpacing
         ensureSpace(60f)
         val sectionIndex = if (incomes.isNotEmpty()) 6 else 5
         canvas.drawText("$sectionIndex. Desglose Detallado de Gastos (${expenses.size})", margin, y, sectionPaint)
@@ -1363,6 +1395,36 @@ object ExportImportManager {
         }
     }
 
+    private fun decodeResourceScaledBitmap(
+        context: Context?,
+        resId: Int,
+        targetWidth: Int,
+        targetHeight: Int
+    ): Bitmap? {
+        if (context == null) return null
+        return try {
+            val boundsOptions = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeResource(context.resources, resId, boundsOptions)
+            if (boundsOptions.outWidth <= 0 || boundsOptions.outHeight <= 0) return null
+
+            var inSampleSize = 1
+            val halfH = boundsOptions.outHeight / 2
+            val halfW = boundsOptions.outWidth / 2
+            while ((halfH / inSampleSize) >= targetHeight && (halfW / inSampleSize) >= targetWidth) {
+                inSampleSize *= 2
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+                inPreferredConfig = Bitmap.Config.RGB_565
+            }
+            BitmapFactory.decodeResource(context.resources, resId, decodeOptions)
+        } catch (e: Throwable) {
+            Log.w("ExportImportManager", "Error al decodificar recurso para PDF: $resId", e)
+            null
+        }
+    }
+
     /**
      * Genera el Reporte PDF del Listado General de todos los Viajes.
      */
@@ -1425,7 +1487,7 @@ object ExportImportManager {
         }
 
         // Encabezado
-        fillPaint.color = Color.parseColor("#0F172A")
+        fillPaint.color = Color.parseColor("#033E5C")
         canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 62f), 12f, 12f, fillPaint)
         canvas.drawText("TRAVEL CASH — Listado General de Viajes", margin + 16f, y + 26f, titlePaint)
         canvas.drawText(
