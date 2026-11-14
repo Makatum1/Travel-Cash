@@ -26,10 +26,19 @@ android {
   // and updating Android apps in AI Studio.
   signingConfigs {
     create("release") {
-      val keystorePath =
+      val keystoreProp =
         providers.gradleProperty("TRAVEL_CASH_STORE_FILE").orNull
           ?: System.getenv("KEYSTORE_PATH")
-          ?: "${rootDir}/my-upload-key.jks"
+      val keystorePath = if (keystoreProp != null) {
+        val f = file(keystoreProp)
+        if (!f.exists() && keystoreProp.contains("Aplicacion/")) {
+          keystoreProp.replace("Aplicacion/", "Aplicaciones/")
+        } else {
+          keystoreProp
+        }
+      } else {
+        "${rootDir}/my-upload-key.jks"
+      }
       storeFile = file(keystorePath)
       storePassword =
         providers.gradleProperty("TRAVEL_CASH_STORE_PASSWORD").orNull
@@ -89,47 +98,31 @@ secrets {
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
-abstract class CopyTravelCashApkTask : org.gradle.api.DefaultTask() {
-  @get:org.gradle.api.tasks.InputFile
-  abstract val sourceApk: org.gradle.api.file.RegularFileProperty
+val copyTravelCashReleaseApk =
+  tasks.register("copyTravelCashReleaseApk") {
+    notCompatibleWithConfigurationCache("Copies release APK to fixed destination path")
+    dependsOn("packageRelease")
+    doLast {
+      val sourceApk = layout.buildDirectory.file("outputs/apk/release/app-release.apk").get().asFile
+      val targetApk = layout.buildDirectory.file("outputs/apk/release/TravelCash.apk").get().asFile
+      if (sourceApk.exists()) {
+        targetApk.parentFile?.mkdirs()
+        sourceApk.copyTo(targetApk, overwrite = true)
 
-  @get:org.gradle.api.tasks.OutputFile
-  abstract val targetApk: org.gradle.api.file.RegularFileProperty
-
-  @get:org.gradle.api.tasks.Internal
-  abstract val customDestinationDir: org.gradle.api.provider.Property<String>
-
-  @org.gradle.api.tasks.TaskAction
-  fun copyApk() {
-    val src = sourceApk.get().asFile
-    val dest = targetApk.get().asFile
-    dest.parentFile?.mkdirs()
-    src.copyTo(dest, overwrite = true)
-
-    val customDirStr = customDestinationDir.orNull
-    if (!customDirStr.isNullOrBlank()) {
-      try {
-        val customDir = file(customDirStr)
-        customDir.mkdirs()
-        val customApk = file("${customDir.absolutePath}/TravelCash.apk")
-        src.copyTo(customApk, overwrite = true)
-        logger.lifecycle("TravelCash.apk guardado y sobreescrito con éxito en: ${customApk.absolutePath}")
-      } catch (e: Exception) {
-        logger.warn("No se pudo copiar el APK al directorio personalizado: ${e.message}")
+        val defaultCustomDirStr =
+          providers.gradleProperty("TRAVEL_CASH_CUSTOM_APK_DIR").orNull
+            ?: "C:/Users/perez/Desktop/basura/Aplicaciones/TravelCash"
+        try {
+          val customDir = file(defaultCustomDirStr)
+          customDir.mkdirs()
+          val customApk = file("${customDir.absolutePath}/TravelCash.apk")
+          sourceApk.copyTo(customApk, overwrite = true)
+          logger.lifecycle("TravelCash.apk guardado y sobreescrito con éxito en: ${customApk.absolutePath}")
+        } catch (e: Exception) {
+          logger.warn("No se pudo copiar el APK al directorio personalizado: ${e.message}")
+        }
       }
     }
-  }
-}
-
-val copyTravelCashReleaseApk =
-  tasks.register("copyTravelCashReleaseApk", CopyTravelCashApkTask::class.java) {
-    sourceApk.set(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
-    targetApk.set(layout.buildDirectory.file("outputs/apk/release/TravelCash.apk"))
-    val defaultCustomDir =
-      providers.gradleProperty("TRAVEL_CASH_CUSTOM_APK_DIR").orNull
-        ?: "C:/Users/perez/Desktop/basura/Aplicaciones/TravelCash"
-    customDestinationDir.set(defaultCustomDir)
-    dependsOn("packageRelease")
   }
 
 tasks.matching { it.name == "assembleRelease" }.configureEach {
