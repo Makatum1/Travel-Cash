@@ -686,7 +686,15 @@ object ExportImportManager {
         val sectionSpacing = 28f // 2 líneas en blanco de separación entre cada apartado
 
         fun drawFooter() {
-            canvas.drawText("Página $pageNumber   •   Reporte Financiero Oficial de Travel Cash", pageWidth / 2f, pageHeight - 16f, footerPaint)
+            val maxFooterTitleWidth = pageWidth - margin * 2 - 100f
+            var titleText = if (trip.title.isNotBlank()) trip.title.trim() else "Viaje"
+            if (footerPaint.measureText("Página $pageNumber   •   $titleText") > maxFooterTitleWidth) {
+                while (titleText.length > 3 && footerPaint.measureText("Página $pageNumber   •   $titleText...") > maxFooterTitleWidth) {
+                    titleText = titleText.dropLast(1)
+                }
+                titleText = "$titleText..."
+            }
+            canvas.drawText("Página $pageNumber   •   $titleText", pageWidth / 2f, pageHeight - 16f, footerPaint)
         }
 
         fun ensureSpace(requiredHeight: Float) {
@@ -715,10 +723,6 @@ object ExportImportManager {
         strokePaint.color = Color.parseColor("#0E5E8A")
         strokePaint.strokeWidth = 1f
         canvas.drawRoundRect(headerRect, 14f, 14f, strokePaint)
-
-        // Línea sutil decorativa en el borde superior del encabezado
-        fillPaint.color = Color.parseColor("#38BDF8")
-        canvas.drawRoundRect(RectF(margin + 16f, y, margin + 84f, y + 3.5f), 2f, 2f, fillPaint)
 
         // Icono o foto del viaje: si no se cambia utiliza por defecto el de portada adaptado a esas medidas
         val iconSize = 58f
