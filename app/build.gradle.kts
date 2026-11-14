@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import org.gradle.api.tasks.bundling.Zip
 
 plugins {
   alias(libs.plugins.android.application)
@@ -125,8 +126,34 @@ val copyTravelCashReleaseApk =
     }
   }
 
+val bundleTravelCashProjectZip =
+  tasks.register<Zip>("bundleTravelCashProjectZip") {
+    notCompatibleWithConfigurationCache("Zips project source code for Android Studio")
+    archiveFileName.set("TravelCash.zip")
+    val defaultCustomDirStr =
+      providers.gradleProperty("TRAVEL_CASH_CUSTOM_APK_DIR").orNull
+        ?: "C:/Users/perez/Desktop/basura/Aplicaciones/TravelCash"
+    destinationDirectory.set(file(defaultCustomDirStr))
+
+    from(rootDir) {
+      exclude("**/build/**")
+      exclude("**/.gradle/**")
+      exclude("**/.idea/**")
+      exclude("**/.git/**")
+      exclude("**/local.properties")
+      exclude("**/*.apk")
+      exclude("**/*.aab")
+      exclude("**/*.zip")
+    }
+
+    doLast {
+      val zipFile = archiveFile.get().asFile
+      logger.lifecycle("TravelCash.zip guardado y sobreescrito con éxito en: ${zipFile.absolutePath}")
+    }
+  }
+
 tasks.matching { it.name == "assembleRelease" }.configureEach {
-  finalizedBy(copyTravelCashReleaseApk)
+  finalizedBy(copyTravelCashReleaseApk, bundleTravelCashProjectZip)
 }
 
 // Some unused dependencies are commented out below instead of being removed.

@@ -5,17 +5,20 @@
 Cada vez que se realice cualquier cambio o modificación en la aplicación y se vaya a dar por finalizada la tarea, se debe ejecutar OBLIGATORIAMENTE la siguiente secuencia de 4 pasos:
 
 1. **Revisión de las modificaciones realizadas**: Comprobar el diff de cambios, validar la compilación sin errores ni advertencias y ejecutar los tests unitarios (`./gradlew testDebugUnitTest`) asegurando que todo funcione limpiamente y sin regresiones.
-2. **Creación del APK en el lugar y nombre correspondiente**: Generar el nuevo APK firmado en Release (`./gradlew assembleRelease copyTravelCashReleaseApk`), verificando que siempre se llame `TravelCash.apk`, mantenga `versionCode = 1` y `versionName = "1.0"`, y se guarde/sobreescriba por defecto en:
+2. **Creación del APK y ZIP en el lugar y nombre correspondiente**: Generar el nuevo APK firmado en Release y el archivo ZIP del código fuente listo para compilar con Google/Android Studio (`./gradlew assembleRelease copyTravelCashReleaseApk bundleTravelCashProjectZip`), verificando que siempre se llamen `TravelCash.apk` y `TravelCash.zip`, mantengan `versionCode = 1` y `versionName = "1.0"`, y se guarden/sobreescriban por defecto en:
    `C:\Users\perez\Desktop\basura\Aplicaciones\TravelCash\TravelCash.apk`
+   `C:\Users\perez\Desktop\basura\Aplicaciones\TravelCash\TravelCash.zip`
    (además de en `app/build/outputs/apk/release/TravelCash.apk`).
 3. **Subida en el apartado correspondiente en GitHub**: Añadir los cambios (`git add`), realizar commit con un mensaje descriptivo y hacer push a la rama principal en GitHub (`git push origin main`), asegurando que el estado remoto y local quede limpio y sincronizado.
-4. **Resumen del día**: Mostrar en la respuesta un resumen claro y estructurado con todo lo que se ha modificado y realizado durante ese día.
+4. **Resumen del día**: Mostrar en la respuesta un resumen claro y estructurado con todo lo que se ha modificado y realizado durante ese día (sin mostrar bloques de código en las respuestas).
 
-## Generación de APK
+## Generación de APK y ZIP del Proyecto
 
-- **Nombre y Ubicación fija del APK**: Cada vez que se genere un APK, el archivo final generado debe llamarse siempre `TravelCash.apk` y guardarse (sobreescribiendo si ya existe) por defecto en:
+- **Nombre y Ubicación fija del APK y ZIP**: Cada vez que se genere un APK o se finalicen cambios, los archivos finales deben llamarse siempre `TravelCash.apk` y `TravelCash.zip` y guardarse (sobreescribiendo si ya existen) por defecto en:
   `C:\Users\perez\Desktop\basura\Aplicaciones\TravelCash\TravelCash.apk`
-  (además de en `app/build/outputs/apk/release/TravelCash.apk`, mediante la tarea `copyTravelCashReleaseApk` configurada en `app/build.gradle.kts`).
+  `C:\Users\perez\Desktop\basura\Aplicaciones\TravelCash\TravelCash.zip`
+  (mediante las tareas `copyTravelCashReleaseApk` y `bundleTravelCashProjectZip` configuradas en `app/build.gradle.kts`).
+- **Contenido del ZIP**: Incluye todos los códigos, módulos y archivos necesarios para compilar directamente en Google/Android Studio (código fuente, recursos, configuración de Gradle y wrappers), excluyendo artefactos temporales y cachés (`build`, `.gradle`, `.idea`, `.git`, `local.properties`).
 - **Versión fija hasta nuevo aviso**: Siempre que se genere una APK, mantener exactamente `versionCode = 1` y `versionName = "1.0"` en `app/build.gradle.kts`. No incrementar, autogenerar ni modificar la versión salvo que el usuario lo indique explícitamente.
 - **Firma de Release**: Las credenciales del keystore (`TRAVEL_CASH_STORE_FILE`, `TRAVEL_CASH_STORE_PASSWORD`, `TRAVEL_CASH_KEY_ALIAS`, `TRAVEL_CASH_KEY_PASSWORD`) se leen desde el `gradle.properties` del usuario (fuera del repositorio) y nunca deben escribirse ni subirse a archivos rastreados por Git.
 
