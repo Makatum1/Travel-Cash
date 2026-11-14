@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.ClipData
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
@@ -309,8 +310,8 @@ fun TravelCashApp(
         }
     }
 
-    // Función para invocar el selector nativo de compartir de Android (Share Sheet)
-    fun shareGeneratedFile(file: File, mimeType: String, subject: String) {
+    // Función para invocar el selector nativo de compartir de Android (Share Sheet / Intent Chooser)
+    fun shareGeneratedFile(file: File, mimeType: String, dialogTitle: String) {
         try {
             val uri: Uri = FileProvider.getUriForFile(
                 context,
@@ -320,11 +321,12 @@ fun TravelCashApp(
             val sendIntent = Intent(Intent.ACTION_SEND).apply {
                 type = mimeType
                 putExtra(Intent.EXTRA_STREAM, uri)
-                putExtra(Intent.EXTRA_SUBJECT, subject)
-                putExtra(Intent.EXTRA_TEXT, subject)
+                putExtra(Intent.EXTRA_SUBJECT, dialogTitle)
+                putExtra(Intent.EXTRA_TEXT, dialogTitle)
+                clipData = ClipData.newRawUri(dialogTitle, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            val chooserIntent = Intent.createChooser(sendIntent, subject).apply {
+            val chooserIntent = Intent.createChooser(sendIntent, dialogTitle).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
@@ -339,19 +341,19 @@ fun TravelCashApp(
 
     fun exportAndShareTripPdf(trip: TripEntity) {
         try {
-            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val fileName = sanitizeTripFileName(trip.title, "pdf")
-            val targetFile = File(exportDir, fileName)
+            val targetFile = File(context.cacheDir, fileName)
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val incs = uiState.allIncomes.filter { it.tripId == trip.id }
             FileOutputStream(targetFile).use { out ->
                 ExportImportManager.writeTripPdfReport(out, trip, parts, exps, incs, context)
             }
+            val title = if (isEn) "Share PDF Report - ${trip.title}" else "Compartir Reporte PDF - ${trip.title}"
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "application/pdf",
-                subject = if (isEn) "PDF Report - ${trip.title}" else "Reporte PDF - ${trip.title}"
+                dialogTitle = title
             )
         } catch (e: Exception) {
             viewModel.showToast(
@@ -363,17 +365,17 @@ fun TravelCashApp(
 
     fun exportAndShareTripCsv(trip: TripEntity) {
         try {
-            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val fileName = sanitizeTripFileName(trip.title, "csv")
-            val targetFile = File(exportDir, fileName)
+            val targetFile = File(context.cacheDir, fileName)
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val csvStr = ExportImportManager.generateTripExpensesCsv(trip, parts, exps)
             targetFile.writeText(csvStr, Charsets.UTF_8)
+            val title = if (isEn) "Share CSV Expenses - ${trip.title}" else "Compartir Gastos CSV - ${trip.title}"
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "text/csv",
-                subject = if (isEn) "CSV Expenses - ${trip.title}" else "Gastos CSV - ${trip.title}"
+                dialogTitle = title
             )
         } catch (e: Exception) {
             viewModel.showToast(
@@ -385,10 +387,9 @@ fun TravelCashApp(
 
     fun exportAndShareTripJson(trip: TripEntity) {
         try {
-            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
             val safeName = if (clean.isEmpty()) "Viaje" else clean
-            val targetFile = File(exportDir, "Viaje_${safeName}.json")
+            val targetFile = File(context.cacheDir, "Viaje_${safeName}.json")
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val incs = uiState.allIncomes.filter { it.tripId == trip.id }
@@ -399,10 +400,11 @@ fun TravelCashApp(
                 incomes = incs
             )
             targetFile.writeText(jsonStr, Charsets.UTF_8)
+            val title = if (isEn) "Share Trip JSON - ${trip.title}" else "Compartir Viaje JSON - ${trip.title}"
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "application/json",
-                subject = if (isEn) "Trip JSON - ${trip.title}" else "Viaje JSON - ${trip.title}"
+                dialogTitle = title
             )
         } catch (e: Exception) {
             viewModel.showToast(
@@ -414,7 +416,6 @@ fun TravelCashApp(
 
     fun exportAndShareZip(targetTrip: TripEntity?) {
         try {
-            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
             val fileName = if (targetTrip != null) {
                 val clean = targetTrip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
                 val safeName = if (clean.isEmpty()) "viaje" else clean
@@ -422,7 +423,7 @@ fun TravelCashApp(
             } else {
                 "travel_cash_todos_los_viajes.zip"
             }
-            val targetFile = File(exportDir, fileName)
+            val targetFile = File(context.cacheDir, fileName)
             val tripsToExport = if (targetTrip != null) {
                 uiState.trips.filter { it.id == targetTrip.id }
             } else {
@@ -446,15 +447,15 @@ fun TravelCashApp(
             FileOutputStream(targetFile).use { out ->
                 ExportImportManager.writeTripsToZip(out, tripsToExport, parts, exps, incs)
             }
-            val subject = if (targetTrip != null) {
-                if (isEn) "Trip ZIP - ${targetTrip.title}" else "Viaje ZIP - ${targetTrip.title}"
+            val title = if (targetTrip != null) {
+                if (isEn) "Share Trip ZIP - ${targetTrip.title}" else "Compartir Viaje ZIP - ${targetTrip.title}"
             } else {
-                if (isEn) "Travel Cash Full Backup ZIP" else "Copia de Seguridad Travel Cash ZIP"
+                if (isEn) "Share Travel Cash Backup ZIP" else "Compartir Copia de Seguridad ZIP"
             }
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "application/zip",
-                subject = subject
+                dialogTitle = title
             )
         } catch (e: Exception) {
             viewModel.showToast(
