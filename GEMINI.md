@@ -17,3 +17,7 @@
 ## Navegación de pestañas
 
 - **Sin desplazamiento lateral**: Mantener desactivado el desplazamiento lateral tipo swipe entre pestañas principales en `MainActivity.kt` (no usar `HorizontalPager`), navegando únicamente al pulsar las pestañas, salvo petición explícita del usuario.
+
+## Verificación de Contexto entre Proyectos
+
+- **Detección de términos ajenos**: El usuario gestiona dos proyectos en paralelo y puede confundir términos (por ejemplo, hacer mención a "Camino", "Etapas", "Eventos" u otros conceptos propios de su otra app). Si el usuario solicita un cambio mencionando conceptos, pantallas o entidades que no pertenecen a esta compilación de Travel-Cash (cuyo modelo es Viajes, Gastos, Bote Común, Participantes), se debe **detener y advertirle explícitamente antes de modificar nada**, consultándole cómo adaptar la petición o si se refería a su otro proyecto.
