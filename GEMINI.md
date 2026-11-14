@@ -2,9 +2,13 @@
 
 ## Flujo de Trabajo Automático tras Modificaciones
 
-- **Subida a GitHub y Generación de APK**: Cada vez que se realice cualquier cambio o modificación en la aplicación, se debe automáticamente:
-  1. Realizar commit con un mensaje descriptivo y hacer push a la rama principal en GitHub (`git push origin main`).
-  2. Generar el nuevo APK firmado en Release (`./gradlew assembleRelease copyTravelCashReleaseApk`), asegurando que siempre quede como `TravelCash.apk`.
+Cada vez que se realice cualquier cambio o modificación en la aplicación y se vaya a dar por finalizada la tarea, se debe ejecutar OBLIGATORIAMENTE la siguiente secuencia de 3 pasos:
+
+1. **Revisión de las modificaciones realizadas**: Comprobar el diff de cambios, validar la compilación sin errores ni advertencias y ejecutar los tests unitarios (`./gradlew testDebugUnitTest`) asegurando que todo funcione limpiamente y sin regresiones.
+2. **Creación del APK en el lugar y nombre correspondiente**: Generar el nuevo APK firmado en Release (`./gradlew assembleRelease copyTravelCashReleaseApk`), verificando que siempre se llame `TravelCash.apk`, mantenga `versionCode = 1` y `versionName = "1.0"`, y se guarde/sobreescriba por defecto en:
+   `C:\Users\perez\Desktop\basura\Aplicaciones\TravelCash\TravelCash.apk`
+   (además de en `app/build/outputs/apk/release/TravelCash.apk`).
+3. **Subida en el apartado correspondiente en GitHub**: Añadir los cambios (`git add`), realizar commit con un mensaje descriptivo y hacer push a la rama principal en GitHub (`git push origin main`), asegurando que el estado remoto y local quede limpio y sincronizado.
 
 ## Generación de APK
 
