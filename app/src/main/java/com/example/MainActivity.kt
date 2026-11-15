@@ -535,6 +535,7 @@ fun TravelCashApp(
                 navItems.forEach { (tab, icon) ->
                     val selected = selectedTab == tab
                     val label = if (isEn) tab.titleEn else tab.titleEs
+                    val iconSize = if (tab == MainTab.SETTINGS) 20.dp else 25.dp
                     NavigationBarItem(
                         selected = selected,
                         onClick = {
@@ -545,13 +546,14 @@ fun TravelCashApp(
                                 TravelLocationPinIcon(
                                     tint = if (selected) TravelBlue else MaterialTheme.colorScheme.onSurfaceVariant,
                                     accentColor = if (selected) Color(0xFFF59E0B) else Color(0xFF94A3B8),
-                                    modifier = Modifier.size(22.dp)
+                                    size = iconSize,
+                                    modifier = Modifier.size(iconSize)
                                 )
                             } else {
                                 Icon(
                                     imageVector = icon,
                                     contentDescription = label,
-                                    modifier = Modifier.size(21.dp)
+                                    modifier = Modifier.size(iconSize)
                                 )
                             }
                         },
@@ -560,11 +562,14 @@ fun TravelCashApp(
                                 text = label,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                                    fontSize = 9.5.sp
+                                    fontSize = 9.5.sp,
+                                    letterSpacing = (-0.2).sp
                                 ),
-                                maxLines = 1
+                                maxLines = 1,
+                                softWrap = false
                             )
                         },
+                        alwaysShowLabel = true,
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = TravelBlue,
                             selectedTextColor = TravelBlue,
