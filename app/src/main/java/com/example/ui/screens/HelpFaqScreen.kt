@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -71,6 +72,8 @@ import java.util.Locale
  */
 data class FaqItem(
     val id: String,
+    val categoryEs: String,
+    val categoryEn: String,
     val questionEs: String,
     val questionEn: String,
     val answerEs: String,
@@ -91,79 +94,243 @@ fun normalizeFaqSearchText(text: String): String {
 }
 
 /**
- * Lista de preguntas y respuestas oficiales adaptadas estrictamente al modelo de Travel Cash
- * (Viajes, Gastos, Bote Común, Participantes, Liquidaciones, Presupuesto, Divisas, Copias de Seguridad).
+ * Guía completa y detallada de preguntas y respuestas oficiales adaptadas estrictamente al modelo de Travel Cash
+ * (Viajes, Gastos, Bote Común, Participantes, Liquidaciones, Presupuesto, Divisas, Copias de Seguridad, Exportación).
  */
 val TRAVEL_CASH_FAQS = listOf(
+    // -------------------------------------------------------------------------
+    // 1. GESTIÓN DE VIAJES
+    // -------------------------------------------------------------------------
     FaqItem(
         id = "faq_create_trip",
-        questionEs = "¿Cómo creo un viaje nuevo?",
-        questionEn = "How do I create a new trip?",
-        answerEs = "Dirígete a la pestaña \"Viajes\" en la barra de navegación inferior y pulsa sobre el botón flotante \"+ Nuevo Viaje\" (o la tarjeta para crear viaje). Introduce el nombre de tu viaje o destino, las fechas de inicio y fin, el presupuesto estimado (opcional), la divisa principal y los participantes iniciales. Al guardar, quedará establecido como tu viaje activo.",
-        answerEn = "Go to the \"Trips\" tab on the bottom navigation bar and tap the \"+ New Trip\" floating button (or the new trip card). Enter your trip or destination name, start and end dates, estimated budget (optional), base currency, and initial participants. Once saved, it will become your active trip."
+        categoryEs = "Gestión de Viajes",
+        categoryEn = "Trip Management",
+        questionEs = "¿Cómo creo un viaje nuevo y qué datos necesito?",
+        questionEn = "How do I create a new trip and what data do I need?",
+        answerEs = "Dirígete a la pestaña \"Viajes\" en la barra de navegación inferior y pulsa sobre el botón flotante \"+ Nuevo Viaje\" (o la tarjeta para crear viaje). Introduce el nombre de tu viaje o destino, las fechas de inicio y fin, el presupuesto estimado (opcional), la divisa base (por ejemplo EUR, USD...) y los participantes iniciales. Al guardar, quedará establecido como tu viaje activo sobre el que registrarás gastos.",
+        answerEn = "Go to the \"Trips\" tab on the bottom navigation bar and tap the \"+ New Trip\" button (or the new trip card). Enter your trip or destination name, start and end dates, estimated budget (optional), base currency (e.g. EUR, USD...), and initial participants. Once saved, it will become your active trip where you can log expenses."
     ),
+    FaqItem(
+        id = "faq_switch_trip",
+        categoryEs = "Gestión de Viajes",
+        categoryEn = "Trip Management",
+        questionEs = "¿Cómo cambio el viaje activo o consulto mis viajes anteriores?",
+        questionEn = "How do I switch the active trip or view my previous trips?",
+        answerEs = "En la pestaña \"Viajes\" verás la lista de todos tus viajes ordenados. El viaje que tenga la etiqueta \"ACTIVO\" es el que se muestra en las pestañas de Gastos, Datos y Cuentas. Para activar otro viaje, simplemente pulsa sobre su tarjeta o selecciona la opción para activarlo. Todos los registros y balances cambiarán instantáneamente a los del viaje seleccionado.",
+        answerEn = "In the \"Trips\" tab you will find all your trips listed. The trip marked with the \"ACTIVE\" badge is the one displayed on the Expenses, Stats, and Splits tabs. To switch to another trip, simply tap on its card or activate it. All expenses, balances, and data will instantly switch to that trip."
+    ),
+    FaqItem(
+        id = "faq_edit_delete_trip",
+        categoryEs = "Gestión de Viajes",
+        categoryEn = "Trip Management",
+        questionEs = "¿Cómo edito o elimino un viaje existente?",
+        questionEn = "How do I edit or delete an existing trip?",
+        answerEs = "Dentro de la pestaña \"Viajes\", pulsa sobre el icono de lápiz (o despliega el menú de opciones de la tarjeta del viaje) para editar su título, fechas, presupuesto, divisa o participantes. Si deseas eliminarlo, pulsa el icono de papelera: la app te solicitará confirmación antes de borrar el viaje y todos sus gastos asociados.",
+        answerEn = "In the \"Trips\" tab, tap the pencil icon (or expand the trip card options) to edit its title, dates, budget, currency, or participants. If you wish to delete it, tap the trash icon: the app will ask for confirmation before removing the trip and all its associated expenses."
+    ),
+    FaqItem(
+        id = "faq_trip_header_photo",
+        categoryEs = "Gestión de Viajes",
+        categoryEn = "Trip Management",
+        questionEs = "¿Cómo cambio la foto o icono de cabecera de un viaje?",
+        questionEn = "How do I change the header photo or route icon of a trip?",
+        answerEs = "En la tarjeta superior del viaje activo (o en la tarjeta del viaje en la pestaña \"Viajes\"), pulsa directamente sobre el icono redondo de la ruta. Se abrirá un diálogo que te permite tomar una foto con la cámara, elegir una imagen de tu galería o restaurar el icono de carretera por defecto.",
+        answerEn = "On the active trip header card (or on the trip card in the \"Trips\" tab), tap directly on the round route icon. A dialog will open allowing you to capture a photo with your camera, pick an image from your gallery, or restore the default road icon."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 2. BOTE COMÚN Y FINANZAS GRUPALES
+    // -------------------------------------------------------------------------
     FaqItem(
         id = "faq_common_pot",
-        questionEs = "¿Cómo funciona el bote común?",
-        questionEn = "How does the common pot work?",
-        answerEs = "El Bote Común es un fondo colectivo para abonar gastos grupales. Puedes añadir fondos pulsando en el botón verde \"+ Ingreso (Bote)\" de la cabecera. Puedes aportar un importe global o una \"Cuantía por persona\". En este último modo, la app calcula automáticamente si algún participante adelantó pagos de su bolsillo y descuenta lo que se le debe de su cuota, calculando en tiempo real el Saldo Extra disponible.",
-        answerEn = "The Common Pot is a group fund used to pay shared expenses. You can add funds by tapping the green \"+ Pot Income\" button in the top header. You can add a lump sum or an \"Amount per person\". In per-person mode, the app automatically calculates if any participant paid out-of-pocket and deducts what they are owed from their share, updating the Extra Balance in real time."
+        categoryEs = "Bote Común",
+        categoryEn = "Common Pot",
+        questionEs = "¿Cómo funciona el bote común y qué es el \"Saldo Extra\"?",
+        questionEn = "How does the common pot work and what is \"Extra Balance\"?",
+        answerEs = "El Bote Común es un fondo colectivo que el grupo reúne para abonar compras compartidas (taxis, comidas, entradas...). En la cabecera verás siempre la tarjeta \"SALDO EXTRA\": representa el dinero neto disponible en el bote descontando los gastos pagados con él y los reembolsos debidos. Si el saldo es positivo aparece en verde; si se han gastado más fondos de los aportados se mostrará en rojo para avisarte de que se necesita reponer dinero.",
+        answerEn = "The Common Pot is a collective fund the group gathers to pay for shared purchases (taxis, meals, tickets...). In the top header you will always see the \"EXTRA BALANCE\" card: it shows the net cash available in the pot after deducting pot expenses and owed reimbursements. A positive balance appears in green; if spending exceeded contributions it turns red to alert you that replenishment is needed."
     ),
     FaqItem(
+        id = "faq_golden_rule",
+        categoryEs = "Bote Común",
+        categoryEn = "Common Pot",
+        questionEs = "¿Cuál es la \"Regla de Oro\" al ingresar dinero al bote común por persona?",
+        questionEn = "What is the \"Golden Rule\" when adding common pot funds per person?",
+        answerEs = "Al pulsar \"+ Ingreso (Bote)\" y seleccionar el modo \"Cuantía por persona\", la app aplica automáticamente la Regla de Oro financiera: si algún participante ya pagó gastos del grupo de su propio bolsillo, el sistema descuenta automáticamente lo que se le debe de su cuota de aportación. Así, quien adelantó dinero paga menos (o nada) en esa ronda de bote y el grupo salda deudas sin transferencias intermedias.",
+        answerEn = "When tapping \"+ Pot Income\" and choosing \"Amount per person\" mode, the app automatically applies the financial Golden Rule: if any traveler previously paid group expenses out of pocket, the system automatically deducts what is owed to them from their pot contribution share. This way, whoever fronted money pays less (or nothing) in that collection round, settling debts without intermediate bank transfers."
+    ),
+    FaqItem(
+        id = "faq_pot_vs_personal",
+        categoryEs = "Bote Común",
+        categoryEn = "Common Pot",
+        questionEs = "¿Cuándo debo marcar un gasto pagado con \"Bote\" o por un participante?",
+        questionEn = "When should an expense be marked as paid by \"Pot\" vs an individual?",
+        answerEs = "Al añadir un gasto, en el campo \"Pagado por\":\n• Elige \"🏺 Bote Común\" si el dinero salió físicamente de la cartera común del grupo o de una tarjeta común.\n• Elige el nombre de un participante si esa persona pagó de su propio dinero en efectivo o con su tarjeta personal. De este modo, la app sabrá que el grupo le debe ese dinero a dicho participante.",
+        answerEn = "When adding an expense, under the \"Paid by\" field:\n• Select \"🏺 Common Pot\" if the cash came directly from the group's common wallet or shared card.\n• Select a traveler's name if that individual paid with their own personal money. This way, the app tracks that the group owes money back to that person."
+    ),
+    FaqItem(
+        id = "faq_leftover_pot",
+        categoryEs = "Bote Común",
+        categoryEn = "Common Pot",
+        questionEs = "¿Qué ocurre si sobra dinero en el bote común al terminar el viaje?",
+        questionEn = "What happens if there is leftover money in the common pot when the trip ends?",
+        answerEs = "Si al finalizar el viaje el \"Saldo Extra\" del bote es positivo, ese dinero restante pertenece al grupo. En la pestaña \"Cuentas\", la app toma en cuenta las aportaciones netas de cada viajero y calcula exactamente cuánto debe devolverse a cada uno para que todos hayan aportado exactamente lo proporcional a lo que consumieron.",
+        answerEn = "If at the end of the trip the pot's \"Extra Balance\" is positive, that surplus belongs to the group. In the \"Splits\" tab, the app takes into account each traveler's net contributions and calculates exactly how much should be refunded to each person so everyone pays strictly what they consumed."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 3. REGISTRO Y DIVISIÓN DE GASTOS
+    // -------------------------------------------------------------------------
+    FaqItem(
         id = "faq_add_expense",
+        categoryEs = "Gastos",
+        categoryEn = "Expenses",
         questionEs = "¿Cómo añado un gasto a un viaje?",
         questionEn = "How do I add an expense to a trip?",
-        answerEs = "En la pestaña \"Gastos\", pulsa el botón flotante \"+\". Introduce el concepto o comercio, el importe, la fecha y la categoría correspondiente (comida, transporte, alojamiento, compras, ocio, etc.). Selecciona quién realizó el pago (si se abonó con el Bote Común o si lo pagó un viajero de su bolsillo) y marca qué participantes comparten el gasto.",
-        answerEn = "On the \"Expenses\" tab, tap the \"+\" floating action button. Enter the description or merchant, amount, date, and category (food, transport, accommodation, shopping, leisure, etc.). Select who paid (from the Common Pot or by an individual traveler out-of-pocket) and select which participants share this expense."
+        answerEs = "En la pestaña \"Gastos\", pulsa el botón flotante circular \"+\". Introduce el concepto o comercio, el importe, la fecha y la categoría correspondiente (comida, transporte, alojamiento, compras, ocio, vuelos, salud...). Selecciona quién pagó (el Bote o un participante) y marca qué viajeros se benefician del gasto.",
+        answerEn = "On the \"Expenses\" tab, tap the circular floating action button \"+\". Enter the description or merchant, amount, date, and category (food, transport, lodging, shopping, leisure, flights, health...). Select who paid (the Pot or a specific traveler) and mark which travelers benefit from this expense."
     ),
     FaqItem(
         id = "faq_split_expenses",
-        questionEs = "¿Cómo se divide un gasto o se reparten los gastos entre participantes?",
-        questionEn = "How do I divide or split an expense among participants?",
-        answerEs = "Al crear o editar cualquier gasto, puedes realizar la división a partes iguales o desmarcar a los participantes que no hayan consumido en él. En la pestaña \"Cuentas\", la app calcula la división y el balance matemático exacto de cada participante (lo pagado frente a lo consumido) y genera las transferencias mínimas optimizadas para saldar todas las deudas del grupo.",
-        answerEn = "When creating or editing an expense, you can perform equal cost division or uncheck participants who did not consume. In the \"Splits\" tab, the app calculates the expense division and exact balance for each traveler (paid vs consumed) and generates the minimum optimized transfers to settle all group debts."
+        categoryEs = "Gastos",
+        categoryEn = "Expenses",
+        questionEs = "¿Cómo se divide un gasto o se reparten los gastos entre participantes? (División de gastos)",
+        questionEn = "How do I divide or split an expense among participants? (Expense division)",
+        answerEs = "Al crear o editar cualquier gasto, verás la lista de todos los participantes del viaje con casillas de verificación. De forma predeterminada están todos marcados para una división equitativa a partes iguales. Si alguien no participó en esa compra (por ejemplo, alguien no cenó o no fue a una excursión), desmarca su casilla: el importe se dividirá exclusivamente entre los participantes marcados.",
+        answerEn = "When creating or editing an expense, you will see all trip participants with checkboxes. By default all are checked for an equal division. If someone did not take part in that purchase (e.g. skipped dinner or an excursion), simply uncheck their box: the amount will be divided only among checked members."
     ),
     FaqItem(
         id = "faq_order_by_date",
+        categoryEs = "Gastos",
+        categoryEn = "Expenses",
         questionEs = "¿Cómo consulto u ordeno los gastos por fecha o día dentro de un viaje?",
         questionEn = "How do I view or sort expenses by date or day in a trip?",
-        answerEs = "En la pestaña \"Gastos\", todos los registros se muestran agrupados y ordenados cronológicamente por día. Además, puedes usar el buscador rápido y los filtros superiores para localizar gastos por fecha específica, categoría o participante, así como acudir a la pestaña \"Datos\" para analizar estadísticas de gasto medio diario.",
-        answerEn = "On the \"Expenses\" tab, all entries are automatically grouped and ordered chronologically by day. You can also use the quick search and top filter chips to locate expenses by specific date, category, or participant, or check the \"Stats\" tab to analyze daily average spend."
-    ),
-    FaqItem(
-        id = "faq_change_currency",
-        questionEs = "¿Cómo cambio la divisa o el formato de moneda?",
-        questionEn = "How do I change currency or currency format?",
-        answerEs = "Cada viaje cuenta con su divisa base (EUR, USD, GBP, JPY...) definida al crearlo o editarlo desde la pestaña \"Viajes\". Además, al registrar un gasto en el extranjero puedes introducir el importe en moneda extranjera y el tipo de cambio aplicado, convirtiéndose de inmediato a la divisa del viaje.",
-        answerEn = "Each trip has a base currency (EUR, USD, GBP, JPY...) set when creating or editing it on the \"Trips\" tab. Additionally, when logging expenses abroad you can enter foreign currency amounts along with the conversion rate, automatically converting it to your trip's base currency."
-    ),
-    FaqItem(
-        id = "faq_export_zip",
-        questionEs = "¿Cómo exporto un viaje a ZIP?",
-        questionEn = "How do I export a trip to ZIP?",
-        answerEs = "Ve a la pestaña \"Ajustes\", localiza la sección \"Exportar e Importar\" y pulsa el botón \"Exportar\". Puedes elegir exportar \"Todos los viajes\" o un viaje específico. El archivo .zip se genera en caché y abre el menú nativo de compartir de Android para que lo envíes por WhatsApp, correo o lo guardes en Google Drive o tu gestor de archivos.",
-        answerEn = "Go to the \"Settings\" tab, find the \"Export and Import\" section, and tap \"Export\". You can choose to export \"All trips\" or a specific trip. A .zip file will be generated in cache and will open Android's native Share Sheet to send via WhatsApp, email, or save to Google Drive or Downloads."
-    ),
-    FaqItem(
-        id = "faq_export_pdf",
-        questionEs = "¿Cómo genero el PDF de resumen de un viaje?",
-        questionEn = "How do I generate a trip summary PDF report?",
-        answerEs = "En la pestaña \"Viajes\", expande las opciones de la tarjeta del viaje y pulsa \"Exportar a PDF\". Se creará un documento profesional multipágina con el título del viaje, el balance general, resumen de bote común, desglose de gastos por categoría y liquidación de deudas, abriendo el selector de compartir para enviarlo o guardarlo.",
-        answerEn = "On the \"Trips\" tab, expand the trip card options and tap \"Export to PDF\". A clean multi-page document will be generated featuring the trip title, financial summary, common pot balance, category breakdowns, and debt settlements, opening the Share Sheet to send or save it."
-    ),
-    FaqItem(
-        id = "faq_backup_restore",
-        questionEs = "¿Cómo hago una copia de seguridad o restauro un viaje?",
-        questionEn = "How do I back up or restore a trip?",
-        answerEs = "Puedes respaldar todos tus viajes exportando el archivo ZIP desde la pestaña \"Ajustes\", o respaldar un viaje individual en formato JSON desde su tarjeta en la pestaña \"Viajes\". Para restaurar tus datos en un dispositivo nuevo o reinstalado, pulsa el botón \"Importar\" y selecciona tu archivo .zip o .json.",
-        answerEn = "You can back up all your trips by exporting a ZIP file from the \"Settings\" tab, or back up an individual trip in JSON format from its card on the \"Trips\" tab. To restore your data on a new device, tap \"Import\" and select your .zip or .json file."
+        answerEs = "En la pestaña \"Gastos\", todos los registros se agrupan y ordenan de manera automática y cronológica por día. Puedes utilizar la barra de búsqueda superior para encontrar compras por texto, usar los chips de filtro para aislar categorías o participantes concretos, y consultar en la pestaña \"Datos\" la evolución del gasto por periodos.",
+        answerEn = "On the \"Expenses\" tab, all records are automatically grouped and sorted chronologically by day. You can use the top search bar to locate purchases by text, use filter chips to isolate specific categories or participants, and consult the \"Stats\" tab for spending over time."
     ),
     FaqItem(
         id = "faq_attach_photo",
+        categoryEs = "Gastos",
+        categoryEn = "Expenses",
         questionEs = "¿Cómo adjunto una imagen o foto a un gasto?",
         questionEn = "How do I attach a receipt photo or image to an expense?",
-        answerEs = "En el formulario para añadir o editar un gasto, pulsa el botón para adjuntar imagen. Puedes tomar una fotografía instantánea del ticket con tu cámara o seleccionar un comprobante guardado en tu galería. La foto quedará vinculada al registro y podrás pulsarla para verla en tamaño completo en cualquier momento.",
-        answerEn = "In the add or edit expense dialog, tap the attach image button. You can take an instant photo of your receipt with your camera or select an image from your gallery. The receipt will be linked to the expense and can be viewed full-screen anytime by tapping it."
+        answerEs = "Al añadir o editar un gasto, pulsa el botón con icono de cámara o galería. Puedes tomar una fotografía instantánea del ticket con tu cámara o seleccionar un comprobante guardado en tu galería. La foto queda guardada de forma segura junto al registro; al pulsar sobre el gasto podrás ver la foto del ticket ampliada en alta resolución.",
+        answerEn = "When adding or editing an expense, tap the camera or gallery button. You can take an instant photo of the receipt with your camera or select an image from your gallery. The photo is securely stored with the record; tapping the expense allows you to view the receipt enlarged in high resolution."
+    ),
+    FaqItem(
+        id = "faq_gps_location",
+        categoryEs = "Gastos",
+        categoryEn = "Expenses",
+        questionEs = "¿Cómo funciona la geolocalización GPS y sugerencias automáticas de comercios?",
+        questionEn = "How does GPS geolocation and automatic venue suggestions work?",
+        answerEs = "Al escribir el nombre de un restaurante o tienda al registrar un gasto, si tienes el permiso de ubicación activo, Travel Cash consulta en tiempo real OpenStreetMap (Nominatim) usando tus coordenadas GPS para sugerir los comercios más cercanos a tu posición, rellenando automáticamente la dirección y situando el gasto en la pestaña \"Mapa\".",
+        answerEn = "When typing a restaurant or shop name while creating an expense, if location permission is granted, Travel Cash queries OpenStreetMap (Nominatim) in real time using your GPS coordinates to suggest the closest venues, automatically filling in the address and plotting it on the \"Map\" tab."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 4. LIQUIDACIÓN DE CUENTAS Y BALANCES
+    // -------------------------------------------------------------------------
+    FaqItem(
+        id = "faq_splits_calculation",
+        categoryEs = "Cuentas y Balances",
+        categoryEn = "Splits & Balances",
+        questionEs = "¿Cómo calcula la app las deudas y saldos en la pestaña \"Cuentas\"?",
+        questionEn = "How does the app calculate debts and balances in the \"Splits\" tab?",
+        answerEs = "Para cada viajero, la app calcula dos cifras fundamentales:\n1. Lo aportado: la suma de todos los gastos que pagó de su bolsillo más su dinero entregado al bote común.\n2. Lo consumido: la suma de su parte proporcional en todos los gastos en los que participó.\nLa diferencia entre ambas cifras determina su saldo: si es positivo se le debe dinero (+); si es negativo debe dinero (-).",
+        answerEn = "For each participant, the app computes two core values:\n1. Paid: sum of all expenses paid out-of-pocket plus money contributed to the pot.\n2. Consumed: sum of their proportional share in all expenses they took part in.\nThe difference determines their net balance: positive means they are owed money (+); negative means they owe money (-)."
+    ),
+    FaqItem(
+        id = "faq_optimized_settlements",
+        categoryEs = "Cuentas y Balances",
+        categoryEn = "Splits & Balances",
+        questionEs = "¿Qué son los \"Pagos de liquidación optimizados\"?",
+        questionEn = "What are the \"optimized settlement payments\"?",
+        answerEs = "En lugar de que cada persona tenga que hacer múltiples transferencias entre sí, el algoritmo matemático de Travel Cash simplifica todas las deudas del grupo al número mínimo indispensable de transferencias (por ejemplo: \"Carlos paga 15,50 € a Lucía\"). Así, con un par de pagos directos todas las cuentas del viaje quedan 100% saldadas.",
+        answerEn = "Instead of everyone making dozens of confusing transfers to each other, Travel Cash's mathematical algorithm simplifies all group debts into the absolute minimum number of transfers (e.g. \"Carlos pays €15.50 to Lucia\"). With just a few direct payments, all trip balances are 100% settled."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 5. DIVISAS, MONEDAS Y PRESUPUESTOS
+    // -------------------------------------------------------------------------
+    FaqItem(
+        id = "faq_change_currency",
+        categoryEs = "Divisas y Presupuestos",
+        categoryEn = "Currencies & Budgets",
+        questionEs = "¿Cómo cambio la divisa o el formato de moneda?",
+        questionEn = "How do I change currency or currency format?",
+        answerEs = "La divisa base del viaje se define al crearlo o editarlo en la pestaña \"Viajes\" (por ejemplo EUR, USD, GBP, JPY, MXN...). Todos los reportes y balances se calculan en esa moneda. Además, al añadir un gasto individual puedes elegir una divisa extranjera e indicar el tipo de cambio aplicado para convertirlo con precisión a la moneda de tu viaje.",
+        answerEn = "The trip's base currency is chosen when creating or editing it on the \"Trips\" tab (e.g. EUR, USD, GBP, JPY, MXN...). All reports and balances are calculated in that currency. In addition, when logging individual expenses you can pick a foreign currency and enter the exchange rate to accurately convert it into your trip currency."
+    ),
+    FaqItem(
+        id = "faq_budget_alerts",
+        categoryEs = "Divisas y Presupuestos",
+        categoryEn = "Currencies & Budgets",
+        questionEs = "¿Cómo funciona el presupuesto y la barra de gasto del viaje?",
+        questionEn = "How does the budget and trip spending bar work?",
+        answerEs = "Si asignas un presupuesto a tu viaje al crearlo o editarlo, verás una barra de progreso que indica el porcentaje consumido en tiempo real. Si el gasto acumulado supera el 90% del límite fijado, la barra cambia a color rojo para alertar al grupo de que se está alcanzando el tope previsto.",
+        answerEn = "If you assign a budget to your trip when creating or editing it, you will see a progress bar indicating the percentage used in real time. If total spending exceeds 90% of the limit, the bar turns coral red to alert the group that the limit is close."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 6. EXPORTACIÓN, INFORMES Y COPIAS DE SEGURIDAD
+    // -------------------------------------------------------------------------
+    FaqItem(
+        id = "faq_export_zip",
+        categoryEs = "Exportación y Respaldo",
+        categoryEn = "Exports & Backup",
+        questionEs = "¿Cómo exporto un viaje a ZIP?",
+        questionEn = "How do I export a trip to ZIP?",
+        answerEs = "Ve a la pestaña \"Ajustes\", localiza el bloque \"Exportar e Importar\" y pulsa \"Exportar\". Puedes elegir exportar \"Todos los viajes\" o un viaje individual. El archivo comprimido .zip contiene toda la información en JSON estructurado y despliega la hoja nativa de compartir de Android para que lo envíes o guardes.",
+        answerEn = "Go to the \"Settings\" tab, locate the \"Export and Import\" section, and tap \"Export\". You can choose to export \"All trips\" or an individual trip. The compressed .zip file contains all data in structured JSON and opens the native Android Share Sheet to send or save."
+    ),
+    FaqItem(
+        id = "faq_export_pdf",
+        categoryEs = "Exportación y Respaldo",
+        categoryEn = "Exports & Backup",
+        questionEs = "¿Cómo genero el PDF de resumen de un viaje?",
+        questionEn = "How do I generate a trip summary PDF report?",
+        answerEs = "En la pestaña \"Viajes\", pulsa en el botón \"Exportar a PDF\" de la tarjeta del viaje (o desde las opciones del viaje activo). Travel Cash genera un reporte PDF multipágina con título, resumen financiero, gráficos por categorías, tabla de participantes y liquidación de deudas, abriendo el selector de compartir para enviarlo o abrirlo en tu visor de documentos.",
+        answerEn = "In the \"Trips\" tab, tap the \"Export to PDF\" button on the trip card (or from the active trip options). Travel Cash generates a multi-page PDF report with the trip title, financial summary, category breakdowns, participant balances, and debt settlements, opening the Share Sheet to send or view it."
+    ),
+    FaqItem(
+        id = "faq_backup_restore",
+        categoryEs = "Exportación y Respaldo",
+        categoryEn = "Exports & Backup",
+        questionEs = "¿Cómo hago una copia de seguridad o restauro un viaje?",
+        questionEn = "How do I back up or restore a trip?",
+        answerEs = "Para respaldar tus viajes, exporta el archivo .zip desde Ajustes o el .json desde la pestaña Viajes. Guarda ese archivo en Google Drive o tu correo. Cuando cambies de teléfono o reinstales la app, pulsa el botón \"Importar\" y selecciona dicho archivo para restaurar todos tus viajes, gastos y participantes sin perder ningún dato.",
+        answerEn = "To back up your trips, export the .zip file from Settings or .json from the Trips tab. Save that file to Google Drive or your email. When switching devices or reinstalling, tap \"Import\" and choose that file to restore all your trips, expenses, and participants without losing any data."
+    ),
+    FaqItem(
+        id = "faq_share_sheet",
+        categoryEs = "Exportación y Respaldo",
+        categoryEn = "Exports & Backup",
+        questionEs = "¿Cómo comparto los archivos directamente por WhatsApp, Correo o Google Drive?",
+        questionEn = "How do I share files directly via WhatsApp, Email, or Google Drive?",
+        answerEs = "Al pulsar en cualquier opción de exportar (PDF, CSV, JSON o ZIP), Travel Cash guarda el archivo de manera temporal y despliega inmediatamente el menú nativo de compartir de Android (Share Sheet). Desde ese menú puedes elegir directamente la aplicación destino: WhatsApp, Gmail, Telegram, guardar en Drive o descargarlo a tu dispositivo.",
+        answerEn = "When tapping any export action (PDF, CSV, JSON, or ZIP), Travel Cash saves the file temporarily and immediately opens the native Android Share Sheet. From there you can directly pick your destination app: WhatsApp, Gmail, Telegram, save to Google Drive, or save to device Downloads."
+    ),
+
+    // -------------------------------------------------------------------------
+    // 7. AJUSTES Y CONFIGURACIÓN
+    // -------------------------------------------------------------------------
+    FaqItem(
+        id = "faq_change_language",
+        categoryEs = "Ajustes y Personalización",
+        categoryEn = "Settings & Customization",
+        questionEs = "¿Cómo cambio el idioma de la app entre Español e Inglés?",
+        questionEn = "How do I switch the app language between Spanish and English?",
+        answerEs = "Ve a la pestaña \"Ajustes\" y en el selector de Idioma elige \"Español\" o \"English\". Toda la interfaz, los menús, las cuentas, los reportes y esta misma sección de Ayuda y FAQ cambiarán de inmediato al idioma seleccionado sin necesidad de reiniciar la app.",
+        answerEn = "Go to the \"Settings\" tab and under the Language selector choose \"Español\" or \"English\". The entire interface, menus, calculations, exports, and this Help & FAQ section will switch immediately to the selected language without needing to restart the app."
+    ),
+    FaqItem(
+        id = "faq_daily_notifications",
+        categoryEs = "Ajustes y Personalización",
+        categoryEn = "Settings & Customization",
+        questionEs = "¿Cómo activo las notificaciones de recordatorio diario de gastos?",
+        questionEn = "How do I enable daily expense reminder notifications?",
+        answerEs = "En la pestaña \"Ajustes\", localiza la tarjeta \"Recordatorio Diario de Gastos\" y activa el interruptor. Puedes fijar la hora deseada (por ejemplo a las 21:00) para recibir una notificación que te recuerde anotar los gastos del día antes de finalizar la jornada.",
+        answerEn = "In the \"Settings\" tab, find the \"Daily Expense Reminder\" card and toggle the switch on. You can configure your preferred reminder time (for example 9:00 PM) to receive a notification reminding you to log the day's expenses before going to sleep."
     )
 )
 
@@ -190,7 +357,8 @@ fun HelpFaqModal(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .imePadding(),
             color = MaterialTheme.colorScheme.background
         ) {
             Column(
@@ -237,7 +405,7 @@ fun HelpFaqModal(
                     shape = RoundedCornerShape(14.dp),
                     placeholder = {
                         Text(
-                            text = if (isEn) "Search questions or solutions…" else "Buscar preguntas o soluciones…",
+                            text = if (isEn) "Search questions, terms or solutions…" else "Buscar preguntas, términos o soluciones…",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF64748B)
                         )
@@ -282,11 +450,13 @@ fun HelpFaqModal(
                         TRAVEL_CASH_FAQS.filter { item ->
                             val qText = if (isEn) item.questionEn else item.questionEs
                             val aText = if (isEn) item.answerEn else item.answerEs
+                            val catText = if (isEn) item.categoryEn else item.categoryEs
                             val normQ = normalizeFaqSearchText(qText)
                             val normA = normalizeFaqSearchText(aText)
+                            val normCat = normalizeFaqSearchText(catText)
 
                             tokens.all { token ->
-                                normQ.contains(token) || normA.contains(token)
+                                normQ.contains(token) || normA.contains(token) || normCat.contains(token)
                             }
                         }
                     }
@@ -335,7 +505,7 @@ fun HelpFaqModal(
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = if (isEn) "Try searching for keywords like \"pot\", \"expenses\", \"split\" or \"backup\"." else "Prueba a buscar términos como \"bote\", \"gastos\", \"repartir\" o \"backup\".",
+                                    text = if (isEn) "Try searching for keywords like \"pot\", \"expenses\", \"split\", \"budget\" or \"backup\"." else "Prueba a buscar términos como \"bote\", \"gastos\", \"repartir\", \"presupuesto\" o \"backup\".",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF64748B),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -355,18 +525,19 @@ fun HelpFaqModal(
                         }
                     }
                 } else {
-                    // Lista de preguntas y respuestas en acordeón
+                    // Lista de preguntas y respuestas en acordeón con margen inferior amplio para barra de navegación del sistema
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
                             .testTag("faq_list"),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(bottom = 24.dp)
+                        contentPadding = PaddingValues(top = 4.dp, bottom = 120.dp)
                     ) {
                         items(filteredFaqs, key = { it.id }) { item ->
                             val isExpanded = expandedItemIds.contains(item.id)
                             val question = if (isEn) item.questionEn else item.questionEs
                             val answer = if (isEn) item.answerEn else item.answerEs
+                            val category = if (isEn) item.categoryEn else item.categoryEs
 
                             Card(
                                 modifier = Modifier
@@ -405,14 +576,25 @@ fun HelpFaqModal(
                                                 modifier = Modifier.size(18.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = question,
-                                                style = MaterialTheme.typography.titleSmall.copy(
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp
-                                                ),
-                                                color = OceanNavy
-                                            )
+                                            Column {
+                                                Text(
+                                                    text = category,
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontSize = 11.sp
+                                                    ),
+                                                    color = TravelBlue
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = question,
+                                                    style = MaterialTheme.typography.titleSmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp
+                                                    ),
+                                                    color = OceanNavy
+                                                )
+                                            }
                                         }
                                         Icon(
                                             imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
@@ -430,7 +612,7 @@ fun HelpFaqModal(
                                             Text(
                                                 text = answer,
                                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                                    lineHeight = 21.sp,
+                                                    lineHeight = 22.sp,
                                                     fontSize = 13.5.sp
                                                 ),
                                                 color = Color(0xFF334155)
@@ -439,6 +621,9 @@ fun HelpFaqModal(
                                     }
                                 }
                             }
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(30.dp))
                         }
                     }
                 }

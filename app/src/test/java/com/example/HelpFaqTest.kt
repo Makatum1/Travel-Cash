@@ -56,9 +56,14 @@ class HelpFaqTest {
     @Test
     fun faqs_doNotContainForeignTermsLikeCaminoOrEtapa() {
         TRAVEL_CASH_FAQS.forEach { item ->
-            val allText = "${item.questionEs} ${item.questionEn} ${item.answerEs} ${item.answerEn}".lowercase()
+            val allText = "${item.categoryEs} ${item.categoryEn} ${item.questionEs} ${item.questionEn} ${item.answerEs} ${item.answerEn}".lowercase()
             assertFalse("FAQ ${item.id} should not mention 'camino'", allText.contains("camino"))
             assertFalse("FAQ ${item.id} should not mention 'etapa'", allText.contains("etapa"))
         }
+    }
+
+    @Test
+    fun faqs_isComprehensiveAndCoversAllKeyAreas() {
+        assertTrue("Debe contener al menos 20 preguntas frecuentes", TRAVEL_CASH_FAQS.size >= 20)
     }
 }
