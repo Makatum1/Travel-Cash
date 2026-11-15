@@ -1,0 +1,64 @@
+package com.example
+
+import com.example.ui.screens.TRAVEL_CASH_FAQS
+import com.example.ui.screens.normalizeFaqSearchText
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class HelpFaqTest {
+
+    @Test
+    fun normalizeFaqSearchText_removesDiacriticsAndConvertsToLowercase() {
+        val input = "¿CÓMO FUNCIONA EL BOTE COMÚN? ¡DIVISIÓN & EXPORTACIÓN!"
+        val normalized = normalizeFaqSearchText(input)
+        assertEquals("como funciona el bote comun division & exportacion", normalized)
+    }
+
+    @Test
+    fun faqSearch_findsBoteWithoutAccents() {
+        val query = normalizeFaqSearchText("bote")
+        val matches = TRAVEL_CASH_FAQS.filter {
+            normalizeFaqSearchText(it.questionEs).contains(query) || normalizeFaqSearchText(it.answerEs).contains(query)
+        }
+        assertTrue(matches.any { it.id == "faq_common_pot" })
+    }
+
+    @Test
+    fun faqSearch_findsDivisionIgnoringAccents() {
+        val query = normalizeFaqSearchText("division")
+        val matches = TRAVEL_CASH_FAQS.filter {
+            normalizeFaqSearchText(it.questionEs).contains(query) || normalizeFaqSearchText(it.answerEs).contains(query)
+        }
+        assertTrue(matches.any { it.id == "faq_split_expenses" })
+    }
+
+    @Test
+    fun faqSearch_findsExport() {
+        val query = normalizeFaqSearchText("export")
+        val matches = TRAVEL_CASH_FAQS.filter {
+            normalizeFaqSearchText(it.questionEs).contains(query) || normalizeFaqSearchText(it.answerEs).contains(query)
+        }
+        assertTrue(matches.any { it.id == "faq_export_zip" })
+        assertTrue(matches.any { it.id == "faq_export_pdf" })
+    }
+
+    @Test
+    fun faqSearch_worksInEnglish() {
+        val query = normalizeFaqSearchText("pot")
+        val matches = TRAVEL_CASH_FAQS.filter {
+            normalizeFaqSearchText(it.questionEn).contains(query) || normalizeFaqSearchText(it.answerEn).contains(query)
+        }
+        assertTrue(matches.any { it.id == "faq_common_pot" })
+    }
+
+    @Test
+    fun faqs_doNotContainForeignTermsLikeCaminoOrEtapa() {
+        TRAVEL_CASH_FAQS.forEach { item ->
+            val allText = "${item.questionEs} ${item.questionEn} ${item.answerEs} ${item.answerEn}".lowercase()
+            assertFalse("FAQ ${item.id} should not mention 'camino'", allText.contains("camino"))
+            assertFalse("FAQ ${item.id} should not mention 'etapa'", allText.contains("etapa"))
+        }
+    }
+}

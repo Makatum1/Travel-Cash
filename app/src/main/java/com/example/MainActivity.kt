@@ -88,6 +88,7 @@ import com.example.ui.modals.CsvColumnMappingModal
 import com.example.ui.modals.IncomeModal
 import com.example.ui.modals.SuggestionsModal
 import com.example.ui.screens.ExpensesTabScreen
+import com.example.ui.screens.HelpFaqModal
 import com.example.ui.screens.MapTabScreen
 import com.example.ui.screens.SettingsTabScreen
 import com.example.ui.screens.SplashScreen
@@ -170,6 +171,7 @@ fun TravelCashApp(
     var showCreateTripModal by remember { mutableStateOf(false) }
     var editingTrip by remember { mutableStateOf<TripEntity?>(null) }
     var showSuggestionsModal by remember { mutableStateOf(false) }
+    var showHelpFaqModal by remember { mutableStateOf(false) }
 
     // Apertura automática del modal de primer viaje si la base de datos está limpia/vacía
     var hasAutoPromptedFirstTrip by remember { mutableStateOf(false) }
@@ -1152,6 +1154,21 @@ fun TravelCashApp(
     }
 
     if (showSuggestionsModal) {
-        SuggestionsModal(onDismiss = { showSuggestionsModal = false })
+        SuggestionsModal(
+            onDismiss = { showSuggestionsModal = false },
+            onOpenHelpFaq = {
+                showSuggestionsModal = false
+                showHelpFaqModal = true
+            }
+        )
+    }
+
+    if (showHelpFaqModal) {
+        HelpFaqModal(
+            onDismiss = {
+                showHelpFaqModal = false
+                showSuggestionsModal = true
+            }
+        )
     }
 }

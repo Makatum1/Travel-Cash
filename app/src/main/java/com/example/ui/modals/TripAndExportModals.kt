@@ -35,9 +35,10 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -1122,7 +1123,10 @@ fun BackupRestoreModal(
 // 4. MODAL DE SUGERENCIAS Y GUÍA RÁPIDA DE TRAVEL CASH
 // =========================================================================
 @Composable
-fun SuggestionsModal(onDismiss: () -> Unit) {
+fun SuggestionsModal(
+    onDismiss: () -> Unit,
+    onOpenHelpFaq: () -> Unit = {}
+) {
     val isEn = LocalAppLanguage.current.isEnglish()
     val context = LocalContext.current
 
@@ -1214,6 +1218,36 @@ fun SuggestionsModal(onDismiss: () -> Unit) {
                             contentDescription = if (isEn) "Send email" else "Enviar correo",
                             tint = TravelBlue,
                             modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Botón de Ayuda y Preguntas Frecuentes justo debajo del correo de contacto
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    onClick = onOpenHelpFaq,
+                    shape = RoundedCornerShape(14.dp),
+                    color = OceanNavy,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("suggestions_help_faq_button")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isEn) "Help & FAQ" else "Ayuda y Preguntas Frecuentes",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White
                         )
                     }
                 }

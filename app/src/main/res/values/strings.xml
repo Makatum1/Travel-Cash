@@ -15,4 +15,9 @@
     <string name="label_spent">Gastado</string>
     <string name="label_income">Ingresos</string>
     <string name="label_extra_balance">Saldo Extra</string>
+    <string name="btn_help_faq">Ayuda y Preguntas Frecuentes</string>
+    <string name="help_faq_title">Ayuda y Preguntas Frecuentes</string>
+    <string name="search_faq_placeholder">Buscar preguntas o respuestas…</string>
+    <string name="no_faq_results">No se han encontrado resultados para tu búsqueda</string>
+    <string name="clear_search">Limpiar búsqueda</string>
 </resources>

@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Travel Cash</string>
+    <string name="app_subtitle">Travel expense manager</string>
+    <string name="tab_expenses">Expenses</string>
+    <string name="tab_map">Map</string>
+    <string name="tab_stats">Stats</string>
+    <string name="tab_splits">Splits</string>
+    <string name="tab_trips">Trips</string>
+    <string name="btn_backup">Backup</string>
+    <string name="btn_suggestions">Tips</string>
+    <string name="btn_csv">CSV</string>
+    <string name="btn_pdf">PDF</string>
+    <string name="btn_import_csv">Import CSV</string>
+    <string name="btn_add_income">+ Pot Income</string>
+    <string name="label_spent">Spent</string>
+    <string name="label_income">Incomes</string>
+    <string name="label_extra_balance">Extra Balance</string>
+    <string name="btn_help_faq">Help &amp; FAQ</string>
+    <string name="help_faq_title">Help &amp; FAQ</string>
+    <string name="search_faq_placeholder">Search questions or solutions…</string>
+    <string name="no_faq_results">No results found for your search</string>
+    <string name="clear_search">Clear search</string>
+</resources>
