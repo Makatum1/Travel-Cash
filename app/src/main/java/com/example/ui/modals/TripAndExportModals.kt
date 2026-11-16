@@ -70,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -1153,16 +1154,23 @@ fun SuggestionsModal(
         AppLanguage.PL -> "Pomoc i FAQ"
     }
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         ModalLightSurfaceTheme {
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 64.dp),
+                .fillMaxWidth(0.95f)
+                .padding(vertical = 20.dp),
             shape = RoundedCornerShape(22.dp),
             color = Color.White
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1206,12 +1214,12 @@ fun SuggestionsModal(
                         .testTag("suggestions_email_banner")
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
                                 .background(TravelBlue),
                             contentAlignment = Alignment.Center
@@ -1220,10 +1228,10 @@ fun SuggestionsModal(
                                 imageVector = Icons.Default.Email,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(9.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = when (currentLang) {
@@ -1236,20 +1244,34 @@ fun SuggestionsModal(
                                     AppLanguage.DE -> "E-Mail für Fragen und Anregungen:"
                                     AppLanguage.PL -> "E-mail do pytań i sugestii:"
                                 },
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF475569)
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                ),
+                                color = Color(0xFF475569),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
+                            Spacer(modifier = Modifier.height(1.dp))
                             Text(
                                 text = "sugerenciastravelcash@gmail.com",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Black),
-                                color = TravelBlue
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    letterSpacing = (-0.3).sp
+                                ),
+                                color = TravelBlue,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
+                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = if (isEn) "Send email" else "Enviar correo",
                             tint = TravelBlue,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
