@@ -8,6 +8,9 @@ import java.util.Locale
 import kotlin.math.abs
 
 object FormatUtils {
+    @Volatile
+    var currentAppLocale: Locale = Locale.forLanguageTag("es")
+
     private val spanishLocale = Locale.forLanguageTag("es-ES")
     private val englishLocale = Locale.US
 
@@ -15,23 +18,29 @@ object FormatUtils {
     private val fullDayFormatterEs = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", spanishLocale)
     private val fullDayFormatterEn = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", englishLocale)
 
-    fun formatCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = spanishLocale): String {
+    fun formatCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = currentAppLocale): String {
         val symbol = CurrencyCatalog.getSymbol(currencyCode)
         val formattedNumber = String.format(locale, "%,.2f", amount)
         return "$formattedNumber $symbol"
     }
 
-    fun formatSignedCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = spanishLocale): String {
+    fun formatSignedCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = currentAppLocale): String {
         val symbol = CurrencyCatalog.getSymbol(currencyCode)
         val sign = if (amount > 0.004) "+" else if (amount < -0.004) "-" else ""
         val formattedNumber = String.format(locale, "%,.2f", abs(amount))
         return "$sign$formattedNumber $symbol"
     }
 
-    fun formatShortDate(isoDate: String, locale: Locale = spanishLocale): String {
+    fun formatShortDate(isoDate: String, locale: Locale = currentAppLocale): String {
         return try {
             val parsed = LocalDate.parse(isoDate.take(10))
-            val pattern = if (locale.language == "zh") "yyyy/MM/dd" else "dd/MM/yyyy"
+            val lang = locale.language.lowercase(Locale.ROOT)
+            val pattern = when (lang) {
+                "zh" -> "yyyy/MM/dd"
+                "de", "pl" -> "dd.MM.yyyy"
+                "nl" -> "dd-MM-yyyy"
+                else -> "dd/MM/yyyy"
+            }
             val formatter = DateTimeFormatter.ofPattern(pattern, locale)
             parsed.format(formatter)
         } catch (e: Exception) {
@@ -39,16 +48,29 @@ object FormatUtils {
         }
     }
 
-    fun formatLongSpanishDate(isoDate: String, isEn: Boolean = false): String {
+    fun formatLongDate(isoDate: String, locale: Locale = currentAppLocale): String {
         return try {
             val parsed = LocalDate.parse(isoDate.take(10))
-            val locale = if (isEn) englishLocale else spanishLocale
-            val formatter = if (isEn) fullDayFormatterEn else fullDayFormatterEs
+            val lang = locale.language.lowercase(Locale.ROOT)
+            val pattern = when (lang) {
+                "zh" -> "yyyy年M月d日 EEEE"
+                "de" -> "EEEE, d. MMMM yyyy"
+                "pl" -> "EEEE, d MMMM yyyy"
+                "nl", "fr", "it" -> "EEEE d MMMM yyyy"
+                "en" -> "EEEE, MMMM d, yyyy"
+                else -> "EEEE, d 'de' MMMM 'de' yyyy" // es
+            }
+            val formatter = DateTimeFormatter.ofPattern(pattern, locale)
             val text = parsed.format(formatter)
             text.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
         } catch (e: Exception) {
             isoDate
         }
+    }
+
+    fun formatLongSpanishDate(isoDate: String, isEn: Boolean = false): String {
+        val locale = if (isEn) englishLocale else spanishLocale
+        return formatLongDate(isoDate, locale)
     }
 
     fun parseFlexibleDateToIso(raw: String): String {
@@ -61,6 +83,18 @@ object FormatUtils {
         if (trimmed.matches(Regex("\\d{1,2}/\\d{1,2}/\\d{4}"))) {
             val parts = trimmed.split("/")
             return "${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}"
+        }
+        if (trimmed.matches(Regex("\\d{1,2}\\.\\d{1,2}\\.\\d{4}"))) {
+            val parts = trimmed.split(".")
+            return "${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}"
+        }
+        if (trimmed.matches(Regex("\\d{1,2}-\\d{1,2}-\\d{4}"))) {
+            val parts = trimmed.split("-")
+            return "${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}"
+        }
+        if (trimmed.matches(Regex("\\d{4}/\\d{1,2}/\\d{1,2}"))) {
+            val parts = trimmed.split("/")
+            return "${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}"
         }
         return try {
             LocalDate.parse(trimmed.take(10)).toString()

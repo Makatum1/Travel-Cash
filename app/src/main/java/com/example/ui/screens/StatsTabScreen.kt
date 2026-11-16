@@ -69,7 +69,8 @@ fun StatsTabScreen(
     onExpenseClick: (ExpenseEntity) -> Unit,
     topHeader: @Composable () -> Unit = {}
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val participantMap = remember(participants) { participants.associateBy { it.id } }
     val totalSpent = remember(expenses) { expenses.sumOf { it.amountInBaseCurrency } }
     val tripDays = remember(trip.startDate, trip.endDate) {
@@ -165,7 +166,7 @@ fun StatsTabScreen(
                             FormatUtils.formatCurrency(it.value, trip.baseCurrency)
                         } ?: "0,00",
                         subtitle = highestSpendingDay?.let {
-                            FormatUtils.formatShortDate(it.key)
+                            FormatUtils.formatShortDate(it.key, currentLang.locale)
                         } ?: if (isEn) "No data" else "Sin datos",
                         accentColor = Color(0xFFF59E0B)
                     )
@@ -329,7 +330,7 @@ fun StatsTabScreen(
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                         Text(
-                                                            text = "${FormatUtils.formatShortDate(exp.date)} · ${if (isEn) "Paid by" else "Pagó"}: $payer",
+                                                            text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${if (isEn) "Paid by" else "Pagó"}: $payer",
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = Color(0xFF64748B)
                                                         )
@@ -503,7 +504,7 @@ fun StatsTabScreen(
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                         Text(
-                                                            text = "$displayCat · ${FormatUtils.formatShortDate(exp.date)}",
+                                                            text = "$displayCat · ${FormatUtils.formatShortDate(exp.date, currentLang.locale)}",
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = Color(0xFF64748B)
                                                         )

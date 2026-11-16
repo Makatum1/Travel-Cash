@@ -134,7 +134,8 @@ fun AddExpenseModal(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current == AppLanguage.EN
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang == AppLanguage.EN
     val isEdit = existingExpense != null
 
     val navBottomFromSystem = remember(context, systemNavBarBottomPadding) {
@@ -1082,12 +1083,21 @@ fun AddExpenseModal(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = if (isEn) "Expense date" else "Fecha del gasto",
+                                        text = when (currentLang) {
+                                            AppLanguage.ES -> "Fecha del gasto"
+                                            AppLanguage.EN -> "Expense date"
+                                            AppLanguage.FR -> "Date de la dépense"
+                                            AppLanguage.IT -> "Data della spesa"
+                                            AppLanguage.ZH -> "支出日期"
+                                            AppLanguage.NL -> "Uitgavedatum"
+                                            AppLanguage.DE -> "Ausgabendatum"
+                                            AppLanguage.PL -> "Data wydatku"
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF64748B)
                                     )
                                     Text(
-                                        text = FormatUtils.formatShortDate(selectedDate),
+                                        text = FormatUtils.formatShortDate(selectedDate, currentLang.locale),
                                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                         color = OceanNavy
                                     )

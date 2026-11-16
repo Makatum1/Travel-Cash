@@ -608,7 +608,7 @@ fun ActiveTripHeaderAndBudgetCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "📅 ${FormatUtils.formatShortDate(trip.startDate)} - ${FormatUtils.formatShortDate(trip.endDate)}",
+                            text = "📅 ${FormatUtils.formatShortDate(trip.startDate, currentLang.locale)} - ${FormatUtils.formatShortDate(trip.endDate, currentLang.locale)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

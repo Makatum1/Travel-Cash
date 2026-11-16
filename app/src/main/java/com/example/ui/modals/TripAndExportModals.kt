@@ -124,7 +124,8 @@ fun CreateTripModal(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val isEdit = existingTrip != null
 
     var title by remember { mutableStateOf(existingTrip?.title ?: "") }
@@ -286,12 +287,22 @@ fun CreateTripModal(
                             modifier = Modifier.weight(1f)
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
+                                val startDateLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Fecha inicio"
+                                    AppLanguage.EN -> "Start date"
+                                    AppLanguage.FR -> "Date de début"
+                                    AppLanguage.IT -> "Data inizio"
+                                    AppLanguage.ZH -> "开始日期"
+                                    AppLanguage.NL -> "Startdatum"
+                                    AppLanguage.DE -> "Startdatum"
+                                    AppLanguage.PL -> "Data rozpoczęcia"
+                                }
                                 Text(
-                                    text = if (isEn) "Start date" else "Fecha inicio",
+                                    text = startDateLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF64748B)
                                 )
-                                Text(FormatUtils.formatShortDate(startDate), fontWeight = FontWeight.Bold, color = OceanNavy)
+                                Text(FormatUtils.formatShortDate(startDate, currentLang.locale), fontWeight = FontWeight.Bold, color = OceanNavy)
                             }
                         }
 
@@ -314,12 +325,22 @@ fun CreateTripModal(
                             modifier = Modifier.weight(1f)
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
+                                val endDateLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Fecha fin"
+                                    AppLanguage.EN -> "End date"
+                                    AppLanguage.FR -> "Date de fin"
+                                    AppLanguage.IT -> "Data fine"
+                                    AppLanguage.ZH -> "结束日期"
+                                    AppLanguage.NL -> "Einddatum"
+                                    AppLanguage.DE -> "Enddatum"
+                                    AppLanguage.PL -> "Data zakończenia"
+                                }
                                 Text(
-                                    text = if (isEn) "End date" else "Fecha fin",
+                                    text = endDateLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF64748B)
                                 )
-                                Text(FormatUtils.formatShortDate(endDate), fontWeight = FontWeight.Bold, color = OceanNavy)
+                                Text(FormatUtils.formatShortDate(endDate, currentLang.locale), fontWeight = FontWeight.Bold, color = OceanNavy)
                             }
                         }
                     }
@@ -787,7 +808,8 @@ fun BackupRestoreModal(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
 
     var replaceAllMode by remember { mutableStateOf(false) }
     var showRawJsonEditor by remember { mutableStateOf(false) }

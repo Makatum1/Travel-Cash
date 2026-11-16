@@ -619,7 +619,13 @@ object ExportImportManager {
         } else {
             totalIncome - totalSpent
         }
-        val genTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+        val timePattern = when (locale.language.lowercase(Locale.ROOT)) {
+            "zh" -> "yyyy/MM/dd HH:mm"
+            "de", "pl" -> "dd.MM.yyyy HH:mm"
+            "nl" -> "dd-MM-yyyy HH:mm"
+            else -> "dd/MM/yyyy HH:mm"
+        }
+        val genTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(timePattern, locale))
 
         var pageNumber = 1
         var currentPage = pdfDocument.startPage(
@@ -1120,7 +1126,10 @@ object ExportImportManager {
 
         val partNames = participants.associate { it.id to it.name }
 
-        expenses.sortedByDescending { it.date }.forEach { exp ->
+        expenses.sortedWith(
+            compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                .thenBy { it.createdAt }
+        ).forEach { exp ->
             val hasAttachments = exp.photos.isNotEmpty()
             val imageUris = mutableListOf<String>()
             val nonImageUris = mutableListOf<String>()

@@ -112,7 +112,8 @@ fun MapTabScreen(
     onEditExpenseClick: (ExpenseEntity) -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
     var shouldCenterOnUserLocation by remember { mutableStateOf(false) }
@@ -767,7 +768,7 @@ fun MapTabScreen(
                                     )
                                 }
                                 Text(
-                                    text = "$translatedCat · ${FormatUtils.formatShortDate(exp.date)}",
+                                    text = "$translatedCat · ${FormatUtils.formatShortDate(exp.date, currentLang.locale)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF475569)
                                 )
@@ -958,7 +959,7 @@ fun MapTabScreen(
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                         Text(
-                                                            text = "${FormatUtils.formatShortDate(exp.date)} · ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency)}",
+                                                            text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale)}",
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = Color(0xFF64748B)
                                                         )

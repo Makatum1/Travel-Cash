@@ -60,13 +60,13 @@ interface TravelCashDao {
     suspend fun deleteParticipantsByTripId(tripId: String)
 
     // Expenses
-    @Query("SELECT * FROM expenses WHERE tripId = :tripId ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM expenses WHERE tripId = :tripId ORDER BY date ASC, createdAt ASC")
     fun getExpensesForTripFlow(tripId: String): Flow<List<ExpenseEntity>>
 
-    @Query("SELECT * FROM expenses ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM expenses ORDER BY date ASC, createdAt ASC")
     fun getAllExpensesFlow(): Flow<List<ExpenseEntity>>
 
-    @Query("SELECT * FROM expenses ORDER BY date DESC, createdAt DESC")
+    @Query("SELECT * FROM expenses ORDER BY date ASC, createdAt ASC")
     suspend fun getAllExpensesOnce(): List<ExpenseEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -85,13 +85,13 @@ interface TravelCashDao {
     suspend fun deleteExpensesByTripId(tripId: String)
 
     // Incomes (Bote común)
-    @Query("SELECT * FROM incomes WHERE tripId = :tripId ORDER BY date DESC")
+    @Query("SELECT * FROM incomes WHERE tripId = :tripId ORDER BY date ASC, id ASC")
     fun getIncomesForTripFlow(tripId: String): Flow<List<IncomeEntity>>
 
-    @Query("SELECT * FROM incomes ORDER BY date DESC")
+    @Query("SELECT * FROM incomes ORDER BY date ASC, id ASC")
     fun getAllIncomesFlow(): Flow<List<IncomeEntity>>
 
-    @Query("SELECT * FROM incomes ORDER BY date DESC")
+    @Query("SELECT * FROM incomes ORDER BY date ASC, id ASC")
     suspend fun getAllIncomesOnce(): List<IncomeEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

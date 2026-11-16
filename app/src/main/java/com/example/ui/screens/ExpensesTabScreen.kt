@@ -89,7 +89,9 @@ fun ExpensesTabScreen(
     topHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current == AppLanguage.EN
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang == AppLanguage.EN
+    val locale = currentLang.locale
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
     val standardFirstEightNames = remember {
@@ -120,7 +122,7 @@ fun ExpensesTabScreen(
 
             val matchesDate = selectedDateFilter == null || exp.date == selectedDateFilter
 
-            val formattedDateShort = FormatUtils.formatShortDate(exp.date).lowercase(Locale.ROOT)
+            val formattedDateShort = FormatUtils.formatShortDate(exp.date, locale).lowercase(Locale.ROOT)
             val matchesQuery = q.isEmpty() ||
                     exp.placeName.lowercase(Locale.ROOT).contains(q) ||
                     exp.notes.lowercase(Locale.ROOT).contains(q) ||
@@ -130,7 +132,10 @@ fun ExpensesTabScreen(
                     formattedDateShort.contains(q)
 
             matchesCategory && matchesDate && matchesQuery
-        }.sortedWith(compareByDescending<ExpenseEntity> { it.date }.thenByDescending { it.createdAt })
+        }.sortedWith(
+            compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                .thenBy { it.createdAt }
+        )
     }
 
     val groupedByDate = remember(filteredExpenses) {
@@ -283,6 +288,16 @@ fun ExpensesTabScreen(
             // 3. Chip activo si hay fecha seleccionada
             if (selectedDateFilter != null) {
                 item(key = "expenses_date_chip") {
+                    val dateLabel = when (currentLang) {
+                        AppLanguage.ES -> "Fecha"
+                        AppLanguage.EN -> "Date"
+                        AppLanguage.FR -> "Date"
+                        AppLanguage.IT -> "Data"
+                        AppLanguage.ZH -> "日期"
+                        AppLanguage.NL -> "Datum"
+                        AppLanguage.DE -> "Datum"
+                        AppLanguage.PL -> "Data"
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -299,7 +314,7 @@ fun ExpensesTabScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "📅 ${if (isEn) "Date" else "Fecha"}: ${FormatUtils.formatShortDate(selectedDateFilter)}  ✕",
+                                    text = "📅 $dateLabel: ${FormatUtils.formatShortDate(selectedDateFilter, locale)}  ✕",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     fontSize = 10.5.sp,
                                     color = TravelBlue
@@ -436,7 +451,7 @@ fun ExpensesTabScreen(
                             expenseCount = dayExpenses.size,
                             dayTotal = dayTotal,
                             baseCurrency = trip.baseCurrency,
-                            isEn = isEn
+                            currentLang = currentLang
                         )
                     }
                     items(dayExpenses, key = { it.id }) { expense ->
@@ -464,8 +479,9 @@ private fun DayStickyHeader(
     expenseCount: Int,
     dayTotal: Double,
     baseCurrency: String,
-    isEn: Boolean
+    currentLang: AppLanguage
 ) {
+    val locale = currentLang.locale
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -482,22 +498,27 @@ private fun DayStickyHeader(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = FormatUtils.formatLongSpanishDate(dateIso, isEn),
+                    text = FormatUtils.formatLongDate(dateIso, locale),
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = OceanNavy
                 )
                 Text(
-                    text = if (isEn) {
-                        if (expenseCount == 1) "1 expense recorded" else "$expenseCount expenses recorded"
-                    } else {
-                        if (expenseCount == 1) "1 gasto registrado" else "$expenseCount gastos registrados"
+                    text = when (currentLang) {
+                        AppLanguage.ES -> if (expenseCount == 1) "1 gasto registrado" else "$expenseCount gastos registrados"
+                        AppLanguage.EN -> if (expenseCount == 1) "1 expense recorded" else "$expenseCount expenses recorded"
+                        AppLanguage.FR -> if (expenseCount == 1) "1 dépense enregistrée" else "$expenseCount dépenses enregistrées"
+                        AppLanguage.IT -> if (expenseCount == 1) "1 spesa registrata" else "$expenseCount spese registrate"
+                        AppLanguage.ZH -> if (expenseCount == 1) "1 笔已记录支出" else "$expenseCount 笔已记录支出"
+                        AppLanguage.NL -> if (expenseCount == 1) "1 geregistreerde uitgave" else "$expenseCount geregistreerde uitgaven"
+                        AppLanguage.DE -> if (expenseCount == 1) "1 erfasste Ausgabe" else "$expenseCount erfasste Ausgaben"
+                        AppLanguage.PL -> if (expenseCount == 1) "1 zarejestrowany wydatek" else "$expenseCount zarejestrowanych wydatków"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF475569)
                 )
             }
             Text(
-                text = FormatUtils.formatCurrency(dayTotal, baseCurrency),
+                text = FormatUtils.formatCurrency(dayTotal, baseCurrency, locale),
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
                 color = OceanNavy
             )

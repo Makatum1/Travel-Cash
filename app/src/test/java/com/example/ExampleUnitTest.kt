@@ -62,4 +62,107 @@ class ExampleUnitTest {
         assertEquals(-20.0, b2.netBalance, 0.01)
         assertTrue(result.transactions.isNotEmpty())
     }
+
+    @Test
+    fun formatUtils_formatsShortDateForSupportedLocales() {
+        val testDate = "2026-11-16"
+        assertEquals("16/11/2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("es")))
+        assertEquals("16/11/2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("en")))
+        assertEquals("16/11/2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("fr")))
+        assertEquals("16/11/2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("it")))
+        assertEquals("2026/11/16", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.SIMPLIFIED_CHINESE))
+        assertEquals("16-11-2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("nl")))
+        assertEquals("16.11.2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("de")))
+        assertEquals("16.11.2026", com.example.util.FormatUtils.formatShortDate(testDate, java.util.Locale.forLanguageTag("pl")))
+    }
+
+    @Test
+    fun formatUtils_formatsLongDateForSupportedLocales() {
+        val testDate = "2026-11-16" // Monday
+        val es = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.forLanguageTag("es"))
+        val en = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.ENGLISH)
+        val fr = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.FRENCH)
+        val it = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.ITALIAN)
+        val de = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.GERMAN)
+        val zh = com.example.util.FormatUtils.formatLongDate(testDate, java.util.Locale.SIMPLIFIED_CHINESE)
+
+        assertTrue(es.contains("noviembre", ignoreCase = true))
+        assertTrue(en.contains("November", ignoreCase = true))
+        assertTrue(fr.contains("novembre", ignoreCase = true))
+        assertTrue(it.contains("novembre", ignoreCase = true))
+        assertTrue(de.contains("November", ignoreCase = true))
+        assertTrue(zh.contains("2026年11月16日"))
+    }
+
+    @Test
+    fun expenses_sortedInChronologicalOrderWhenDateIsModified() {
+        val exp1 = ExpenseEntity(
+            id = "e1",
+            tripId = "t1",
+            amount = 10.0,
+            currency = "EUR",
+            amountInBaseCurrency = 10.0,
+            exchangeRate = 1.0,
+            category = "General",
+            date = "2026-11-10",
+            paymentMethod = "Tarjeta",
+            notes = "First",
+            paidById = "p1",
+            createdAt = 1000L
+        )
+        val exp2 = ExpenseEntity(
+            id = "e2",
+            tripId = "t1",
+            amount = 20.0,
+            currency = "EUR",
+            amountInBaseCurrency = 20.0,
+            exchangeRate = 1.0,
+            category = "General",
+            date = "2026-11-15",
+            paymentMethod = "Tarjeta",
+            notes = "Second",
+            paidById = "p1",
+            createdAt = 2000L
+        )
+        val exp3 = ExpenseEntity(
+            id = "e3",
+            tripId = "t1",
+            amount = 30.0,
+            currency = "EUR",
+            amountInBaseCurrency = 30.0,
+            exchangeRate = 1.0,
+            category = "General",
+            date = "2026-11-20",
+            paymentMethod = "Tarjeta",
+            notes = "Third",
+            paidById = "p1",
+            createdAt = 3000L
+        )
+
+        val list = listOf(exp1, exp2, exp3)
+
+        // Case A: User modifies exp3 (originally 2026-11-20) and changes date to 2026-11-12
+        val modifiedExp3 = exp3.copy(date = "2026-11-12")
+        val updatedList = listOf(exp1, exp2, modifiedExp3).sortedWith(
+            compareBy<ExpenseEntity> { com.example.util.FormatUtils.parseFlexibleDateToIso(it.date) }
+                .thenBy { it.createdAt }
+        )
+
+        // It should be placed chronologically between exp1 (Nov 10) and exp2 (Nov 15), NOT at the end!
+        assertEquals("e1", updatedList[0].id)
+        assertEquals("e3", updatedList[1].id)
+        assertEquals("e2", updatedList[2].id)
+
+        // Case B: User modifies exp2 (originally 2026-11-15) and changes date to 2026-11-05 (earliest date)
+        val modifiedExp2 = exp2.copy(date = "2026-11-05")
+        val updatedListB = listOf(exp1, modifiedExp2, exp3).sortedWith(
+            compareBy<ExpenseEntity> { com.example.util.FormatUtils.parseFlexibleDateToIso(it.date) }
+                .thenBy { it.createdAt }
+        )
+
+        // It should be at the beginning (Nov 05), NOT at the end!
+        assertEquals("e2", updatedListB[0].id)
+        assertEquals("e1", updatedListB[1].id)
+        assertEquals("e3", updatedListB[2].id)
+    }
 }

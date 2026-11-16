@@ -66,6 +66,7 @@ import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
 import com.example.ui.components.EditableTripRouteIcon
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.CoralRed
 import com.example.ui.theme.CoralRedDark
 import com.example.ui.theme.EmeraldGreen
@@ -96,7 +97,8 @@ fun TripsTabScreen(
     onDeleteTripConfirmed: (String) -> Unit,
     topHeader: @Composable () -> Unit = {}
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val today = remember { LocalDate.now() }
     var tripPendingDeletion by remember { mutableStateOf<TripEntity?>(null) }
     var expandedTripIds by remember { mutableStateOf(setOf<String>()) }
@@ -406,8 +408,18 @@ fun TripsTabScreen(
                             HorizontalDivider(color = Color(0xFFE2E8F0), thickness = 1.dp)
 
                             // Fechas y cantidad de viajeros
+                            val travelersUnit = when (currentLang) {
+                                AppLanguage.ES -> "viajeros"
+                                AppLanguage.EN -> "travelers"
+                                AppLanguage.FR -> "voyageurs"
+                                AppLanguage.IT -> "viaggiatori"
+                                AppLanguage.ZH -> "位旅行者"
+                                AppLanguage.NL -> "reizigers"
+                                AppLanguage.DE -> "Reisende"
+                                AppLanguage.PL -> "podróżnych"
+                            }
                             Text(
-                                text = "📅 ${FormatUtils.formatShortDate(trip.startDate)} - ${FormatUtils.formatShortDate(trip.endDate)} · 👥 ${tParts.size} ${if (isEn) "travelers" else "viajeros"}",
+                                text = "📅 ${FormatUtils.formatShortDate(trip.startDate, currentLang.locale)} - ${FormatUtils.formatShortDate(trip.endDate, currentLang.locale)} · 👥 ${tParts.size} $travelersUnit",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                                 color = Color(0xFF64748B)
                             )

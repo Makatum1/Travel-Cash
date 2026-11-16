@@ -102,7 +102,8 @@ fun SplitsTabScreen(
     onSettleDebt: (DebtTransaction, Double, String) -> Unit = { _, _, _ -> },
     topHeader: @Composable () -> Unit = {}
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
     var newParticipantName by remember { mutableStateOf("") }
@@ -365,7 +366,7 @@ fun SplitsTabScreen(
                                                     if (isEn) "Global amount" else "Importe global"
                                                 }
                                                 Text(
-                                                    text = "📅 ${FormatUtils.formatShortDate(inc.date)} · $methodLabel",
+                                                    text = "📅 ${FormatUtils.formatShortDate(inc.date, currentLang.locale)} · $methodLabel",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = Color(0xFF475569)
                                                 )
@@ -660,6 +661,7 @@ private fun SettlementTransactionCard(
     isEn: Boolean,
     onClick: () -> Unit
 ) {
+    val currentLang = LocalAppLanguage.current
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
     val subjectParticipantId = if (tx.isFromBote) tx.toParticipantId else tx.fromParticipantId
@@ -732,7 +734,7 @@ private fun SettlementTransactionCard(
                     val subjectExpenses = expenses.filter { exp ->
                         exp.splits.any { it.participantId == sb.participantId && it.amount > 0.0 } ||
                                 exp.paidById == sb.participantId
-                    }.sortedByDescending { it.date }
+                    }.sortedWith(compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }.thenBy { it.createdAt })
 
                     val subjectIncomes = incomes.mapNotNull { inc ->
                         val c = inc.contributions.find { it.participantId == sb.participantId }
@@ -847,7 +849,7 @@ private fun SettlementTransactionCard(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = "${FormatUtils.formatShortDate(exp.date)} · ${if (isEn) "Paid total" else "Pagó total"} (${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency)}): $payer",
+                                        text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${if (isEn) "Paid total" else "Pagó total"} (${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}): $payer",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF64748B)
                                     )
@@ -877,7 +879,7 @@ private fun SettlementTransactionCard(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = "${FormatUtils.formatShortDate(inc.date)} · ${inc.description.ifBlank { if (isEn) "Pot" else "Bote" }}",
+                                        text = "${FormatUtils.formatShortDate(inc.date, currentLang.locale)} · ${inc.description.ifBlank { if (isEn) "Pot" else "Bote" }}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF475569)
                                     )
@@ -906,6 +908,7 @@ private fun ParticipantBalanceInteractiveCard(
     onAvatarClick: () -> Unit,
     onClick: () -> Unit
 ) {
+    val currentLang = LocalAppLanguage.current
     val isPositive = balance.netBalance >= -0.004
 
     Surface(
@@ -1026,7 +1029,7 @@ private fun ParticipantBalanceInteractiveCard(
 
                     expenses.filter { exp ->
                         exp.paidById == balance.participantId || exp.splits.any { it.participantId == balance.participantId }
-                    }.sortedByDescending { it.date }.forEach { exp ->
+                    }.sortedWith(compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }.thenBy { it.createdAt }).forEach { exp ->
                         val paidThis = exp.paidById == balance.participantId
                         val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
                         val displayCat = CategoryCatalog.displayName(exp.category, isEn)
@@ -1035,7 +1038,7 @@ private fun ParticipantBalanceInteractiveCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "• ${FormatUtils.formatShortDate(exp.date)} · ${exp.placeName.ifBlank { displayCat }.take(22)}",
+                                text = "• ${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${exp.placeName.ifBlank { displayCat }.take(22)}",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = OceanNavy,
                                 modifier = Modifier.weight(1f)

@@ -137,6 +137,27 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     private val dao = TravelCashDatabase.getInstance(application).travelCashDao()
     private val repository = TravelCashRepository(dao)
 
+    private val prefs = application.getSharedPreferences("travel_cash_settings", Context.MODE_PRIVATE)
+
+    private val _themeMode = MutableStateFlow(
+        runCatching {
+            AppThemeMode.valueOf(prefs.getString("theme_mode_v2", AppThemeMode.LIGHT.name) ?: AppThemeMode.LIGHT.name)
+        }.getOrDefault(AppThemeMode.LIGHT)
+    )
+    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
+
+    private val _language = MutableStateFlow(
+        runCatching {
+            val saved = prefs.getString("app_language", null)
+            if (saved != null && saved != "SYSTEM") {
+                AppLanguage.valueOf(saved)
+            } else {
+                AppLanguage.detectSystemLanguage()
+            }
+        }.getOrElse { AppLanguage.detectSystemLanguage() }
+    )
+    val language: StateFlow<AppLanguage> = _language.asStateFlow()
+
     private val _selectedTab = MutableStateFlow(MainTab.EXPENSES)
     val selectedTab: StateFlow<MainTab> = _selectedTab.asStateFlow()
 
@@ -226,6 +247,10 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     )
 
     init {
+        val initialLang = _language.value
+        java.util.Locale.setDefault(initialLang.locale)
+        com.example.util.FormatUtils.currentAppLocale = initialLang.locale
+
         viewModelScope.launch {
             val seedTripId = repository.ensureSeedDataIfEmpty()
             if (_activeTripId.value == null && seedTripId != null) {
@@ -616,26 +641,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    private val prefs = application.getSharedPreferences("travel_cash_settings", Context.MODE_PRIVATE)
 
-    private val _themeMode = MutableStateFlow(
-        runCatching {
-            AppThemeMode.valueOf(prefs.getString("theme_mode_v2", AppThemeMode.LIGHT.name) ?: AppThemeMode.LIGHT.name)
-        }.getOrDefault(AppThemeMode.LIGHT)
-    )
-    val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
-
-    private val _language = MutableStateFlow(
-        runCatching {
-            val saved = prefs.getString("app_language", null)
-            if (saved != null && saved != "SYSTEM") {
-                AppLanguage.valueOf(saved)
-            } else {
-                AppLanguage.detectSystemLanguage()
-            }
-        }.getOrElse { AppLanguage.detectSystemLanguage() }
-    )
-    val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
     private val _reminderNotificationsEnabled = MutableStateFlow(
         prefs.getBoolean("reminder_notifications_enabled", false)
@@ -650,6 +656,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     fun setLanguage(lang: AppLanguage) {
         _language.value = lang
         prefs.edit().putString("app_language", lang.name).apply()
+        java.util.Locale.setDefault(lang.locale)
+        com.example.util.FormatUtils.currentAppLocale = lang.locale
         val msg = when (lang) {
             AppLanguage.ES -> "Idioma cambiado a Español"
             AppLanguage.EN -> "Language changed to English"

@@ -99,7 +99,8 @@ fun IncomeModal(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val isEdit = existingIncome != null
     val symbol = CurrencyCatalog.getSymbol(trip.baseCurrency)
 
@@ -813,8 +814,18 @@ fun IncomeModal(
                         ) {
                             Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = EmeraldGreenDark)
                             Spacer(modifier = Modifier.width(8.dp))
+                            val dateLabel = when (currentLang) {
+                                AppLanguage.ES -> "Fecha"
+                                AppLanguage.EN -> "Date"
+                                AppLanguage.FR -> "Date"
+                                AppLanguage.IT -> "Data"
+                                AppLanguage.ZH -> "日期"
+                                AppLanguage.NL -> "Datum"
+                                AppLanguage.DE -> "Datum"
+                                AppLanguage.PL -> "Data"
+                            }
                             Text(
-                                text = "${if (isEn) "Date" else "Fecha"}: ${FormatUtils.formatShortDate(selectedDate)}",
+                                text = "$dateLabel: ${FormatUtils.formatShortDate(selectedDate, currentLang.locale)}",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = grayAmountAndNameColor
                             )
