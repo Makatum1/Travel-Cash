@@ -338,6 +338,7 @@ fun IncomeModal(
                         AppLanguage.NL -> "Berekeningsmethode pot"
                         AppLanguage.DE -> "Berechnungsmodus der Kasse"
                         AppLanguage.PL -> "Tryb obliczania budżetu"
+                        AppLanguage.PT -> "Modo de Cálculo do Fundo"
                     }
                     Text(
                         text = calculationModeTitle,
@@ -418,6 +419,7 @@ fun IncomeModal(
                                     AppLanguage.NL -> "Inleg per persoon ($symbol)"
                                     AppLanguage.DE -> "Beitrag pro Person ($symbol)"
                                     AppLanguage.PL -> "Kwota wpłacana przez osobę ($symbol)"
+                                    AppLanguage.PT -> "Quantia que cada pessoa coloca ($symbol)"
                                 }
                                 Text(
                                     text = amountPerPersonTitle,
@@ -434,6 +436,7 @@ fun IncomeModal(
                                     AppLanguage.NL -> "Vaste bijdrage ($symbol)"
                                     AppLanguage.DE -> "Feste Quote ($symbol)"
                                     AppLanguage.PL -> "Stała składka ($symbol)"
+                                    AppLanguage.PT -> "Quota fixa ($symbol)"
                                 }
                                 OutlinedTextField(
                                     value = basePerPersonText,
@@ -467,6 +470,7 @@ fun IncomeModal(
                                     AppLanguage.NL -> "💡 Als een deelnemer geld tegoed heeft voor voorgeschoten uitgaven, wordt dit automatisch van diens bijdrage afgetrokken (nooit minder dan 0 $symbol)."
                                     AppLanguage.DE -> "💡 Wenn einem Teilnehmer Geld für vorgestreckte Ausgaben geschuldet wird, wird dies automatisch von seinem Beitrag abgezogen (nie weniger als 0 $symbol)."
                                     AppLanguage.PL -> "💡 Jeśli uczestnikowi należy się zwrot za wyłożone wydatki, kwota ta zostanie automatycznie odjęta od jego składki (nigdy mniej niż 0 $symbol)."
+                                    AppLanguage.PT -> "💡 Se algum participante tiver dinheiro a haver por despesas adiantadas, será automaticamente deduzido da sua quota (nunca inferior a 0 $symbol)."
                                 }
                                 Text(
                                     text = discountHintText,
@@ -485,6 +489,7 @@ fun IncomeModal(
                             AppLanguage.NL -> "Totaal te verdelen ($symbol)"
                             AppLanguage.DE -> "Zu verteilender Gesamtbetrag ($symbol)"
                             AppLanguage.PL -> "Łącznie do podziału ($symbol)"
+                            AppLanguage.PT -> "Total a dividir ($symbol)"
                         }
                         OutlinedTextField(
                             value = globalTotalText,
@@ -540,6 +545,7 @@ fun IncomeModal(
                                 AppLanguage.NL -> "Totaal opgehaald in kas"
                                 AppLanguage.DE -> "In Kasse gesammelt"
                                 AppLanguage.PL -> "Łącznie zebrane w kasie"
+                                AppLanguage.PT -> "Total Angariado em Caixa"
                             }
                             val totalCollectedSubtitle = when (currentLang) {
                                 AppLanguage.ES -> "Importe Total del Bote (efectivo real)"
@@ -550,6 +556,7 @@ fun IncomeModal(
                                 AppLanguage.NL -> "Totaalbedrag van de pot (werkelijk geld)"
                                 AppLanguage.DE -> "Gesamter Kassenbetrag (tatsächliches Geld)"
                                 AppLanguage.PL -> "Całkowita kwota budżetu (rzeczywista gotówka)"
+                                AppLanguage.PT -> "Montante Total do Fundo (dinheiro real)"
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
@@ -585,6 +592,7 @@ fun IncomeModal(
                         AppLanguage.NL -> "Uitsplitsing per deelnemer (bewerkbaar)"
                         AppLanguage.DE -> "Aufteilung nach Teilnehmer (bearbeitbar)"
                         AppLanguage.PL -> "Podział według uczestników (edytowalny)"
+                        AppLanguage.PT -> "Desdobramento por Participante (editável)"
                     }
                     val breakdownSubtitle = when (currentLang) {
                         AppLanguage.ES -> "Indica quién aporta o paga para el bote, su forma de pago (Bizum/Efectivo) y su importe:"
@@ -595,6 +603,7 @@ fun IncomeModal(
                         AppLanguage.NL -> "Geef aan wie bijdraagt aan de pot, de betaalmethode (Bizum/Contant) en het bedrag:"
                         AppLanguage.DE -> "Geben Sie an, wer in die Kasse einzahlt, die Zahlungsmethode (Bizum/Bar) und den Betrag:"
                         AppLanguage.PL -> "Wskaż, kto wpłaca na wspólny budżet, metodę płatności (Bizum/Gotówka) oraz kwotę:"
+                        AppLanguage.PT -> "Indique quem contribui ou paga para o fundo, a sua forma de pagamento (Bizum/Numerário) e a respetiva quantia:"
                     }
                     Text(
                         text = breakdownTitle,
@@ -674,6 +683,7 @@ fun IncomeModal(
                                                         AppLanguage.NL -> "Tegoed: +"
                                                         AppLanguage.DE -> "Zugunsten: +"
                                                         AppLanguage.PL -> "Na korzyść: +"
+                                                        AppLanguage.PT -> "A haver: +"
                                                     }
                                                     Text(
                                                         text = "$owedPrefix${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)}",
@@ -771,6 +781,7 @@ fun IncomeModal(
                                                         AppLanguage.NL -> "Contant"
                                                         AppLanguage.DE -> "Bargeld"
                                                         AppLanguage.PL -> "Gotówka"
+                                                        AppLanguage.PT -> "Numerário"
                                                     }
                                                     Text(
                                                         text = cashLabel,
@@ -795,6 +806,7 @@ fun IncomeModal(
                                             AppLanguage.NL -> "Legt in ($symbol)"
                                             AppLanguage.DE -> "Zahlt ($symbol)"
                                             AppLanguage.PL -> "Wpłaca ($symbol)"
+                                            AppLanguage.PT -> "Coloca ($symbol)"
                                         }
                                         OutlinedTextField(
                                             value = individualAmounts[p.id] ?: "0.00",
@@ -844,6 +856,7 @@ fun IncomeModal(
                                             AppLanguage.NL -> "bijdrage"
                                             AppLanguage.DE -> "Quote"
                                             AppLanguage.PL -> "składka"
+                                            AppLanguage.PT -> "quota"
                                         }
                                         val owedWord = when (currentLang) {
                                             AppLanguage.ES -> "se le debe"
@@ -854,6 +867,7 @@ fun IncomeModal(
                                             AppLanguage.NL -> "tegoed"
                                             AppLanguage.DE -> "geschuldet"
                                             AppLanguage.PL -> "należne"
+                                            AppLanguage.PT -> "a haver"
                                         }
                                         val putsWord = when (currentLang) {
                                             AppLanguage.ES -> "Pone"
@@ -864,6 +878,7 @@ fun IncomeModal(
                                             AppLanguage.NL -> "Legt in"
                                             AppLanguage.DE -> "Zahlt"
                                             AppLanguage.PL -> "Wpłaca"
+                                            AppLanguage.PT -> "Coloca"
                                         }
                                         val compensatesWord = when (currentLang) {
                                             AppLanguage.ES -> "compensa"
@@ -874,6 +889,7 @@ fun IncomeModal(
                                             AppLanguage.NL -> "compenseert"
                                             AppLanguage.DE -> "verrechnet"
                                             AppLanguage.PL -> "kompensuje"
+                                            AppLanguage.PT -> "compensa"
                                         }
                                         val formulaText = if (currentCashVal <= 0.009) {
                                             "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} ($quotaWord) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} ($owedWord) → $putsWord 0 $symbol ($compensatesWord ${FormatUtils.formatCurrency(appliedDiscount, trip.baseCurrency)})"
@@ -902,6 +918,7 @@ fun IncomeModal(
                         AppLanguage.NL -> "Beschrijving / Reden van de pot"
                         AppLanguage.DE -> "Beschreibung / Grund der Kasse"
                         AppLanguage.PL -> "Opis / Powód budżetu"
+                        AppLanguage.PT -> "Descrição / Motivo do fundo"
                     }
                     OutlinedTextField(
                         value = description,
@@ -965,6 +982,7 @@ fun IncomeModal(
                                 AppLanguage.NL -> "Datum"
                                 AppLanguage.DE -> "Datum"
                                 AppLanguage.PL -> "Data"
+                                AppLanguage.PT -> "Data"
                             }
                             Text(
                                 text = "$dateLabel: ${FormatUtils.formatShortDate(selectedDate, currentLang.locale)}",
@@ -1026,6 +1044,7 @@ fun IncomeModal(
                                     AppLanguage.NL -> "Selecteer ten minste één deelnemer voor deze potronde."
                                     AppLanguage.DE -> "Wählen Sie mindestens einen Teilnehmer für diese Kassenrunde aus."
                                     AppLanguage.PL -> "Wybierz przynajmniej jednego uczestnika dla tej zbiórki."
+                                    AppLanguage.PT -> "Selecione pelo menos um participante para esta ronda de fundo."
                                 }
                                 return@Button
                             }
@@ -1055,6 +1074,7 @@ fun IncomeModal(
                                     AppLanguage.NL -> "Voer een geldig bedrag in groter dan 0."
                                     AppLanguage.DE -> "Geben Sie einen gültigen Betrag größer als 0 ein."
                                     AppLanguage.PL -> "Wprowadź prawidłową kwotę większą niż 0."
+                                    AppLanguage.PT -> "Introduza uma quantia válida superior a 0."
                                 }
                                 return@Button
                             }
@@ -1068,6 +1088,7 @@ fun IncomeModal(
                                 AppLanguage.NL -> "Bijdrage aan gemeenschappelijke pot"
                                 AppLanguage.DE -> "Beitrag zur Gemeinschaftskasse"
                                 AppLanguage.PL -> "Wpłata do wspólnego budżetu"
+                                AppLanguage.PT -> "Contribuição para o Fundo Comum"
                             }
                             val incomeEntity = IncomeEntity(
                                 id = existingIncome?.id ?: "inc-${UUID.randomUUID().toString().take(8)}",
@@ -1100,6 +1121,7 @@ fun IncomeModal(
                             AppLanguage.NL -> "Pot opslaan"
                             AppLanguage.DE -> "Kasse speichern"
                             AppLanguage.PL -> "Zapisz budżet"
+                            AppLanguage.PT -> "Guardar Fundo"
                         }
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))

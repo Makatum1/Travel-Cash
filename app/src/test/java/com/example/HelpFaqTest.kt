@@ -70,7 +70,7 @@ class HelpFaqTest {
     @Test
     fun faqs_provideTranslationsForAllSupportedLanguages() {
         val languages = com.example.ui.theme.AppLanguage.entries
-        assertEquals(8, languages.size)
+        assertEquals(9, languages.size)
         TRAVEL_CASH_FAQS.forEach { item ->
             languages.forEach { lang ->
                 val q = item.getQuestion(lang)

@@ -294,6 +294,7 @@ fun ExpensesTabScreen(
                         AppLanguage.NL -> "Datum"
                         AppLanguage.DE -> "Datum"
                         AppLanguage.PL -> "Data"
+                        AppLanguage.PT -> "Data"
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -501,6 +502,7 @@ private fun DayStickyHeader(
                         AppLanguage.NL -> if (expenseCount == 1) "1 geregistreerde uitgave" else "$expenseCount geregistreerde uitgaven"
                         AppLanguage.DE -> if (expenseCount == 1) "1 erfasste Ausgabe" else "$expenseCount erfasste Ausgaben"
                         AppLanguage.PL -> if (expenseCount == 1) "1 zarejestrowany wydatek" else "$expenseCount zarejestrowanych wydatków"
+                        AppLanguage.PT -> if (expenseCount == 1) "1 despesa registada" else "$expenseCount despesas registadas"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF475569)
@@ -537,6 +539,7 @@ private fun ExpenseItemCard(
         AppLanguage.NL -> "dag"
         AppLanguage.DE -> "Tag"
         AppLanguage.PL -> "dzień"
+        AppLanguage.PT -> "dia"
     }
 
     val receiptsDesc = when (currentLang) {
@@ -548,6 +551,7 @@ private fun ExpenseItemCard(
         AppLanguage.NL -> "Bijgevoegde bonnen en herinneringen"
         AppLanguage.DE -> "Angehängte Belege und Erinnerungen"
         AppLanguage.PL -> "Załączone paragony i wspomnienia"
+        AppLanguage.PT -> "Recibos e recordações anexas"
     }
 
     val geoDesc = when (currentLang) {
@@ -559,6 +563,7 @@ private fun ExpenseItemCard(
         AppLanguage.NL -> "Geolocatie op kaart"
         AppLanguage.DE -> "Auf Karte geolokalisiert"
         AppLanguage.PL -> "Zlokalizowane na mapie"
+        AppLanguage.PT -> "Com coordenadas no mapa"
     }
 
     Card(

@@ -1,4 +1,4 @@
-package com.example.ui.modals
+﻿package com.example.ui.modals
 
 import android.Manifest
 import android.app.DatePickerDialog
@@ -148,6 +148,11 @@ enum class SplitMode(val labelEs: String, val labelEn: String) {
             EQUAL -> "Równe części"
             EXACT -> "Dokładne kwoty"
             PERCENTAGE -> "Procentowo (%)"
+        }
+        AppLanguage.PT -> when (this) {
+            EQUAL -> "Partes iguais"
+            EXACT -> "Montantes exatos"
+            PERCENTAGE -> "Percentagens (%)"
         }
     }
 }
@@ -301,7 +306,8 @@ fun AddExpenseModal(
         originSuggestions = NominatimService.searchPlacesByProximity(
             query = q,
             userLat = userLocation?.first,
-            userLon = userLocation?.second
+            userLon = userLocation?.second,
+            context = context
         )
         isSearchingOrigin = false
     }
@@ -319,7 +325,8 @@ fun AddExpenseModal(
         destinationSuggestions = NominatimService.searchPlacesByProximity(
             query = q,
             userLat = userLocation?.first,
-            userLon = userLocation?.second
+            userLon = userLocation?.second,
+            context = context
         )
         isSearchingDestination = false
     }
@@ -505,6 +512,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "1. Bedrag en Valuta"
                         AppLanguage.DE -> "1. Betrag & Währung"
                         AppLanguage.PL -> "1. Kwota i Waluta"
+                        AppLanguage.PT -> "1. Montante e Moeda"
                     }
                     Text(
                         text = step1Title,
@@ -591,6 +599,7 @@ fun AddExpenseModal(
                                     AppLanguage.NL -> "Wisselkoers (1 $selectedCurrency = X ${trip.baseCurrency})"
                                     AppLanguage.DE -> "Wechselkurs (1 $selectedCurrency = X ${trip.baseCurrency})"
                                     AppLanguage.PL -> "Kurs (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.PT -> "Taxa (1 $selectedCurrency = X ${trip.baseCurrency})"
                                 }
                                 val inBaseLabel = when (currentLang) {
                                     AppLanguage.ES -> "En moneda base:"
@@ -601,6 +610,7 @@ fun AddExpenseModal(
                                     AppLanguage.NL -> "In basisvaluta:"
                                     AppLanguage.DE -> "In Basiswährung:"
                                     AppLanguage.PL -> "W walucie bazowej:"
+                                    AppLanguage.PT -> "Na moeda base:"
                                 }
                                 OutlinedTextField(
                                     value = exchangeRateText,
@@ -639,6 +649,7 @@ fun AddExpenseModal(
                             AppLanguage.NL -> "2. Herkomst en Bestemming"
                             AppLanguage.DE -> "2. Abfahrt & Ziel"
                             AppLanguage.PL -> "2. Miejsce wyjazdu i docelowe"
+                            AppLanguage.PT -> "2. Origem e Destino"
                         }
                     } else {
                         when (currentLang) {
@@ -650,6 +661,7 @@ fun AddExpenseModal(
                             AppLanguage.NL -> "2. Locatie / Gelegenheid"
                             AppLanguage.DE -> "2. Ort / Betrieb"
                             AppLanguage.PL -> "2. Miejsce / Lokal"
+                            AppLanguage.PT -> "2. Local / Estabelecimento"
                         }
                     }
                     Text(
@@ -747,6 +759,7 @@ fun AddExpenseModal(
                                 AppLanguage.NL -> "📍 GPS actief — Dichtstbijzijnde locaties eerst"
                                 AppLanguage.DE -> "📍 GPS aktiv — Nächste Orte zuerst"
                                 AppLanguage.PL -> "📍 GPS aktywny — Najbliższe miejsca na początku"
+                                AppLanguage.PT -> "📍 GPS ativo — A ordenar locais mais próximos primeiro"
                             }
                             Text(
                                 text = gpsActiveHint,
@@ -830,6 +843,7 @@ fun AddExpenseModal(
                             AppLanguage.NL -> "Adres"
                             AppLanguage.DE -> "Adresse"
                             AppLanguage.PL -> "Adres"
+                            AppLanguage.PT -> "Morada"
                         }
                         val addressPlaceholder = when (currentLang) {
                             AppLanguage.ES -> "Calle, ciudad o dirección del lugar..."
@@ -840,6 +854,7 @@ fun AddExpenseModal(
                             AppLanguage.NL -> "Straat, stad of adres van de locatie..."
                             AppLanguage.DE -> "Straße, Stadt oder Adresse des Ortes..."
                             AppLanguage.PL -> "Ulica, miasto lub adres miejsca..."
+                            AppLanguage.PT -> "Rua, cidade ou morada do local..."
                         }
                         OutlinedTextField(
                             value = addressText,
@@ -862,6 +877,7 @@ fun AddExpenseModal(
                             AppLanguage.NL -> "Zoek straat, plaats, stad, station of luchthaven..."
                             AppLanguage.DE -> "Straße, Ort, Stadt, Bahnhof oder Flughafen suchen..."
                             AppLanguage.PL -> "Szukaj ulicy, miejsca, miasta, stacji lub lotniska..."
+                            AppLanguage.PT -> "Pesquisar rua, local, cidade, estação ou aeroporto..."
                         }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
@@ -1046,6 +1062,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "3. Categorie"
                         AppLanguage.DE -> "3. Kategorie"
                         AppLanguage.PL -> "3. Kategoria"
+                        AppLanguage.PT -> "3. Categoria"
                     }
                     Text(
                         text = step3Title,
@@ -1169,6 +1186,7 @@ fun AddExpenseModal(
                                             AppLanguage.NL -> "Uitgavedatum"
                                             AppLanguage.DE -> "Ausgabendatum"
                                             AppLanguage.PL -> "Data wydatku"
+                                            AppLanguage.PT -> "Data da despesa"
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF64748B)
@@ -1209,6 +1227,7 @@ fun AddExpenseModal(
                                 AppLanguage.NL -> "🗓️ Uitgave gespreid over $pDays dagen → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} per dag"
                                 AppLanguage.DE -> "🗓️ Ausgabe auf $pDays Tage umgelegt → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} pro Tag"
                                 AppLanguage.PL -> "🗓️ Wydatek rozłożony na $pDays dni → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} dziennie"
+                                AppLanguage.PT -> "🗓️ Despesa rateada em $pDays dias → Supõe ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} por dia"
                             }
                             Text(
                                 text = proratedText,
@@ -1238,6 +1257,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "4. Deelnemers"
                         AppLanguage.DE -> "4. Teilnehmer"
                         AppLanguage.PL -> "4. Uczestnicy"
+                        AppLanguage.PT -> "4. Participantes"
                     }
                     val step4Subtitle = when (currentLang) {
                         AppLanguage.ES -> "Selecciona quién paga este gasto (el Bote común o un participante):"
@@ -1248,6 +1268,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "Selecteer wie deze uitgave betaalt (de gemeenschappelijke pot of een deelnemer):"
                         AppLanguage.DE -> "Wählen Sie, wer diese Ausgabe bezahlt (Gemeinschaftskasse oder ein Teilnehmer):"
                         AppLanguage.PL -> "Wybierz, kto płaci za ten wydatek (wspólny budżet lub uczestnik):"
+                        AppLanguage.PT -> "Selecione quem paga esta despesa (o Fundo comum ou um participante):"
                     }
                     Text(
                         text = step4Title,
@@ -1342,6 +1363,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "5. Kostenverdeling"
                         AppLanguage.DE -> "5. Ausgabenaufteilung"
                         AppLanguage.PL -> "5. Podział wydatku"
+                        AppLanguage.PT -> "5. Divisão da Despesa"
                     }
                     Text(
                         text = step5Title,
@@ -1424,6 +1446,7 @@ fun AddExpenseModal(
                                         AppLanguage.NL -> "Toegewezen som: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Totaal: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
                                         AppLanguage.DE -> "Zugewiesene Summe: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Gesamt: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
                                         AppLanguage.PL -> "Przydzielona suma: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Łącznie: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.PT -> "Soma atribuída: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
                                     }
                                     Text(
                                         text = exactStatusText,
@@ -1466,6 +1489,7 @@ fun AddExpenseModal(
                                         AppLanguage.NL -> "Som percentages: ${String.format(Locale.US, "%.1f", sumPct)}% (moet 100% zijn)"
                                         AppLanguage.DE -> "Prozentsumme: ${String.format(Locale.US, "%.1f", sumPct)}% (muss 100% ergeben)"
                                         AppLanguage.PL -> "Suma procentów: ${String.format(Locale.US, "%.1f", sumPct)}% (musi wynosić 100%)"
+                                        AppLanguage.PT -> "Soma de percentagens: ${String.format(Locale.US, "%.1f", sumPct)}% (deve somar 100%)"
                                     }
                                     Text(
                                         text = pctStatusText,
@@ -1516,6 +1540,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "6. Bonnen en Herinneringen"
                         AppLanguage.DE -> "6. Belege & Erinnerungen"
                         AppLanguage.PL -> "6. Rachunki i Wspomnienia"
+                        AppLanguage.PT -> "6. Recibos e Lembranças"
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -1543,6 +1568,7 @@ fun AddExpenseModal(
                                         AppLanguage.NL -> "bon"
                                         AppLanguage.DE -> "Beleg"
                                         AppLanguage.PL -> "rachunek"
+                                        AppLanguage.PT -> "recibo"
                                     }
                                 } else {
                                     when (currentLang) {
@@ -1554,6 +1580,7 @@ fun AddExpenseModal(
                                         AppLanguage.NL -> "bonnen"
                                         AppLanguage.DE -> "Belege"
                                         AppLanguage.PL -> "rachunki"
+                                        AppLanguage.PT -> "recibos"
                                     }
                                 }
                                 Text(
@@ -1574,6 +1601,7 @@ fun AddExpenseModal(
                         AppLanguage.NL -> "Voeg onbeperkt alle benodigde tickets, facturen, bonnen of foto's toe."
                         AppLanguage.DE -> "Fügen Sie unbegrenzt Tickets, Rechnungen, Belege oder Fotos hinzu."
                         AppLanguage.PL -> "Dodawaj wszystkie potrzebne bilety, faktury, rachunki lub zdjęcia bez ograniczeń."
+                        AppLanguage.PT -> "Adicione todos os bilhetes, faturas, recibos ou lembranças de que necessitar sem limite."
                     }
                     Text(
                         text = receiptsInfoText,
@@ -1627,6 +1655,7 @@ fun AddExpenseModal(
                                         AppLanguage.NL -> "Bon of herinnering ${idx + 1}"
                                         AppLanguage.DE -> "Beleg oder Erinnerung ${idx + 1}"
                                         AppLanguage.PL -> "Rachunek lub wspomnienie ${idx + 1}"
+                                        AppLanguage.PT -> "Recibo ou lembrança ${idx + 1}"
                                     }
                                     AsyncImage(
                                         model = photoUri,
@@ -1726,6 +1755,7 @@ fun AddExpenseModal(
                                     AppLanguage.NL -> "Voer een bedrag in groter dan 0."
                                     AppLanguage.DE -> "Geben Sie einen Betrag größer als 0 ein."
                                     AppLanguage.PL -> "Wprowadź kwotę większą niż 0."
+                                    AppLanguage.PT -> "Introduza um montante superior a 0."
                                 }
                                 return@Button
                             }
@@ -1744,6 +1774,7 @@ fun AddExpenseModal(
                                             AppLanguage.NL -> "Selecteer ten minste één deelnemer om de uitgave te verdelen."
                                             AppLanguage.DE -> "Wählen Sie mindestens einen Teilnehmer zur Ausgabenaufteilung aus."
                                             AppLanguage.PL -> "Wybierz przynajmniej jednego uczestnika, aby podzielić wydatek."
+                                            AppLanguage.PT -> "Selecione pelo menos um participante para dividir a despesa."
                                         }
                                         return@Button
                                     }
@@ -1778,6 +1809,7 @@ fun AddExpenseModal(
                                             AppLanguage.NL -> "De som van exacte bedragen (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) moet overeenkomen met het totaal (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
                                             AppLanguage.DE -> "Die Summe der genauen Beträge (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) muss mit dem Gesamtbetrag übereinstimmen (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
                                             AppLanguage.PL -> "Suma dokładnych kwot (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) musi zgadzać się z sumą całkowitą (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.PT -> "A soma dos montantes exatos (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) deve coincidir com o total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
                                         }
                                         return@Button
                                     }
@@ -1810,6 +1842,7 @@ fun AddExpenseModal(
                                             AppLanguage.NL -> "Percentages moeten optellen tot 100% (momenteel ${String.format(Locale.US, "%.1f", sumPct)}%)."
                                             AppLanguage.DE -> "Die Prozentsätze müssen 100% ergeben (derzeit ${String.format(Locale.US, "%.1f", sumPct)}%)."
                                             AppLanguage.PL -> "Procenty muszą sumować się do 100% (obecnie ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.PT -> "As percentagens devem somar 100% (atualmente somam ${String.format(Locale.US, "%.1f", sumPct)}%)."
                                         }
                                         return@Button
                                     }
@@ -1908,6 +1941,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Knop Algemeen aanpassen"
             AppLanguage.DE -> "Allgemein-Schaltfläche anpassen"
             AppLanguage.PL -> "Dostosuj przycisk Ogólne"
+            AppLanguage.PT -> "Personalizar botão Geral"
         }
         val renameDialogDesc = when (currentLang) {
             AppLanguage.ES -> "Escribe un nombre para este botón en este gasto (para futuros gastos volverá a mostrarse como \"General\"):"
@@ -1918,6 +1952,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Voer alleen voor deze uitgave een aangepaste naam in voor deze knop (wordt bij volgende uitgaven weer 'Algemeen'):"
             AppLanguage.DE -> "Geben Sie nur für diese Ausgabe einen benutzerdefinierten Namen ein (wird bei künftigen Ausgaben wieder auf „Allgemein“ zurückgesetzt):"
             AppLanguage.PL -> "Wpisz własną nazwę tego przycisku tylko dla tego wydatku (dla kolejnych wydatków powróci do „Ogólne”):"
+            AppLanguage.PT -> "Escreva um nome para este botão nesta despesa (para futuras despesas voltará a mostrar-se como \"Geral\"):"
         }
         val renameFieldLabel = when (currentLang) {
             AppLanguage.ES -> "Nombre (ej. Souvenirs, Visado, Propina...)"
@@ -1928,6 +1963,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Naam (bijv. Souvenirs, Visum, Fooi...)"
             AppLanguage.DE -> "Name (z.B. Souvenirs, Visum, Trinkgeld...)"
             AppLanguage.PL -> "Nazwa (np. Pamiątki, Wiza, Napiwek...)"
+            AppLanguage.PT -> "Nome (ex. Lembranças, Visto, Gorjeta...)"
         }
         val applyBtnLabel = when (currentLang) {
             AppLanguage.ES -> "Aplicar a este gasto"
@@ -1938,6 +1974,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Toepassen op deze uitgave"
             AppLanguage.DE -> "Auf diese Ausgabe anwenden"
             AppLanguage.PL -> "Zastosuj do tego wydatku"
+            AppLanguage.PT -> "Aplicar a esta despesa"
         }
         val keepGeneralLabel = when (currentLang) {
             AppLanguage.ES -> "Dejar en General"
@@ -1948,6 +1985,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Als Algemeen behouden"
             AppLanguage.DE -> "Als Allgemein belassen"
             AppLanguage.PL -> "Pozostaw jako Ogólne"
+            AppLanguage.PT -> "Manter como Geral"
         }
         AlertDialog(
             onDismissRequest = { showRenameGeneralDialog = false },
@@ -2012,6 +2050,7 @@ fun AddExpenseModal(
             AppLanguage.NL -> "Bon / Herinnering"
             AppLanguage.DE -> "Beleg / Erinnerung"
             AppLanguage.PL -> "Rachunek / Wspomnienie"
+            AppLanguage.PT -> "Recibo / Lembrança"
         }
         Dialog(onDismissRequest = { previewReceiptUri = null }) {
             Surface(

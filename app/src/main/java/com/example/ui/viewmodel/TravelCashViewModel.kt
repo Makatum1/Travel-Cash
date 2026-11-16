@@ -1,4 +1,4 @@
-package com.example.ui.viewmodel
+﻿package com.example.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
@@ -98,6 +98,14 @@ enum class MainTab(val titleEs: String, val titleEn: String) {
             MAP -> "Mapa"
             TRIPS -> "Podróże"
             SETTINGS -> "Ustawienia"
+        }
+        AppLanguage.PT -> when (this) {
+            EXPENSES -> "Despesas"
+            SPLITS -> "Contas"
+            STATS -> "Dados"
+            MAP -> "Mapa"
+            TRIPS -> "Viagens"
+            SETTINGS -> "Definições"
         }
     }
 }
@@ -348,7 +356,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             val results = NominatimService.searchPlacesByProximity(
                 query = query,
                 userLat = coords?.first,
-                userLon = coords?.second
+                userLon = coords?.second,
+                context = getApplication()
             )
             _placeSuggestions.value = results
             _isSearchingPlaces.value = false
@@ -408,6 +417,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Reis \"${newTrip.title}\" succesvol aangemaakt"
                 AppLanguage.DE -> "Reise „${newTrip.title}“ erfolgreich erstellt"
                 AppLanguage.PL -> "Podróż „${newTrip.title}” utworzona pomyślnie"
+                AppLanguage.PT -> "Viagem \"${newTrip.title}\" criada com sucesso"
             }
             showToast(msg)
         }
@@ -425,6 +435,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Reis naar Rome"
                 AppLanguage.DE -> "Reise nach Rom"
                 AppLanguage.PL -> "Wycieczka do Rzymu"
+                AppLanguage.PT -> "Viagem a Roma"
             }
             val tripId = "trip-${UUID.randomUUID().toString().take(8)}"
             val now = LocalDate.now()
@@ -452,6 +463,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Alex"
                 AppLanguage.DE -> "Alexander"
                 AppLanguage.PL -> "Aleksander"
+                AppLanguage.PT -> "Alexandre"
             }
             val p2Name = when (lang) {
                 AppLanguage.ES -> "María"
@@ -462,6 +474,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Maria"
                 AppLanguage.DE -> "Maria"
                 AppLanguage.PL -> "Maria"
+                AppLanguage.PT -> "Maria"
             }
             val p3Name = when (lang) {
                 AppLanguage.ES, AppLanguage.EN -> "Carlos"
@@ -471,6 +484,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Karel"
                 AppLanguage.DE -> "Karl"
                 AppLanguage.PL -> "Karol"
+                AppLanguage.PT -> "Carlos"
             }
 
             val p1 = ParticipantEntity(id = p1Id, tripId = tripId, name = p1Name, avatarColor = AvatarColorPalette.colors[0])
@@ -487,6 +501,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Diner in Trattoria Romana"
                 AppLanguage.DE -> "Abendessen in der Trattoria Romana"
                 AppLanguage.PL -> "Kolacja w Trattoria Romana"
+                AppLanguage.PT -> "Jantar na Trattoria Romana"
             }
             val exp1Place = when (lang) {
                 AppLanguage.ES -> "Coliseo, Roma"
@@ -497,6 +512,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Colosseum, Rome"
                 AppLanguage.DE -> "Kolosseum, Rom"
                 AppLanguage.PL -> "Koloseum, Rzym"
+                AppLanguage.PT -> "Coliseu, Roma"
             }
             val exp1Country = when (lang) {
                 AppLanguage.ES, AppLanguage.IT -> "Italia"
@@ -506,6 +522,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Italië"
                 AppLanguage.DE -> "Italien"
                 AppLanguage.PL -> "Włochy"
+                AppLanguage.PT -> "Itália"
             }
 
             val exp1Id = "exp-${UUID.randomUUID().toString().take(8)}"
@@ -547,6 +564,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Taxi van vliegveld naar hotel"
                 AppLanguage.DE -> "Taxi vom Flughafen zum Hotel"
                 AppLanguage.PL -> "Taksówka z lotniska do hotelu"
+                AppLanguage.PT -> "Táxi do aeroporto para o hotel"
             }
             val exp2Origin = when (lang) {
                 AppLanguage.ES -> "Aeropuerto Fiumicino"
@@ -557,6 +575,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Luchthaven Fiumicino"
                 AppLanguage.DE -> "Flughafen Fiumicino"
                 AppLanguage.PL -> "Lotnisko Fiumicino"
+                AppLanguage.PT -> "Aeroporto Fiumicino"
             }
 
             val exp2Id = "exp-${UUID.randomUUID().toString().take(8)}"
@@ -596,6 +615,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Museum- en galerietickets"
                 AppLanguage.DE -> "Museums- und Galerietickets"
                 AppLanguage.PL -> "Bilety do muzeum i galerii"
+                AppLanguage.PT -> "Bilhetes para museu e galeria"
             }
             val exp3Place = when (lang) {
                 AppLanguage.ES -> "Museos Vaticanos"
@@ -606,6 +626,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Vaticaanse Musea"
                 AppLanguage.DE -> "Vatikanische Museen"
                 AppLanguage.PL -> "Muzea Watykańskie"
+                AppLanguage.PT -> "Museus do Vaticano"
             }
 
             val exp3Id = "exp-${UUID.randomUUID().toString().take(8)}"
@@ -645,6 +666,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Startkapitaal gezamenlijke pot"
                 AppLanguage.DE -> "Anfangskapital Gemeinschaftskasse"
                 AppLanguage.PL -> "Początkowy fundusz wspólnej kasy"
+                AppLanguage.PT -> "Fundo inicial do Fundo Comum"
             }
 
             val incId = "inc-${UUID.randomUUID().toString().take(8)}"
@@ -678,6 +700,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Proefreis \"${sampleTrip.title}\" succesvol toegevoegd!"
                 AppLanguage.DE -> "Testreise „${sampleTrip.title}“ erfolgreich hinzugefügt!"
                 AppLanguage.PL -> "Podróż próbna „${sampleTrip.title}” dodana pomyślnie!"
+                AppLanguage.PT -> "Viagem de teste \"${sampleTrip.title}\" adicionada com sucesso!"
             }
             showToast(sampleMsg)
         }
@@ -750,6 +773,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Reis \"${updatedTrip.title}\" bijgewerkt"
                 AppLanguage.DE -> "Reise „${updatedTrip.title}“ aktualisiert"
                 AppLanguage.PL -> "Podróż „${updatedTrip.title}” zaktualizowana"
+                AppLanguage.PT -> "Viagem \"${updatedTrip.title}\" atualizada"
             }
             showToast(msg)
         }
@@ -790,6 +814,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Deelnemer \"$clean\" toegevoegd"
                 AppLanguage.DE -> "Teilnehmer „$clean“ hinzugefügt"
                 AppLanguage.PL -> "Uczestnik „$clean” dodany"
+                AppLanguage.PT -> "Participante \"$clean\" adicionado"
             }
             showToast(msg)
         }
@@ -821,6 +846,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             AppLanguage.NL -> "Taal gewijzigd in Nederlands"
             AppLanguage.DE -> "Sprache auf Deutsch geändert"
             AppLanguage.PL -> "Język zmieniony na Polski"
+            AppLanguage.PT -> "Idioma alterado para Português"
         }
         showToast(msg)
     }
@@ -842,6 +868,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             AppLanguage.NL -> "Reiskostenherinneringen"
             AppLanguage.DE -> "Reisekosten-Erinnerungen"
             AppLanguage.PL -> "Przypomnienia o wydatkach w podróży"
+            AppLanguage.PT -> "Lembretes de Despesas de Viagem"
         }
 
         val channelDesc = when (lang) {
@@ -853,6 +880,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             AppLanguage.NL -> "Herinneringen om dagelijkse reiskosten en inleg in de pot vast te leggen"
             AppLanguage.DE -> "Erinnerungen zur Erfassung täglicher Reiseausgaben und Kassenbeiträge"
             AppLanguage.PL -> "Przypomnienia o zapisywaniu codziennych wydatków z podróży i wspólnej kasy"
+            AppLanguage.PT -> "Lembretes para registar as despesas diárias da viagem e o fundo comum"
         }
 
         val notifTitle = when (lang) {
@@ -864,6 +892,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             AppLanguage.NL -> "Travel Cash · Herinnering actief"
             AppLanguage.DE -> "Travel Cash · Erinnerung aktiviert"
             AppLanguage.PL -> "Travel Cash · Przypomnienie aktywne"
+            AppLanguage.PT -> "Travel Cash · Lembrete Ativado"
         }
 
         if (enabled) {
@@ -888,6 +917,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Vergeet niet de uitgaven van vandaag voor \"$activeTitle\" te registreren."
                     AppLanguage.DE -> "Vergessen Sie nicht, die heutigen Ausgaben für „$activeTitle“ zu erfassen."
                     AppLanguage.PL -> "Nie zapomnij zarejestrować dzisiejszych wydatków w „$activeTitle”."
+                    AppLanguage.PT -> "Não se esqueça de registar as despesas de hoje em \"$activeTitle\"."
                 }
                 val notification = androidx.core.app.NotificationCompat.Builder(app, channelId)
                     .setSmallIcon(android.R.drawable.ic_popup_reminder)
@@ -908,6 +938,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "🔔 Herinneringsmeldingen ingeschakeld"
                 AppLanguage.DE -> "🔔 Erinnerungsbenachrichtigungen aktiviert"
                 AppLanguage.PL -> "🔔 Powiadomienia z przypomnieniami włączone"
+                AppLanguage.PT -> "🔔 Notificações de lembrete ativadas"
             }
             showToast(enabledToast)
         } else {
@@ -921,6 +952,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "🔕 Herinneringsmeldingen uitgeschakeld"
                 AppLanguage.DE -> "🔕 Erinnerungsbenachrichtigungen deaktiviert"
                 AppLanguage.PL -> "🔕 Powiadomienia z przypomnieniami wyłączone"
+                AppLanguage.PT -> "🔕 Notificações de lembrete desativadas"
             }
             showToast(disabledToast)
         }
@@ -940,6 +972,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Foto van ${participant.name} bijgewerkt"
                     AppLanguage.DE -> "Foto von ${participant.name} aktualisiert"
                     AppLanguage.PL -> "Zdjęcie użytkownika ${participant.name} zaktualizowane"
+                    AppLanguage.PT -> "Foto de ${participant.name} atualizada"
                 }
             } else {
                 when (lang) {
@@ -951,6 +984,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Standaardpictogram hersteld voor ${participant.name}"
                     AppLanguage.DE -> "Standard-Icon für ${participant.name} wiederhergestellt"
                     AppLanguage.PL -> "Przywrócono domyślną ikonę dla ${participant.name}"
+                    AppLanguage.PT -> "Ícone predefinido restaurado para ${participant.name}"
                 }
             }
             showToast(msg)
@@ -972,6 +1006,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Naam bijgewerkt naar \"$clean\""
                 AppLanguage.DE -> "Name in „$clean“ geändert"
                 AppLanguage.PL -> "Nazwa zaktualizowana na „$clean”"
+                AppLanguage.PT -> "Nome atualizado para \"$clean\""
             }
             showToast(msg)
         }
@@ -990,6 +1025,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "Deelnemer \"${participant.name}\" verwijderd"
                 AppLanguage.DE -> "Teilnehmer „${participant.name}“ gelöscht"
                 AppLanguage.PL -> "Uczestnik „${participant.name}” usunięty"
+                AppLanguage.PT -> "Participante \"${participant.name}\" eliminado"
             }
             showToast(msg)
         }
@@ -1063,6 +1099,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "CSV-bestand is leeg of bevat geen geldige rijen"
                 AppLanguage.DE -> "Die CSV-Datei ist leer oder enthält keine gültigen Zeilen"
                 AppLanguage.PL -> "Plik CSV jest pusty lub nie zawiera prawidłowych wierszy"
+                AppLanguage.PT -> "O ficheiro CSV está vazio ou não tem linhas válidas"
             }
             showToast(emptyError, isError = true)
             return
@@ -1141,6 +1178,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Geen geldige bedragen gevonden in geselecteerde rijen"
                     AppLanguage.DE -> "Keine gültigen Beträge in den ausgewählten Zeilen gefunden"
                     AppLanguage.PL -> "Nie znaleziono prawidłowych kwot w wybranych wierszach"
+                    AppLanguage.PT -> "Não foram encontrados montantes válidos nas linhas selecionadas"
                 }
                 showToast(noAmountsError, isError = true)
                 return@launch
@@ -1177,6 +1215,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 AppLanguage.NL -> "CSV geïmporteerd: ${newExpenses.size} uitgaven geregistreerd"
                 AppLanguage.DE -> "CSV importiert: ${newExpenses.size} Ausgaben erfasst"
                 AppLanguage.PL -> "Zaimportowano CSV: dodano ${newExpenses.size} wydatków"
+                AppLanguage.PT -> "CSV importado: ${newExpenses.size} despesas registadas"
             }
             showToast(successMsg)
         }
@@ -1229,6 +1268,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                         AppLanguage.NL -> "Reis \"$title\" geëxporteerd in ZIP"
                         AppLanguage.DE -> "Reise „$title“ als ZIP exportiert"
                         AppLanguage.PL -> "Podróż „$title” wyeksportowana w ZIP"
+                        AppLanguage.PT -> "Viagem \"$title\" exportada em ZIP"
                     }
                 }
                 showToast(msg)
@@ -1273,6 +1313,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Reis \"${targetTrip.title}\" geëxporteerd (.json)"
                     AppLanguage.DE -> "Reise „${targetTrip.title}“ exportiert (.json)"
                     AppLanguage.PL -> "Podróż „${targetTrip.title}” wyeksportowana (.json)"
+                    AppLanguage.PT -> "Viagem \"${targetTrip.title}\" exportada (.json)"
                 }
                 showToast(msg)
             } catch (e: Exception) {
@@ -1285,6 +1326,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Fout bij exporteren van reis-JSON"
                     AppLanguage.DE -> "Fehler beim Exportieren der Reise-JSON"
                     AppLanguage.PL -> "Błąd podczas eksportowania pliku JSON podróży"
+                    AppLanguage.PT -> "Erro ao exportar o JSON da viagem"
                 }
                 showToast(errMsg, isError = true)
             }
@@ -1311,6 +1353,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                         AppLanguage.NL -> "Geen geldige reizen gevonden in het geselecteerde bestand"
                         AppLanguage.DE -> "Keine gültigen Reisen in der ausgewählten Datei gefunden"
                         AppLanguage.PL -> "Nie znaleziono prawidłowych podróży w wybranym pliku"
+                        AppLanguage.PT -> "Não foram encontradas viagens válidas no ficheiro selecionado"
                     }
                     showToast(noTripsMsg, isError = true)
                 } else {
@@ -1326,6 +1369,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Fout bij lezen van te importeren bestand"
                     AppLanguage.DE -> "Fehler beim Lesen der Importdatei"
                     AppLanguage.PL -> "Błąd podczas odczytu importowanego pliku"
+                    AppLanguage.PT -> "Erro ao ler o ficheiro a importar"
                 }
                 showToast(readErrMsg, isError = true)
             }
@@ -1423,6 +1467,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "$newlyImportedCount reis/reizen succesvol geïmporteerd"
                     AppLanguage.DE -> "$newlyImportedCount Reise(n) erfolgreich importiert"
                     AppLanguage.PL -> "Zaimportowano $newlyImportedCount podróż(e) pomyślnie"
+                    AppLanguage.PT -> "Foram importadas $newlyImportedCount viagem(ns) com sucesso"
                 }
                 showToast(importedMsg)
             } else if (packages.isEmpty()) {
@@ -1435,6 +1480,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Geen geldige reizen gevonden in het geselecteerde bestand"
                     AppLanguage.DE -> "Keine gültigen Reisen in der ausgewählten Datei gefunden"
                     AppLanguage.PL -> "Nie znaleziono prawidłowych podróży w wybranym pliku"
+                    AppLanguage.PT -> "Não foram encontradas viagens válidas no ficheiro selecionado"
                 }
                 showToast(noTripsMsg, isError = true)
             }
@@ -1463,6 +1509,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     AppLanguage.NL -> "Reis \"${remapped.trip.title}\" overschreven"
                     AppLanguage.DE -> "Reise „${remapped.trip.title}“ überschrieben"
                     AppLanguage.PL -> "Podróż „${remapped.trip.title}” nadpisana"
+                    AppLanguage.PT -> "Viagem \"${remapped.trip.title}\" substituída"
                 }
                 showToast(overwrittenMsg)
             }

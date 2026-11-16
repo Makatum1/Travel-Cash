@@ -134,6 +134,7 @@ fun TripsTabScreen(
                         AppLanguage.NL -> "Reisbeheer"
                         AppLanguage.DE -> "Reiseverwaltung"
                         AppLanguage.PL -> "Zarządzanie podróżami"
+                        AppLanguage.PT -> "Gestão de Viagens"
                     }
                     Text(
                         text = tripManagementTitle,
@@ -275,6 +276,7 @@ fun TripsTabScreen(
                             AppLanguage.NL -> "Maak je eerste reis aan om uitgaven en deelnemers te beheren."
                             AppLanguage.DE -> "Erstellen Sie Ihre erste Reise, um Ausgaben und Teilnehmer zu verwalten."
                             AppLanguage.PL -> "Utwórz swoją pierwszą podróż, aby zarządzać wydatkami i uczestnikami."
+                            AppLanguage.PT -> "Crie a sua primeira viagem para começar a registar e organizar todas as suas despesas."
                         }
                         Text(
                             text = emptyTripsSubtitle,
@@ -407,6 +409,7 @@ fun TripsTabScreen(
                                     AppLanguage.NL -> "Inklappen"
                                     AppLanguage.DE -> "Einklappen"
                                     AppLanguage.PL -> "Zwiń"
+                                    AppLanguage.PT -> "Recolher"
                                 }
                                 val expandAllLabel = when (currentLang) {
                                     AppLanguage.ES -> "Desplegar todas las opciones"
@@ -417,6 +420,7 @@ fun TripsTabScreen(
                                     AppLanguage.NL -> "Alle opties uitvouwen"
                                     AppLanguage.DE -> "Alle Optionen erweitern"
                                     AppLanguage.PL -> "Rozwiń wszystkie opcje"
+                                    AppLanguage.PT -> "Expandir todas as opções"
                                 }
                                 Icon(
                                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
@@ -450,6 +454,7 @@ fun TripsTabScreen(
                                 AppLanguage.NL -> "reizigers"
                                 AppLanguage.DE -> "Reisende"
                                 AppLanguage.PL -> "podróżnych"
+                                AppLanguage.PT -> "viajantes"
                             }
                             Text(
                                 text = "📅 ${FormatUtils.formatShortDate(trip.startDate, currentLang.locale)} - ${FormatUtils.formatShortDate(trip.endDate, currentLang.locale)} · 👥 ${tParts.size} $travelersUnit",
@@ -468,6 +473,7 @@ fun TripsTabScreen(
                                     AppLanguage.NL -> "Instellen als actieve reis"
                                     AppLanguage.DE -> "Als aktive Reise festlegen"
                                     AppLanguage.PL -> "Ustaw jako aktywną podróż"
+                                    AppLanguage.PT -> "Definir como viagem ativa"
                                 }
                                 Button(
                                     onClick = { onSelectTrip(trip.id) },
@@ -498,6 +504,7 @@ fun TripsTabScreen(
                                     AppLanguage.NL -> "Momenteel actieve reis in de app"
                                     AppLanguage.DE -> "Derzeit aktive Reise in der App"
                                     AppLanguage.PL -> "Aktualnie aktywna podróż w aplikacji"
+                                    AppLanguage.PT -> "Viagem atualmente ativa na aplicação"
                                 }
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
@@ -651,14 +658,15 @@ fun TripsTabScreen(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 val exportCsvLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Exportar CSV"
-                                    AppLanguage.EN -> "Export CSV"
-                                    AppLanguage.FR -> "Exporter CSV"
-                                    AppLanguage.IT -> "Esporta CSV"
-                                    AppLanguage.ZH -> "导出 CSV"
-                                    AppLanguage.NL -> "Exporteer CSV"
-                                    AppLanguage.DE -> "CSV exportieren"
-                                    AppLanguage.PL -> "Eksportuj CSV"
+                                    AppLanguage.ES -> "Exportar"
+                                    AppLanguage.EN -> "Export"
+                                    AppLanguage.FR -> "Exporter"
+                                    AppLanguage.IT -> "Esporta"
+                                    AppLanguage.ZH -> "导出"
+                                    AppLanguage.NL -> "Exporteren"
+                                    AppLanguage.DE -> "Exportieren"
+                                    AppLanguage.PL -> "Eksportuj"
+                                    AppLanguage.PT -> "Exportar"
                                 }
                                 OutlinedButton(
                                     onClick = { onExportSingleTripJsonClick(trip) },
@@ -685,6 +693,7 @@ fun TripsTabScreen(
                                     AppLanguage.NL -> "Exporteer naar PDF"
                                     AppLanguage.DE -> "Als PDF exportieren"
                                     AppLanguage.PL -> "Eksportuj do PDF"
+                                    AppLanguage.PT -> "Exportar para PDF"
                                 }
                                 OutlinedButton(
                                     onClick = { onExportSingleTripPdfClick(trip) },
@@ -713,6 +722,7 @@ fun TripsTabScreen(
                                 AppLanguage.NL -> "Opties sluiten"
                                 AppLanguage.DE -> "Optionen schließen"
                                 AppLanguage.PL -> "Zamknij opcje"
+                                AppLanguage.PT -> "Fechar opções"
                             }
                             TextButton(
                                 onClick = { expandedTripIds = expandedTripIds - trip.id },
@@ -756,6 +766,7 @@ fun TripsTabScreen(
             AppLanguage.NL -> "Reis \"${target.title}\" verwijderen"
             AppLanguage.DE -> "Reise „${target.title}“ löschen"
             AppLanguage.PL -> "Usuń podróż „${target.title}”"
+            AppLanguage.PT -> "Eliminar viagem \"${target.title}\""
         }
         val deleteDialogMessage = when (currentLang) {
             AppLanguage.ES -> "¿Estás seguro de que deseas eliminar este viaje y todos sus gastos, participantes y aportaciones al bote? Esta acción no se puede deshacer."
@@ -766,6 +777,7 @@ fun TripsTabScreen(
             AppLanguage.NL -> "Weet u zeker dat u deze reis en alle bijbehorende uitgaven, deelnemers en potbijdragen wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
             AppLanguage.DE -> "Sind Sie sicher, dass Sie diese Reise mit allen Ausgaben, Teilnehmern und Beiträgen löschen möchten? Dies kann nicht rückgängig gemacht werden."
             AppLanguage.PL -> "Czy na pewno chcesz usunąć tę podróż oraz wszystkie powiązane wydatki, uczestników i wpłaty? Tej operacji nie można cofnąć."
+            AppLanguage.PT -> "Tem a certeza de que deseja eliminar esta viagem e todas as suas despesas, participantes e contribuições para o fundo? Esta ação não pode ser anulada."
         }
         val confirmDeleteLabel = when (currentLang) {
             AppLanguage.ES -> "Sí, eliminar viaje"
@@ -776,6 +788,7 @@ fun TripsTabScreen(
             AppLanguage.NL -> "Ja, verwijder reis"
             AppLanguage.DE -> "Ja, Reise löschen"
             AppLanguage.PL -> "Tak, usuń podróż"
+            AppLanguage.PT -> "Sim, eliminar viagem"
         }
         AlertDialog(
             onDismissRequest = { tripPendingDeletion = null },

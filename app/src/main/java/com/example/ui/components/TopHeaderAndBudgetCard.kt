@@ -142,6 +142,7 @@ fun TravelCashTopBar(
         AppLanguage.NL -> "Reiskostenbeheer"
         AppLanguage.DE -> "Reisekostenverwaltung"
         AppLanguage.PL -> "Menedżer wydatków w podróży"
+        AppLanguage.PT -> "Gestor de despesas de viagem"
     }
 
     val selectOrCreateTripText = when (currentLang) {
@@ -153,6 +154,7 @@ fun TravelCashTopBar(
         AppLanguage.NL -> "Selecteer of maak een reis..."
         AppLanguage.DE -> "Reise auswählen oder erstellen..."
         AppLanguage.PL -> "Wybierz lub utwórz podróż..."
+        AppLanguage.PT -> "Selecionar ou criar uma viagem..."
     }
 
     val switchActiveTripDesc = when (currentLang) {
@@ -164,6 +166,7 @@ fun TravelCashTopBar(
         AppLanguage.NL -> "Actieve reis wisselen"
         AppLanguage.DE -> "Aktive Reise wechseln"
         AppLanguage.PL -> "Zmień aktywną podróż"
+        AppLanguage.PT -> "Mudar viagem ativa"
     }
 
     val activeBadgeText = when (currentLang) {
@@ -175,6 +178,7 @@ fun TravelCashTopBar(
         AppLanguage.NL -> "ACTIEF"
         AppLanguage.DE -> "AKTIV"
         AppLanguage.PL -> "AKTYWNA"
+        AppLanguage.PT -> "ATIVO"
     }
 
     val createNewTripText = when (currentLang) {
@@ -186,6 +190,7 @@ fun TravelCashTopBar(
         AppLanguage.NL -> "Nieuwe reis aanmaken"
         AppLanguage.DE -> "Neue Reise erstellen"
         AppLanguage.PL -> "Utwórz nową podróż"
+        AppLanguage.PT -> "Criar nova viagem"
     }
 
     Surface(
@@ -247,6 +252,7 @@ fun TravelCashTopBar(
                         AppLanguage.NL -> "Help"
                         AppLanguage.DE -> "Hilfe"
                         AppLanguage.PL -> "Pomoc"
+                        AppLanguage.PT -> "Ajuda"
                     }
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -433,6 +439,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "⏳ Binnenkort"
         AppLanguage.DE -> "⏳ Bevorstehend"
         AppLanguage.PL -> "⏳ Nadchodząca"
+        AppLanguage.PT -> "⏳ Por iniciar"
     }
     val statusCompletedText = when (currentLang) {
         AppLanguage.ES -> "🏁 Finalizado"
@@ -443,6 +450,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "🏁 Voltooid"
         AppLanguage.DE -> "🏁 Abgeschlossen"
         AppLanguage.PL -> "🏁 Zakończona"
+        AppLanguage.PT -> "🏁 Concluída"
     }
     val statusOngoingText = when (currentLang) {
         AppLanguage.ES -> "🟢 En curso"
@@ -453,6 +461,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "🟢 Bezig"
         AppLanguage.DE -> "🟢 Laufend"
         AppLanguage.PL -> "🟢 W trakcie"
+        AppLanguage.PT -> "🟢 Em curso"
     }
     val potIncomeLabel = when (currentLang) {
         AppLanguage.ES -> "+ Ingreso (Bote)"
@@ -463,6 +472,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "+ Inleg pot"
         AppLanguage.DE -> "+ Kassenbeitrag"
         AppLanguage.PL -> "+ Wpłata do kasy"
+        AppLanguage.PT -> "+ Depósito (Fundo)"
     }
     val extraBalanceTitle = when (currentLang) {
         AppLanguage.ES -> "SALDO EXTRA"
@@ -473,6 +483,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "EXTRA SALDO"
         AppLanguage.DE -> "EXTRAGUTHABEN"
         AppLanguage.PL -> "DODATKOWE SALDO"
+        AppLanguage.PT -> "SALDO EXTRA"
     }
     val spentTitle = when (currentLang) {
         AppLanguage.ES -> "Gastado"
@@ -483,6 +494,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "Uitgegeven"
         AppLanguage.DE -> "Ausgegeben"
         AppLanguage.PL -> "Wydano"
+        AppLanguage.PT -> "Gasto"
     }
     val incomeTitle = when (currentLang) {
         AppLanguage.ES -> "Ingresos"
@@ -493,6 +505,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "Inkomsten"
         AppLanguage.DE -> "Einnahmen"
         AppLanguage.PL -> "Wpływy"
+        AppLanguage.PT -> "Receitas"
     }
     val flexibleBudgetTitle = when (currentLang) {
         AppLanguage.ES -> "Sin límite fijado / Viaje con presupuesto flexible"
@@ -503,6 +516,7 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.NL -> "Geen vaste limiet / Reis met flexibel budget"
         AppLanguage.DE -> "Kein festes Limit / Reise mit flexiblem Budget"
         AppLanguage.PL -> "Brak limitu / Podróż z elastycznym budżetem"
+        AppLanguage.PT -> "Sem limite fixado / Viagem com orçamento flexível"
     }
 
     val today = remember { java.time.LocalDate.now() }
@@ -748,6 +762,7 @@ fun ActiveTripHeaderAndBudgetCard(
                         AppLanguage.NL -> "Budget: "
                         AppLanguage.DE -> "Budget: "
                         AppLanguage.PL -> "Budżet: "
+                        AppLanguage.PT -> "Orçamento: "
                     }
                     val usedSuffix = when (currentLang) {
                         AppLanguage.ES -> "% usado"
@@ -758,6 +773,7 @@ fun ActiveTripHeaderAndBudgetCard(
                         AppLanguage.NL -> "% verbruikt"
                         AppLanguage.DE -> "% verbraucht"
                         AppLanguage.PL -> "% wykorzystano"
+                        AppLanguage.PT -> "% utilizado"
                     }
 
                     Row(

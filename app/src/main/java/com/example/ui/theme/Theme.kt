@@ -28,7 +28,8 @@ enum class AppLanguage(
     ZH("zh", "中文 (简体)", "🇨🇳", java.util.Locale.SIMPLIFIED_CHINESE),
     NL("nl", "Nederlands", "🇳🇱", java.util.Locale.forLanguageTag("nl")),
     DE("de", "Deutsch", "🇩🇪", java.util.Locale.forLanguageTag("de")),
-    PL("pl", "Polski", "🇵🇱", java.util.Locale.forLanguageTag("pl"));
+    PL("pl", "Polski", "🇵🇱", java.util.Locale.forLanguageTag("pl")),
+    PT("pt", "Português", "🇵🇹", java.util.Locale.forLanguageTag("pt-PT"));
 
     val displayNameEs: String
         get() = when (this) {
@@ -40,6 +41,7 @@ enum class AppLanguage(
             NL -> "Holandés"
             DE -> "Alemán"
             PL -> "Polaco"
+            PT -> "Portugués"
         }
 
     val displayNameEn: String
@@ -52,6 +54,7 @@ enum class AppLanguage(
             NL -> "Dutch"
             DE -> "German"
             PL -> "Polish"
+            PT -> "Portuguese"
         }
 
     fun getDisplayName(targetLang: AppLanguage): String = when (targetLang) {
@@ -66,6 +69,7 @@ enum class AppLanguage(
             NL -> "Néerlandais"
             DE -> "Allemand"
             PL -> "Polonais"
+            PT -> "Portugais"
         }
         IT -> when (this) {
             ES -> "Spagnolo"
@@ -76,6 +80,7 @@ enum class AppLanguage(
             NL -> "Olandese"
             DE -> "Tedesco"
             PL -> "Polacco"
+            PT -> "Portoghese"
         }
         ZH -> when (this) {
             ES -> "西班牙语"
@@ -86,6 +91,7 @@ enum class AppLanguage(
             NL -> "荷兰语"
             DE -> "德语"
             PL -> "波兰语"
+            PT -> "葡萄牙语"
         }
         NL -> when (this) {
             ES -> "Spaans"
@@ -96,6 +102,7 @@ enum class AppLanguage(
             NL -> "Nederlands"
             DE -> "Duits"
             PL -> "Pools"
+            PT -> "Portugees"
         }
         DE -> when (this) {
             ES -> "Spanisch"
@@ -106,6 +113,7 @@ enum class AppLanguage(
             NL -> "Niederländisch"
             DE -> "Deutsch"
             PL -> "Polnisch"
+            PT -> "Portugiesisch"
         }
         PL -> when (this) {
             ES -> "Hiszpański"
@@ -116,6 +124,18 @@ enum class AppLanguage(
             NL -> "Holenderski"
             DE -> "Niemiecki"
             PL -> "Polski"
+            PT -> "Portugalski"
+        }
+        PT -> when (this) {
+            ES -> "Espanhol"
+            EN -> "Inglês"
+            FR -> "Francês"
+            IT -> "Italiano"
+            ZH -> "Chinês"
+            NL -> "Holandês"
+            DE -> "Alemão"
+            PL -> "Polaco"
+            PT -> "Português"
         }
     }
 

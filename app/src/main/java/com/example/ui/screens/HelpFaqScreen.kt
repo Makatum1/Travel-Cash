@@ -364,6 +364,7 @@ fun HelpFaqModal(
         AppLanguage.NL -> "Help & FAQ"
         AppLanguage.DE -> "Hilfe & FAQ"
         AppLanguage.PL -> "Pomoc i FAQ"
+        AppLanguage.PT -> "Ajuda e Perguntas Frequentes"
     }
 
     val backDescription = when (currentLang) {
@@ -375,6 +376,7 @@ fun HelpFaqModal(
         AppLanguage.NL -> "Terug"
         AppLanguage.DE -> "Zurück"
         AppLanguage.PL -> "Wstecz"
+        AppLanguage.PT -> "Voltar"
     }
 
     val searchPlaceholder = when (currentLang) {
@@ -386,6 +388,7 @@ fun HelpFaqModal(
         AppLanguage.NL -> "Zoek vragen, termen of oplossingen…"
         AppLanguage.DE -> "Fragen, Begriffe oder Lösungen suchen…"
         AppLanguage.PL -> "Szukaj pytań, haseł lub rozwiązań…"
+        AppLanguage.PT -> "Pesquisar perguntas, termos ou soluções…"
     }
 
     val clearSearchText = when (currentLang) {
@@ -397,17 +400,19 @@ fun HelpFaqModal(
         AppLanguage.NL -> "Zoekopdracht wissen"
         AppLanguage.DE -> "Suche löschen"
         AppLanguage.PL -> "Wyczyść wyszukiwanie"
+        AppLanguage.PT -> "Limpar pesquisa"
     }
 
     val noResultsTitle = when (currentLang) {
         AppLanguage.ES -> "No se han encontrado resultados para tu búsqueda"
         AppLanguage.EN -> "No results found for your search"
         AppLanguage.FR -> "Aucun résultat trouvé pour votre recherche"
-        AppLanguage.IT -> "Nessun risultato trovato per la tua ricerca"
+        AppLanguage.IT -> "Nessun resultado trovato per la tua ricerca"
         AppLanguage.ZH -> "未找到符合您搜索条件的结果"
         AppLanguage.NL -> "Geen resultaten gevonden voor je zoekopdracht"
         AppLanguage.DE -> "Keine Ergebnisse für Ihre Suche gefunden"
         AppLanguage.PL -> "Nie znaleziono wyników dla Twojego wyszukiwania"
+        AppLanguage.PT -> "Nenhum resultado encontrado para a sua pesquisa"
     }
 
     val noResultsSubtitle = when (currentLang) {
@@ -419,6 +424,7 @@ fun HelpFaqModal(
         AppLanguage.NL -> "Probeer te zoeken op termen zoals \"pot\", \"uitgaven\", \"splitsen\", \"budget\" of \"back-up\"."
         AppLanguage.DE -> "Versuchen Sie Begriffe wie „Gemeinschaftskasse“, „Ausgaben“, „Aufteilung“, „Budget“ oder „Backup“."
         AppLanguage.PL -> "Spróbuj wyszukać hasła takie jak „wspólna kasa”, „wydatki”, „podział”, „budżet” lub „kopia zapasowa”."
+        AppLanguage.PT -> "Tente pesquisar termos como \"fundo\", \"despesas\", \"dividir\", \"orçamento\" ou \"cópia de segurança\"."
     }
 
     BackHandler {

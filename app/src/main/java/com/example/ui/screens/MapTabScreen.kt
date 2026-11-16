@@ -322,7 +322,7 @@ fun MapTabScreen(
             }
         }
 
-        // 1. Origen y Destino propios del gasto
+        // 1. Origen y Destino propios del gasto (únicamente para categorías de ruta: Transporte, Taxi, Vuelo)
         sortedGeo.forEach { exp ->
             val oLat = exp.originLatitude
             val oLon = exp.originLongitude
@@ -330,32 +330,33 @@ fun MapTabScreen(
             val dLon = exp.longitude
             if (oLat != null && oLon != null && dLat != null && dLon != null) {
                 val catName = CategoryCatalog.getCategory(exp.category).name
-                val isFlight = catName.equals("Vuelos", ignoreCase = true)
-                addCoordsSegment(oLat, oLon, dLat, dLon, isFlight)
+                if (CategoryCatalog.isRouteCategory(catName)) {
+                    val isFlight = catName.equals("Vuelos", ignoreCase = true) || catName.equals("Vuelo", ignoreCase = true)
+                    addCoordsSegment(oLat, oLon, dLat, dLon, isFlight)
+                }
             }
         }
 
-        // 2. Conexión de ruta consecutiva
-        for (i in 0 until sortedGeo.size - 1) {
-            val a = sortedGeo[i]
-            val b = sortedGeo[i + 1]
+        // 2. Conexión de ruta consecutiva exclusivamente entre eventos de Transporte, Taxi y Vuelo
+        val routeExpenses = sortedGeo.filter { exp ->
+            val catName = CategoryCatalog.getCategory(exp.category).name
+            CategoryCatalog.isRouteCategory(catName)
+        }
+        for (i in 0 until routeExpenses.size - 1) {
+            val a = routeExpenses[i]
+            val b = routeExpenses[i + 1]
             val catA = CategoryCatalog.getCategory(a.category).name
             val catB = CategoryCatalog.getCategory(b.category).name
-            val aIsFlight = catA.equals("Vuelos", ignoreCase = true)
-            val bIsFlight = catB.equals("Vuelos", ignoreCase = true)
-            val aIsTransport = CategoryCatalog.isRouteCategory(catA) && !aIsFlight
-            val bIsTransport = CategoryCatalog.isRouteCategory(catB) && !bIsFlight
+            val aIsFlight = catA.equals("Vuelos", ignoreCase = true) || catA.equals("Vuelo", ignoreCase = true)
+            val bIsFlight = catB.equals("Vuelos", ignoreCase = true) || catB.equals("Vuelo", ignoreCase = true)
 
             val fLat = a.latitude ?: continue
             val fLon = a.longitude ?: continue
             val tLat = b.originLatitude ?: b.latitude ?: continue
             val tLon = b.originLongitude ?: b.longitude ?: continue
 
-            if (aIsFlight || bIsFlight) {
-                addCoordsSegment(fLat, fLon, tLat, tLon, isFlight = true)
-            } else if (aIsTransport || bIsTransport) {
-                addCoordsSegment(fLat, fLon, tLat, tLon, isFlight = false)
-            }
+            val isFlight = aIsFlight || bIsFlight
+            addCoordsSegment(fLat, fLon, tLat, tLon, isFlight)
         }
 
         segments.toList()
@@ -460,6 +461,7 @@ fun MapTabScreen(
                         AppLanguage.NL -> "Betaald door"
                         AppLanguage.DE -> "Bezahlt von"
                         AppLanguage.PL -> "Zapłacone przez"
+                        AppLanguage.PT -> "Pago por"
                     }
 
                     // Marcador de origen
@@ -548,6 +550,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "Mijn locatie"
                             AppLanguage.DE -> "Mein Standort"
                             AppLanguage.PL -> "Moja lokalizacja"
+                            AppLanguage.PT -> "A minha localização"
                         }
                         title = myLocationTitle
                     }
@@ -604,6 +607,7 @@ fun MapTabScreen(
                         AppLanguage.NL -> "${geoExpenses.size} plaatsen"
                         AppLanguage.DE -> "${geoExpenses.size} Orte"
                         AppLanguage.PL -> "${geoExpenses.size} miejsc"
+                        AppLanguage.PT -> "${geoExpenses.size} locais"
                     }
                     Text(
                         text = placesCountLabel,
@@ -628,6 +632,7 @@ fun MapTabScreen(
                         AppLanguage.NL -> "Kaartlagen"
                         AppLanguage.DE -> "Kartenebenen"
                         AppLanguage.PL -> "Warstwy mapy"
+                        AppLanguage.PT -> "Camadas do mapa"
                     }
                     SmallFloatingActionButton(
                         onClick = { showLayerMenu = !showLayerMenu },
@@ -654,6 +659,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "Google Maps (Standaard)"
                             AppLanguage.DE -> "Google Maps (Standard)"
                             AppLanguage.PL -> "Google Maps (Standardowa)"
+                            AppLanguage.PT -> "Google Maps (Padrão)"
                         }
                         DropdownMenuItem(
                             text = { Text(layerStandard) },
@@ -676,6 +682,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "Satelliet (Hybride)"
                             AppLanguage.DE -> "Satellit (Hybrid)"
                             AppLanguage.PL -> "Satelita (Hybryda)"
+                            AppLanguage.PT -> "Satélite (Híbrido)"
                         }
                         DropdownMenuItem(
                             text = { Text(layerSatellite) },
@@ -698,6 +705,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "Terrein (Reliëf)"
                             AppLanguage.DE -> "Gelände (Relief)"
                             AppLanguage.PL -> "Teren (Ukształtowanie)"
+                            AppLanguage.PT -> "Relevo (Terreno)"
                         }
                         DropdownMenuItem(
                             text = { Text(layerTerrain) },
@@ -720,6 +728,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "Carto Voyager (Schoon)"
                             AppLanguage.DE -> "Carto Voyager (Schlicht)"
                             AppLanguage.PL -> "Carto Voyager (Czysty)"
+                            AppLanguage.PT -> "Carto Voyager (Limpo)"
                         }
                         DropdownMenuItem(
                             text = { Text(layerCarto) },
@@ -742,6 +751,7 @@ fun MapTabScreen(
                             AppLanguage.NL -> "OpenStreetMap officieel"
                             AppLanguage.DE -> "OpenStreetMap offiziell"
                             AppLanguage.PL -> "Oficjalna OpenStreetMap"
+                            AppLanguage.PT -> "OpenStreetMap Oficial"
                         }
                         DropdownMenuItem(
                             text = { Text(layerOsm) },
@@ -769,6 +779,7 @@ fun MapTabScreen(
                     AppLanguage.NL -> "Centreren op mijn GPS-locatie"
                     AppLanguage.DE -> "Auf meinen GPS-Standort zentrieren"
                     AppLanguage.PL -> "Wyśrodkuj na mojej lokalizacji GPS"
+                    AppLanguage.PT -> "Centrar na minha localização GPS"
                 }
                 SmallFloatingActionButton(
                     onClick = {
@@ -882,6 +893,7 @@ fun MapTabScreen(
                                     AppLanguage.NL -> "Betaald door"
                                     AppLanguage.DE -> "Bezahlt von"
                                     AppLanguage.PL -> "Zapłacone przez"
+                                    AppLanguage.PT -> "Pago por"
                                 }
                                 Text(
                                     text = "$paidByPrefix: $payerName ($translatedMethod)",
@@ -908,6 +920,7 @@ fun MapTabScreen(
                                         AppLanguage.NL -> "Openen in Google Maps"
                                         AppLanguage.DE -> "In Google Maps öffnen"
                                         AppLanguage.PL -> "Otwórz w Google Maps"
+                                        AppLanguage.PT -> "Abrir no Google Maps"
                                     }
                                     val editExpenseLabel = when (currentLang) {
                                         AppLanguage.ES -> "Editar gasto"
@@ -918,6 +931,7 @@ fun MapTabScreen(
                                         AppLanguage.NL -> "Uitgave bewerken"
                                         AppLanguage.DE -> "Ausgabe bearbeiten"
                                         AppLanguage.PL -> "Edytuj wydatek"
+                                        AppLanguage.PT -> "Editar despesa"
                                     }
                                     val deselectShowAllLabel = when (currentLang) {
                                         AppLanguage.ES -> "Deseleccionar y ver todos"
@@ -928,6 +942,7 @@ fun MapTabScreen(
                                         AppLanguage.NL -> "Deselecteren en alles tonen"
                                         AppLanguage.DE -> "Abwählen und alle anzeigen"
                                         AppLanguage.PL -> "Odznacz i pokaż wszystko"
+                                        AppLanguage.PT -> "Desmarcar e mostrar tudo"
                                     }
                                     // Abrir en la app de Google Maps
                                     IconButton(

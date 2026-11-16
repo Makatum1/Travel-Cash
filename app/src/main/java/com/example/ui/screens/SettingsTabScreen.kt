@@ -137,6 +137,7 @@ fun SettingsTabScreen(
                         AppLanguage.NL -> "Exporteren en importeren"
                         AppLanguage.DE -> "Exportieren und Importieren"
                         AppLanguage.PL -> "Eksport i import"
+                        AppLanguage.PT -> "Exportar e Importar"
                     }
                     Text(
                         text = exportImportSectionTitle,
@@ -290,6 +291,7 @@ fun SettingsTabScreen(
                                         AppLanguage.NL -> "Dagelijkse melding om 21:00 uur"
                                         AppLanguage.DE -> "Tägliche Benachrichtigung um 21:00 Uhr"
                                         AppLanguage.PL -> "Codzienne powiadomienie o 21:00"
+                                        AppLanguage.PT -> "Aviso diário às 21:00 h"
                                     }
                                 } else {
                                     when (language) {
@@ -301,6 +303,7 @@ fun SettingsTabScreen(
                                         AppLanguage.NL -> "Uitgeschakeld"
                                         AppLanguage.DE -> "Deaktiviert"
                                         AppLanguage.PL -> "Wyłączone"
+                                        AppLanguage.PT -> "Desativado"
                                     }
                                 }
                                 Text(
@@ -348,6 +351,7 @@ fun SettingsTabScreen(
                     AppLanguage.NL -> "Lichte modus (standaard)"
                     AppLanguage.DE -> "Heller Modus (Standard)"
                     AppLanguage.PL -> "Tryb jasny (domyślny)"
+                    AppLanguage.PT -> "Modo Claro (Predefinido)"
                 }
                 AppThemeMode.DARK -> when (language) {
                     AppLanguage.ES -> "Modo Oscuro"
@@ -358,6 +362,7 @@ fun SettingsTabScreen(
                     AppLanguage.NL -> "Donkere modus"
                     AppLanguage.DE -> "Dunkler Modus"
                     AppLanguage.PL -> "Tryb ciemny"
+                    AppLanguage.PT -> "Modo Escuro"
                 }
                 AppThemeMode.SYSTEM -> when (language) {
                     AppLanguage.ES -> "Modo Sistema"
@@ -368,6 +373,7 @@ fun SettingsTabScreen(
                     AppLanguage.NL -> "Systeemstandaard"
                     AppLanguage.DE -> "Systemstandard"
                     AppLanguage.PL -> "Domyślny systemowy"
+                    AppLanguage.PT -> "Padrão do Sistema"
                 }
             }
 
@@ -409,6 +415,7 @@ fun SettingsTabScreen(
                                     AppLanguage.NL -> "Uiterlijk (themamodus)"
                                     AppLanguage.DE -> "Erscheinungsbild (Designmodus)"
                                     AppLanguage.PL -> "Wygląd (tryb motywu)"
+                                    AppLanguage.PT -> "Aparência (Modo de Ecrã)"
                                 }
                                 Text(
                                     text = appearanceHeader,
@@ -531,6 +538,7 @@ fun SettingsTabScreen(
                                     AppLanguage.NL -> "Taal van de app"
                                     AppLanguage.DE -> "App-Sprache"
                                     AppLanguage.PL -> "Język aplikacji"
+                                    AppLanguage.PT -> "Idioma da Aplicação"
                                 }
                                 Text(
                                     text = languageSectionTitle,
@@ -554,10 +562,24 @@ fun SettingsTabScreen(
 
                     AnimatedVisibility(visible = languageExpanded) {
                         Column(modifier = Modifier.padding(top = 8.dp)) {
-                            AppLanguage.entries.forEach { lang ->
+                            val collator = remember(language) {
+                                java.text.Collator.getInstance(language.locale).apply {
+                                    strength = java.text.Collator.SECONDARY
+                                }
+                            }
+                            val sortedLanguages = remember(language) {
+                                AppLanguage.entries.sortedWith { a, b ->
+                                    collator.compare(a.getDisplayName(language), b.getDisplayName(language))
+                                }
+                            }
+                            sortedLanguages.forEach { lang ->
                                 val selected = language == lang
                                 val langDescription = lang.getDisplayName(language)
-                                val label = "${lang.nativeName} ($langDescription)"
+                                val label = if (lang.nativeName.equals(langDescription, ignoreCase = true)) {
+                                    langDescription
+                                } else {
+                                    "$langDescription (${lang.nativeName})"
+                                }
                                 val flag = "${lang.flag} "
                                 Surface(
                                     onClick = { onLanguageChange(lang) },

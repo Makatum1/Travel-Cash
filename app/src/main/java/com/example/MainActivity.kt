@@ -212,6 +212,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Fout bij opslaan van routefoto"
                     AppLanguage.DE -> "Fehler beim Speichern des Routenfotos"
                     AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia trasy"
+                    AppLanguage.PT -> "Erro ao guardar a foto da rota"
                 }
                 viewModel.showToast(saveRoutePhotoError, isError = true)
             }
@@ -240,6 +241,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Fout bij opslaan van camerafoto"
                     AppLanguage.DE -> "Fehler beim Speichern des Kamerafotos"
                     AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia z aparatu"
+                    AppLanguage.PT -> "Erro ao guardar a foto da câmara"
                 }
                 viewModel.showToast(saveCameraPhotoError, isError = true)
             }
@@ -273,6 +275,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Fout bij opslaan van foto van deelnemer"
                     AppLanguage.DE -> "Fehler beim Speichern des Teilnehmerfotos"
                     AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia uczestnika"
+                    AppLanguage.PT -> "Erro ao guardar a foto do participante"
                 }
                 viewModel.showToast(savePartPhotoError, isError = true)
             }
@@ -301,6 +304,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Fout bij opslaan van camerafoto"
                     AppLanguage.DE -> "Fehler beim Speichern des Kamerafotos"
                     AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia z aparatu"
+                    AppLanguage.PT -> "Erro ao guardar a foto da câmara"
                 }
                 viewModel.showToast(saveCameraPhotoError, isError = true)
             }
@@ -328,6 +332,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Geïmporteerde CSV-reis"
                     AppLanguage.DE -> "Importierte CSV-Reise"
                     AppLanguage.PL -> "Zaimportowana podróż CSV"
+                    AppLanguage.PT -> "Viagem Importada CSV"
                 }
                 viewModel.processCsvImportContent(
                     csvContent = content,
@@ -344,6 +349,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Kan het geselecteerde CSV-bestand niet lezen"
                     AppLanguage.DE -> "Ausgewählte CSV-Datei konnte nicht gelesen werden"
                     AppLanguage.PL -> "Nie można odczytać wybranego pliku CSV"
+                    AppLanguage.PT -> "Não foi possível ler o ficheiro CSV selecionado"
                 }
                 viewModel.showToast(csvReadError, isError = true)
             }
@@ -390,6 +396,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Fout bij delen van bestand: ${e.message}"
                 AppLanguage.DE -> "Fehler beim Teilen der Datei: ${e.message}"
                 AppLanguage.PL -> "Błąd podczas udostępniania pliku: ${e.message}"
+                AppLanguage.PT -> "Erro ao partilhar ficheiro: ${e.message}"
             }
             viewModel.showToast(shareError, isError = true)
         }
@@ -414,6 +421,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "PDF-rapport delen - ${trip.title}"
                 AppLanguage.DE -> "PDF-Bericht teilen - ${trip.title}"
                 AppLanguage.PL -> "Udostępnij raport PDF - ${trip.title}"
+                AppLanguage.PT -> "Partilhar Relatório PDF - ${trip.title}"
             }
             shareGeneratedFile(
                 file = targetFile,
@@ -430,6 +438,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Fout bij genereren van PDF-rapport"
                 AppLanguage.DE -> "Fehler beim Erstellen des PDF-Berichts"
                 AppLanguage.PL -> "Błąd podczas generowania raportu PDF"
+                AppLanguage.PT -> "Erro ao gerar o relatório PDF"
             }
             viewModel.showToast(errorMsg, isError = true)
         }
@@ -452,6 +461,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "CSV-uitgaven delen - ${trip.title}"
                 AppLanguage.DE -> "CSV-Ausgaben teilen - ${trip.title}"
                 AppLanguage.PL -> "Udostępnij wydatki CSV - ${trip.title}"
+                AppLanguage.PT -> "Partilhar Despesas CSV - ${trip.title}"
             }
             shareGeneratedFile(
                 file = targetFile,
@@ -468,6 +478,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Fout bij exporteren van CSV"
                 AppLanguage.DE -> "Fehler beim Exportieren von CSV"
                 AppLanguage.PL -> "Błąd podczas eksportowania CSV"
+                AppLanguage.PT -> "Erro ao exportar CSV"
             }
             viewModel.showToast(errorMsg, isError = true)
         }
@@ -497,6 +508,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Reis JSON delen - ${trip.title}"
                 AppLanguage.DE -> "Reise-JSON teilen - ${trip.title}"
                 AppLanguage.PL -> "Udostępnij podróż JSON - ${trip.title}"
+                AppLanguage.PT -> "Partilhar Viagem JSON - ${trip.title}"
             }
             shareGeneratedFile(
                 file = targetFile,
@@ -513,6 +525,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Fout bij exporteren van JSON"
                 AppLanguage.DE -> "Fehler beim Exportieren von JSON"
                 AppLanguage.PL -> "Błąd podczas eksportowania JSON"
+                AppLanguage.PT -> "Erro ao exportar JSON"
             }
             viewModel.showToast(errorMsg, isError = true)
         }
@@ -561,6 +574,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Reis ZIP delen - ${targetTrip.title}"
                     AppLanguage.DE -> "Reise-ZIP teilen - ${targetTrip.title}"
                     AppLanguage.PL -> "Udostępnij podróż ZIP - ${targetTrip.title}"
+                    AppLanguage.PT -> "Partilhar Viagem ZIP - ${targetTrip.title}"
                 }
             } else {
                 when (language) {
@@ -572,6 +586,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Travel Cash back-up ZIP delen"
                     AppLanguage.DE -> "Travel Cash Backup-ZIP teilen"
                     AppLanguage.PL -> "Udostępnij kopię zapasową ZIP Travel Cash"
+                    AppLanguage.PT -> "Partilhar Cópia de Segurança ZIP"
                 }
             }
             shareGeneratedFile(
@@ -589,6 +604,7 @@ fun TravelCashApp(
                 AppLanguage.NL -> "Fout bij exporteren van ZIP"
                 AppLanguage.DE -> "Fehler beim Exportieren von ZIP"
                 AppLanguage.PL -> "Błąd podczas eksportowania ZIP"
+                AppLanguage.PT -> "Erro ao exportar ZIP"
             }
             viewModel.showToast(errorMsg, isError = true)
         }
@@ -634,6 +650,7 @@ fun TravelCashApp(
                     AppLanguage.NL -> "Uitgave toevoegen"
                     AppLanguage.DE -> "Ausgabe hinzufügen"
                     AppLanguage.PL -> "Dodaj wydatek"
+                    AppLanguage.PT -> "Adicionar Despesa"
                 }
                 ExtendedFloatingActionButton(
                     onClick = {
@@ -838,6 +855,7 @@ fun TravelCashApp(
                                             AppLanguage.NL -> "Vereffening vanuit de pot naar ${tx.toName}"
                                             AppLanguage.DE -> "Ausgleich aus Gemeinschaftskasse an ${tx.toName}"
                                             AppLanguage.PL -> "Rozliczenie ze wspólnej kasy dla ${tx.toName}"
+                                            AppLanguage.PT -> "Liquidação do Fundo Comum para ${tx.toName}"
                                         }
                                     } else {
                                         when (language) {
@@ -849,6 +867,7 @@ fun TravelCashApp(
                                             AppLanguage.NL -> "Schuldaflossing: ${tx.fromName} → ${tx.toName}"
                                             AppLanguage.DE -> "Schuldenausgleich: ${tx.fromName} → ${tx.toName}"
                                             AppLanguage.PL -> "Rozliczenie długu: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.PT -> "Liquidação de dívida: ${tx.fromName} → ${tx.toName}"
                                         }
                                     }
                                     val payerId = if (tx.isFromBote) DebtCalculator.BOTE_COMUN_ID else tx.fromParticipantId
@@ -862,6 +881,7 @@ fun TravelCashApp(
                                         AppLanguage.NL -> "Vereffening: $fromName betaalt aan ${tx.toName}"
                                         AppLanguage.DE -> "Ausgleich: $fromName zahlt an ${tx.toName}"
                                         AppLanguage.PL -> "Rozliczenie: $fromName płaci dla ${tx.toName}"
+                                        AppLanguage.PT -> "Liquidação: $fromName paga a ${tx.toName}"
                                     }
                                     val expense = ExpenseEntity(
                                         id = expenseId,
@@ -903,6 +923,7 @@ fun TravelCashApp(
                                         AppLanguage.NL -> "Schuld voldaan: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
                                         AppLanguage.DE -> "Schuld beglichen: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
                                         AppLanguage.PL -> "Dług uregulowany: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.PT -> "Dívida liquidada: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
                                     }
                                     viewModel.showToast(debtSettledToast)
                                 },
@@ -1033,6 +1054,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Routepictogram voor \"${targetTrip.title}\""
             AppLanguage.DE -> "Routen-Icon für „${targetTrip.title}“"
             AppLanguage.PL -> "Ikona trasy dla „${targetTrip.title}”"
+            AppLanguage.PT -> "Ícone da rota \"${targetTrip.title}\""
         }
         val routeIconSubtitle = when (language) {
             AppLanguage.ES -> "Puedes poner una foto personalizada para esta ruta o dejar el icono de la carretera por defecto:"
@@ -1043,6 +1065,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Je kunt een eigen foto instellen of het standaard wegpictogram behouden:"
             AppLanguage.DE -> "Sie können ein eigenes Foto festlegen oder das Standard-Straßen-Icon behalten:"
             AppLanguage.PL -> "Możesz ustawić własne zdjęcie dla tej trasy lub zachować domyślną ikonę drogi:"
+            AppLanguage.PT -> "Pode definir uma foto personalizada para esta rota ou manter o ícone predefinido:"
         }
         val defaultRoadIcon = when (language) {
             AppLanguage.ES -> "Dejar icono de carretera por defecto"
@@ -1053,6 +1076,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Standaard wegpictogram behouden"
             AppLanguage.DE -> "Standard-Straßen-Icon behalten"
             AppLanguage.PL -> "Zachowaj domyślną ikonę drogi"
+            AppLanguage.PT -> "Manter ícone de estrada predefinido"
         }
         AlertDialog(
             onDismissRequest = { tripForIconPhotoDialog = null },
@@ -1142,6 +1166,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Pictogram voor ${targetPart.name}"
             AppLanguage.DE -> "Icon für ${targetPart.name}"
             AppLanguage.PL -> "Ikona użytkownika ${targetPart.name}"
+            AppLanguage.PT -> "Ícone de ${targetPart.name}"
         }
         val partIconSubtitle = when (language) {
             AppLanguage.ES -> "Elige una foto para ${targetPart.name}. Si no pones ninguna, se mostrará por defecto su inicial con su color:"
@@ -1152,6 +1177,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Kies een foto voor ${targetPart.name}. Zonder foto worden initialen en kleur standaard getoond:"
             AppLanguage.DE -> "Wählen Sie ein Foto für ${targetPart.name}. Ohne Foto werden standardmäßig Initiale und Farbe angezeigt:"
             AppLanguage.PL -> "Wybierz zdjęcie dla ${targetPart.name}. Jeśli brak, domyślnie wyświetlany jest inicjał i kolor:"
+            AppLanguage.PT -> "Escolha uma foto para ${targetPart.name}. Se não definir nenhuma, são mostradas a inicial e a cor predefinidas:"
         }
         val defaultPartIcon = when (language) {
             AppLanguage.ES -> "Dejar por defecto (Inicial + Color)"
@@ -1162,6 +1188,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "Standaard behouden (Initiaal + Kleur)"
             AppLanguage.DE -> "Standard beibehalten (Initiale + Farbe)"
             AppLanguage.PL -> "Zachowaj domyślne (Inicjał + Kolor)"
+            AppLanguage.PT -> "Manter predefinido (Inicial + Cor)"
         }
         AlertDialog(
             onDismissRequest = { participantForPhotoDialog = null },
@@ -1347,6 +1374,7 @@ fun TravelCashApp(
             AppLanguage.NL -> "De reis \"${candidate.existing.title}\" bestaat al. Wil je deze overschrijven?"
             AppLanguage.DE -> "Die Reise „${candidate.existing.title}“ existiert bereits. Möchten Sie sie überschreiben?"
             AppLanguage.PL -> "Podróż „${candidate.existing.title}” już istnieje. Czy chcesz ją nadpisać?"
+            AppLanguage.PT -> "A viagem \"${candidate.existing.title}\" já existe. Deseja substituí-la?"
         }
         AlertDialog(
             onDismissRequest = {

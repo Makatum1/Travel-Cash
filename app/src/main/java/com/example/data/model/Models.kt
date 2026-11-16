@@ -239,6 +239,19 @@ object CategoryCatalog {
                 "general" -> "Ogólne"
                 else -> rawCategoryName
             }
+            AppLanguage.PT -> when (norm) {
+                "restaurantes y comida" -> "Restaurantes e Comida"
+                "alojamiento" -> "Alojamento"
+                "transporte", "transporte y gasolina" -> "Transporte"
+                "entradas y ocio", "entradas" -> "Bilhetes e Lazer"
+                "taxi" -> "Táxi"
+                "compras y supermercado" -> "Compras e Supermercado"
+                "cafés y snacks", "cafes y snacks" -> "Cafés e Snacks"
+                "vuelos", "vuelo" -> "Voos"
+                "salud y farmacia" -> "Saúde e Farmácia"
+                "general" -> "Geral"
+                else -> rawCategoryName
+            }
         }
     }
 
@@ -313,6 +326,14 @@ object PaymentMethodCatalog {
                 "bizum" -> "Bizum"
                 "transferencia" -> "Przelew"
                 "bote común", "bote comun" -> "Wspólna kasa"
+                else -> rawMethod
+            }
+            AppLanguage.PT -> when (norm) {
+                "efectivo" -> "Dinheiro"
+                "tarjeta" -> "Cartão"
+                "bizum" -> "MB Way / Transferência"
+                "transferencia" -> "Transferência"
+                "bote común", "bote comun" -> "Fundo Comum"
                 else -> rawMethod
             }
         }

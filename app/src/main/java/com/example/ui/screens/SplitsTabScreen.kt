@@ -1,4 +1,4 @@
-package com.example.ui.screens
+﻿package com.example.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -126,6 +126,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Rekeningvereffening"
         AppLanguage.DE -> "Abrechnung der Konten"
         AppLanguage.PL -> "Rozliczenie rachunków"
+        AppLanguage.PT -> "Liquidação de Contas"
     }
 
     val settlementAccountsSubtitle = when (currentLang) {
@@ -137,6 +138,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Tik op een betaling voor de wiskundige uitsplitsing"
         AppLanguage.DE -> "Tippen Sie auf eine Zahlung für die mathematische Aufschlüsselung"
         AppLanguage.PL -> "Dotknij dowolnej płatności, aby zobaczyć szczegóły obliczeń"
+        AppLanguage.PT -> "Toque em qualquer pagamento para ver o detalhe matemático"
     }
 
     val allSettledBanner = when (currentLang) {
@@ -148,6 +150,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "✅ Alle rekeningen van de reis zijn vereffend!"
         AppLanguage.DE -> "✅ Alle Reisekonten sind ausgeglichen!"
         AppLanguage.PL -> "✅ Wszystkie rachunki z podróży zostały rozliczone!"
+        AppLanguage.PT -> "✅ Todas as contas da viagem estão liquidadas!"
     }
 
     val detailedBalanceTitle = when (currentLang) {
@@ -159,6 +162,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Gedetailleerd saldo per persoon"
         AppLanguage.DE -> "Detaillierte Bilanz pro Person"
         AppLanguage.PL -> "Szczegółowy bilans na osobę"
+        AppLanguage.PT -> "Balanço Detalhado por Pessoa"
     }
 
     val detailedBalanceSubtitle = when (currentLang) {
@@ -170,6 +174,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Tik op een reiziger om boekhouding en bewegingen te zien"
         AppLanguage.DE -> "Tippen Sie auf einen Reisenden, um Buchhaltung und Buchungen zu sehen"
         AppLanguage.PL -> "Dotknij podróżnika, aby zobaczyć podsumowanie i operacje"
+        AppLanguage.PT -> "Toque num viajante para ver o seu resumo e movimentos"
     }
 
     val potContributionsTitleText = when (currentLang) {
@@ -181,6 +186,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Inleg in de gezamenlijke pot"
         AppLanguage.DE -> "Beiträge zur Gemeinschaftskasse"
         AppLanguage.PL -> "Wpłaty do wspólnej kasy"
+        AppLanguage.PT -> "Contribuições para o Fundo Comum"
     }
 
     val potCollectedSubtitle = when (currentLang) {
@@ -192,6 +198,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Totaal ingelegd in pot: ${FormatUtils.formatCurrency(debtResult.totalBoteCollected, trip.baseCurrency)}"
         AppLanguage.DE -> "Insgesamt in Kasse eingezahlt: ${FormatUtils.formatCurrency(debtResult.totalBoteCollected, trip.baseCurrency)}"
         AppLanguage.PL -> "Łącznie zebrano w kasie: ${FormatUtils.formatCurrency(debtResult.totalBoteCollected, trip.baseCurrency)}"
+        AppLanguage.PT -> "Total angariado em caixa: ${FormatUtils.formatCurrency(debtResult.totalBoteCollected, trip.baseCurrency)}"
     }
 
     val addPotBtnText = when (currentLang) {
@@ -203,6 +210,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Pot toevoegen"
         AppLanguage.DE -> "Kasse einzahlen"
         AppLanguage.PL -> "Dodaj wpłatę"
+        AppLanguage.PT -> "Adicionar Fundo"
     }
 
     val noPotContributionsText = when (currentLang) {
@@ -214,6 +222,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Nog geen inleg in de gezamenlijke pot geregistreerd voor deze reis."
         AppLanguage.DE -> "Noch keine Kassenbeiträge für diese Reise erfasst."
         AppLanguage.PL -> "Nie zarejestrowano jeszcze wpłat do wspólnej kasy w tej podróży."
+        AppLanguage.PT -> "Não foram registadas contribuições para o fundo comum nesta viagem."
     }
 
     val participantsTitleText = when (currentLang) {
@@ -225,6 +234,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Reisdeelnemers (${participants.size})"
         AppLanguage.DE -> "Reiseteilnehmer (${participants.size})"
         AppLanguage.PL -> "Uczestnicy podróży (${participants.size})"
+        AppLanguage.PT -> "Participantes da Viagem (${participants.size})"
     }
 
     val tapIconToAddPhotoText = when (currentLang) {
@@ -236,6 +246,7 @@ fun SplitsTabScreen(
         AppLanguage.NL -> "Tik op pictogram voor foto"
         AppLanguage.DE -> "Icon antippen, um Foto hinzuzufügen"
         AppLanguage.PL -> "Dotknij ikony, aby dodać zdjęcie"
+        AppLanguage.PT -> "Toque no ícone para adicionar foto"
     }
 
     LazyColumn(
@@ -465,6 +476,7 @@ fun SplitsTabScreen(
                                                     AppLanguage.NL -> "Inleg pot"
                                                     AppLanguage.DE -> "Kassenbeitrag"
                                                     AppLanguage.PL -> "Wpłata do kasy"
+                                                    AppLanguage.PT -> "Contribuição para o Fundo"
                                                 }
                                                 Text(
                                                     text = inc.description.ifBlank { potContributionFallback },
@@ -557,6 +569,10 @@ fun SplitsTabScreen(
                                                     AppLanguage.PL -> {
                                                         if (disc > 0.009) "• $pName: Wpłacił(a) ${FormatUtils.formatCurrency(c.amount, trip.baseCurrency)} (odliczono ${FormatUtils.formatCurrency(disc, trip.baseCurrency)} należności)"
                                                         else "• $pName: Wpłacił(a) ${FormatUtils.formatCurrency(c.amount, trip.baseCurrency)}"
+                                                    }
+                                                    AppLanguage.PT -> {
+                                                        if (disc > 0.009) "• $pName: Colocou ${FormatUtils.formatCurrency(c.amount, trip.baseCurrency)} (descontados ${FormatUtils.formatCurrency(disc, trip.baseCurrency)} por dívida a seu favor)"
+                                                        else "• $pName: Colocou ${FormatUtils.formatCurrency(c.amount, trip.baseCurrency)}"
                                                     }
                                                 }
                                                 Text(
@@ -835,6 +851,7 @@ private fun SettlementTransactionCard(
                             AppLanguage.NL -> "betaalt aan"
                             AppLanguage.DE -> "zahlt an"
                             AppLanguage.PL -> "płaci do"
+                            AppLanguage.PT -> "paga a"
                         },
                         tint = Color(0xFF64748B),
                         modifier = Modifier.size(16.dp)
@@ -868,6 +885,7 @@ private fun SettlementTransactionCard(
                             AppLanguage.NL -> "Details bekijken"
                             AppLanguage.DE -> "Details anzeigen"
                             AppLanguage.PL -> "Pokaż szczegóły"
+                            AppLanguage.PT -> "Ver detalhe"
                         },
                         tint = Color(0xFF64748B)
                     )
@@ -905,6 +923,7 @@ private fun SettlementTransactionCard(
                                     AppLanguage.NL -> "📊 Wiskundig overzicht voor schuldeiser (${sb.participantName}) die ontvangt uit Gemeenschappelijke Pot:"
                                     AppLanguage.DE -> "📊 Mathematische Zusammenfassung für Gläubiger (${sb.participantName}) aus der Gemeinschaftskasse:"
                                     AppLanguage.PL -> "📊 Podsumowanie matematyczne dla wierzyciela (${sb.participantName}) ze Wspólnej kasy:"
+                                    AppLanguage.PT -> "📊 Resumo Matemático do Credor (${sb.participantName}) que recebe do Fundo Comum:"
                                 }
                             } else {
                                 when (currentLang) {
@@ -916,6 +935,7 @@ private fun SettlementTransactionCard(
                                     AppLanguage.NL -> "📊 Wiskundig overzicht voor ${sb.participantName}:"
                                     AppLanguage.DE -> "📊 Mathematische Zusammenfassung für ${sb.participantName}:"
                                     AppLanguage.PL -> "📊 Podsumowanie matematyczne dla ${sb.participantName}:"
+                                    AppLanguage.PT -> "📊 Resumo Matemático de ${sb.participantName}:"
                                 }
                             },
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
@@ -943,6 +963,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Toegewezen uitgaven:"
                                         AppLanguage.DE -> "Zugewiesene Ausgaben:"
                                         AppLanguage.PL -> "Przypisane wydatki:"
+                                        AppLanguage.PT -> "Despesas que lhe correspondia assumir:"
                                     },
                                     value = FormatUtils.formatCurrency(sb.totalExpensesOwed, baseCurrency, currentLang.locale),
                                     valueColor = OceanNavy
@@ -957,6 +978,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Uit eigen zak betaalde uitgaven:"
                                         AppLanguage.DE -> "Aus eigener Tasche bezahlt:"
                                         AppLanguage.PL -> "Wydatki opłacone z własnej kieszeni:"
+                                        AppLanguage.PT -> "Despesas pagas do seu próprio bolso:"
                                     },
                                     value = FormatUtils.formatCurrency(sb.totalExpensesPaid, baseCurrency, currentLang.locale),
                                     valueColor = TravelBlue
@@ -971,6 +993,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Geld reeds in de pot gestopt:"
                                         AppLanguage.DE -> "Bereits in die Kasse eingezahltes Geld:"
                                         AppLanguage.PL -> "Pieniądze już wpłacone do wspólnej kasy:"
+                                        AppLanguage.PT -> "Dinheiro que já colocou no fundo:"
                                     },
                                     value = "-${FormatUtils.formatCurrency(sb.totalBoteContributed, baseCurrency, currentLang.locale)}",
                                     valueColor = EmeraldGreenDark
@@ -986,6 +1009,7 @@ private fun SettlementTransactionCard(
                                             AppLanguage.NL -> "Gecompenseerd bij inleg in pot:"
                                             AppLanguage.DE -> "Bei Einzahlung kompensiert:"
                                             AppLanguage.PL -> "Skompensowane przy wpłacie do kasy:"
+                                            AppLanguage.PT -> "Compensado ao colocar no fundo:"
                                         },
                                         value = FormatUtils.formatCurrency(sb.totalDebtDiscountCompensated, baseCurrency, currentLang.locale),
                                         valueColor = AmberGoldDark
@@ -1002,6 +1026,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Te ontvangen nettosaldo:"
                                         AppLanguage.DE -> "Zu erhaltender Nettosaldo:"
                                         AppLanguage.PL -> "Saldo netto do odbioru:"
+                                        AppLanguage.PT -> "Saldo líquido a receber:"
                                     }
                                 } else {
                                     when (currentLang) {
@@ -1013,6 +1038,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Openstaande nettoschuld:"
                                         AppLanguage.DE -> "Ausstehende Nettoschuld:"
                                         AppLanguage.PL -> "Zaległy dług netto:"
+                                        AppLanguage.PT -> "Dívida líquida pendente:"
                                     }
                                 }
                                 MathRow(
@@ -1035,6 +1061,7 @@ private fun SettlementTransactionCard(
                                 AppLanguage.NL -> "🧾 Uitgavenoverzicht (${subjectExpenses.size}):"
                                 AppLanguage.DE -> "🧾 Ausgabenaufschlüsselung (${subjectExpenses.size}):"
                                 AppLanguage.PL -> "🧾 Zestawienie wydatków (${subjectExpenses.size}):"
+                                AppLanguage.PT -> "🧾 Detalhe de Despesas (${subjectExpenses.size}):"
                             },
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
@@ -1071,6 +1098,7 @@ private fun SettlementTransactionCard(
                                         AppLanguage.NL -> "Totaal betaald"
                                         AppLanguage.DE -> "Gesamt bezahlt"
                                         AppLanguage.PL -> "Zapłacono łącznie"
+                                        AppLanguage.PT -> "Pagou no total"
                                     }
                                     Text(
                                         text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · $paidTotalLabel (${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}): $payer",
@@ -1087,6 +1115,7 @@ private fun SettlementTransactionCard(
                                     AppLanguage.NL -> "Zijn/haar deel"
                                     AppLanguage.DE -> "Anteil"
                                     AppLanguage.PL -> "Część"
+                                    AppLanguage.PT -> "A sua parte"
                                 }
                                 Text(
                                     text = "$shareLabel: ${FormatUtils.formatCurrency(shareForSubject, baseCurrency, currentLang.locale)}",
@@ -1108,6 +1137,7 @@ private fun SettlementTransactionCard(
                                     AppLanguage.NL -> "🏺 Overzicht van inleg in de pot (${subjectIncomes.size}):"
                                     AppLanguage.DE -> "🏺 Aufschlüsselung der Kasseneinzahlungen (${subjectIncomes.size}):"
                                     AppLanguage.PL -> "🏺 Zestawienie wpłat do wspólnej kasy (${subjectIncomes.size}):"
+                                    AppLanguage.PT -> "🏺 Detalhe de Contribuições para o Fundo (${subjectIncomes.size}):"
                                 },
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                                 color = EmeraldGreenDark
@@ -1121,6 +1151,7 @@ private fun SettlementTransactionCard(
                                 AppLanguage.NL -> "Ingelegd"
                                 AppLanguage.DE -> "Eingezahlt"
                                 AppLanguage.PL -> "Wpłacono"
+                                AppLanguage.PT -> "Colocou"
                             }
                             subjectIncomes.forEach { (inc, contrib) ->
                                 Row(
@@ -1201,6 +1232,7 @@ private fun ParticipantBalanceInteractiveCard(
                                     AppLanguage.NL -> "Te ontvangen (tegoed)"
                                     AppLanguage.DE -> "Zu erhalten (Guthaben)"
                                     AppLanguage.PL -> "Do odbioru (należność)"
+                                    AppLanguage.PT -> "A receber (a haver)"
                                 }
                             } else if (balance.netBalance < -0.009) {
                                 when (currentLang) {
@@ -1212,6 +1244,7 @@ private fun ParticipantBalanceInteractiveCard(
                                     AppLanguage.NL -> "Nettoschuld (moet betalen)"
                                     AppLanguage.DE -> "Nettoschuld (muss zahlen)"
                                     AppLanguage.PL -> "Dług netto (musi zapłacić)"
+                                    AppLanguage.PT -> "Dívida líquida (deve pagar)"
                                 }
                             } else {
                                 when (currentLang) {
@@ -1223,6 +1256,7 @@ private fun ParticipantBalanceInteractiveCard(
                                     AppLanguage.NL -> "Kwijtgescholden (0,00)"
                                     AppLanguage.DE -> "Ausgeglichen (0,00)"
                                     AppLanguage.PL -> "Rozliczone (0,00)"
+                                    AppLanguage.PT -> "Em dia (0,00)"
                                 }
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -1255,6 +1289,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Boekhoudkundig overzicht uitvouwen"
                             AppLanguage.DE -> "Buchhaltungsübersicht erweitern"
                             AppLanguage.PL -> "Rozwiń podsumowanie księgowe"
+                            AppLanguage.PT -> "Expandir resumo contabilístico"
                         },
                         tint = Color(0xFF64748B)
                     )
@@ -1280,6 +1315,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Uit eigen zak betaald:"
                             AppLanguage.DE -> "Aus eigener Tasche bezahlt:"
                             AppLanguage.PL -> "Zapłacono z własnej kieszeni:"
+                            AppLanguage.PT -> "Pago do seu próprio bolso:"
                         },
                         value = "+${FormatUtils.formatCurrency(balance.totalExpensesPaid, baseCurrency, currentLang.locale)}",
                         valueColor = TravelBlue
@@ -1294,6 +1330,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Geld in de pot gestopt (in mindering):"
                             AppLanguage.DE -> "In die Kasse eingezahlt (abgezogen):"
                             AppLanguage.PL -> "Pieniądze wpłacone do kasy (odliczone):"
+                            AppLanguage.PT -> "Dinheiro colocado no fundo (desconta-se):"
                         },
                         value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
                         valueColor = EmeraldGreenDark
@@ -1309,6 +1346,7 @@ private fun ParticipantBalanceInteractiveCard(
                                 AppLanguage.NL -> "Gecompenseerd bij inleg in pot:"
                                 AppLanguage.DE -> "Bei Einzahlung kompensiert:"
                                 AppLanguage.PL -> "Skompensowane przy wpłacie:"
+                                AppLanguage.PT -> "Compensado ao colocar no fundo:"
                             },
                             value = "-${FormatUtils.formatCurrency(balance.totalDebtDiscountCompensated, baseCurrency, currentLang.locale)}",
                             valueColor = AmberGoldDark
@@ -1324,6 +1362,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Toegewezen uitgavenaandeel:"
                             AppLanguage.DE -> "Zugewiesener Ausgabenanteil:"
                             AppLanguage.PL -> "Przypisana część wydatków:"
+                            AppLanguage.PT -> "Despesas que lhe correspondia assumir:"
                         },
                         value = "-${FormatUtils.formatCurrency(balance.totalExpensesOwed, baseCurrency, currentLang.locale)}",
                         valueColor = CoralRedDark
@@ -1339,6 +1378,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Formule nettosaldo:"
                             AppLanguage.DE -> "Nettosaldo-Formel:"
                             AppLanguage.PL -> "Wzór salda netto:"
+                            AppLanguage.PT -> "Fórmula Saldo Líquido:"
                         },
                         value = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
                         valueColor = if (isPositive) EmeraldGreenDark else CoralRedDark,
@@ -1356,6 +1396,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Chronologische bewegingen voor ${balance.participantName}:"
                             AppLanguage.DE -> "Chronologische Bewegungen für ${balance.participantName}:"
                             AppLanguage.PL -> "Ruchy chronologiczne dla ${balance.participantName}:"
+                            AppLanguage.PT -> "Movimentos cronológicos de ${balance.participantName}:"
                         },
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
@@ -1376,6 +1417,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Betaalde"
                             AppLanguage.DE -> "Bezahlte"
                             AppLanguage.PL -> "Zapłacił(a)"
+                            AppLanguage.PT -> "Pagou"
                         }
                         val shareLabel = when (currentLang) {
                             AppLanguage.ES -> "Cuota"
@@ -1386,6 +1428,7 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.NL -> "Aandeel"
                             AppLanguage.DE -> "Anteil"
                             AppLanguage.PL -> "Udział"
+                            AppLanguage.PT -> "Quota"
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1506,6 +1549,7 @@ fun SettleDebtsModal(
                                 AppLanguage.NL -> "Schulden vereffenen"
                                 AppLanguage.DE -> "Schulden begleichen"
                                 AppLanguage.PL -> "Ureguluj długi"
+                                AppLanguage.PT -> "Liquidar Dívidas"
                             },
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                             color = Color.White
@@ -1542,6 +1586,7 @@ fun SettleDebtsModal(
                                         AppLanguage.NL -> "Terug"
                                         AppLanguage.DE -> "Zurück"
                                         AppLanguage.PL -> "Wstecz"
+                                        AppLanguage.PT -> "Voltar"
                                     },
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                 )
@@ -1590,6 +1635,7 @@ fun SettleDebtsModal(
                                 AppLanguage.NL -> "Selecteer een openstaande schuld om deze geheel of gedeeltelijk te vereffenen. De aanpassing wordt automatisch toegepast op de reisrekeningen."
                                 AppLanguage.DE -> "Wählen Sie eine ausstehende Schuld aus, um sie ganz oder teilweise zu begleichen. Die Anpassung wird automatisch übernommen."
                                 AppLanguage.PL -> "Wybierz zaległy dług, aby go spłacić w całości lub częściowo. Korekta zostanie automatycznie zastosowana do kont podróży."
+                                AppLanguage.PT -> "Selecione uma dívida pendente para liquidá-la total ou parcialmente. O ajuste será aplicado automaticamente às contas da viagem."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF64748B)
@@ -1611,6 +1657,7 @@ fun SettleDebtsModal(
                                         AppLanguage.NL -> "✅ Geen openstaande schulden in deze reis!"
                                         AppLanguage.DE -> "✅ Keine ausstehenden Schulden für diese Reise!"
                                         AppLanguage.PL -> "✅ Brak zaległych długów w tej podróży!"
+                                        AppLanguage.PT -> "✅ Não há dívidas pendentes nesta viagem!"
                                     },
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                     color = EmeraldGreenDark,
@@ -1668,6 +1715,7 @@ fun SettleDebtsModal(
                                                 AppLanguage.NL -> "Openstaand bedrag"
                                                 AppLanguage.DE -> "Ausstehender Betrag"
                                                 AppLanguage.PL -> "Zaległa kwota"
+                                                AppLanguage.PT -> "Montante pendente"
                                             }
                                             Text(
                                                 text = "$pendingAmtLabel: ${FormatUtils.formatCurrency(tx.amount, trip.baseCurrency, currentLang.locale)}",
@@ -1726,6 +1774,7 @@ fun SettleDebtsModal(
                                         AppLanguage.NL -> "Te vereffenen schuld:"
                                         AppLanguage.DE -> "Zu begleichende Schuld:"
                                         AppLanguage.PL -> "Dług do uregulowania:"
+                                        AppLanguage.PT -> "Dívida a liquidar:"
                                     },
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF64748B)
@@ -1762,6 +1811,7 @@ fun SettleDebtsModal(
                                     AppLanguage.NL -> "Totale openstaande schuld"
                                     AppLanguage.DE -> "Ausstehende Gesamtschuld"
                                     AppLanguage.PL -> "Całkowity zaległy dług"
+                                    AppLanguage.PT -> "Dívida total pendente"
                                 }
                                 Text(
                                     text = "$totalDebtPending: ${FormatUtils.formatCurrency(debt.amount, trip.baseCurrency, currentLang.locale)}",
@@ -1781,6 +1831,7 @@ fun SettleDebtsModal(
                             AppLanguage.NL -> "Te vereffenen bedrag (${trip.baseCurrency})"
                             AppLanguage.DE -> "Zu begleichender Betrag (${trip.baseCurrency})"
                             AppLanguage.PL -> "Kwota do spłaty (${trip.baseCurrency})"
+                            AppLanguage.PT -> "Montante a liquidar (${trip.baseCurrency})"
                         }
                         OutlinedTextField(
                             value = amountText,
@@ -1815,6 +1866,7 @@ fun SettleDebtsModal(
                             AppLanguage.NL -> "Helft (50%)"
                             AppLanguage.DE -> "Hälfte (50%)"
                             AppLanguage.PL -> "Połowa (50%)"
+                            AppLanguage.PT -> "Metade (50%)"
                         }
                         val totalLabel = when (currentLang) {
                             AppLanguage.ES -> "Total (100%)"
@@ -1825,6 +1877,7 @@ fun SettleDebtsModal(
                             AppLanguage.NL -> "Totaal (100%)"
                             AppLanguage.DE -> "Gesamt (100%)"
                             AppLanguage.PL -> "Całość (100%)"
+                            AppLanguage.PT -> "Total (100%)"
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1951,6 +2004,7 @@ fun SettleDebtsModal(
                                     AppLanguage.NL -> "Terug"
                                     AppLanguage.DE -> "Zurück"
                                     AppLanguage.PL -> "Wstecz"
+                                    AppLanguage.PT -> "Voltar"
                                 },
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                 color = OceanNavy
@@ -1991,6 +2045,7 @@ fun SettleDebtsModal(
                                     AppLanguage.NL -> "Vereffening bevestigen"
                                     AppLanguage.DE -> "Abrechnung bestätigen"
                                     AppLanguage.PL -> "Potwierdź rozliczenie"
+                                    AppLanguage.PT -> "Confirmar Liquidação"
                                 },
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                             )

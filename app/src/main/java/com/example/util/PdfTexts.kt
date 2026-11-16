@@ -407,6 +407,51 @@ data class PdfTexts(
                 pageFooterPattern = "Strona %d   •   %s",
                 defaultTripTitle = "Podróż"
             )
+
+            AppLanguage.PT -> PdfTexts(
+                headerBadge = "TRAVEL CASH • RELATÓRIO FINANCEIRO E LIQUIDAÇÃO",
+                datesLabel = "Datas:",
+                baseCurrencyLabel = "Moeda base:",
+                generatedLabel = "Gerado em:",
+                travelersLabel = "Viajantes:",
+                recordedExpensesLabel = "Despesas registadas:",
+                section1Title = "1. Resumo financeiro e métricas principais",
+                totalBudget = "ORÇAMENTO TOTAL",
+                totalSpent = "TOTAL GASTO",
+                extraBalance = "SALDO EXTRA DISPONÍVEL",
+                budgetOverrun = "EXCESSO DE ORÇAMENTO",
+                potContributions = "DEPÓSITOS NO FUNDO COMUM",
+                spentFromPot = "GASTO DO FUNDO COMUM",
+                currentPotBalance = "SALDO ATUAL DO FUNDO",
+                potDeficit = "DÉFICE DO FUNDO",
+                noLimit = "Sem limite",
+                section2Title = "2. Repartição por categoria e distribuição",
+                colCategory = "Categoria",
+                colExpenseCount = "N.º despesas",
+                colTotalAmount = "Montante total",
+                colVisualShare = "% e proporção visual",
+                noCategories = "Não há despesas registadas para categorizar.",
+                expensesUnit = "despesas",
+                section3Title = "3. Liquidação de contas (Transferências entre viajantes)",
+                accountsSettledOk = "✓ Contas 100% liquidadas! Não existem transferências pendentes.",
+                mustTransferTo = "  →  deve transferir para  →  ",
+                section4Title = "4. Saldo individual por participante",
+                colParticipant = "Participante",
+                colPaidPocket = "Pagou do bolso",
+                colContributedPot = "Contribuiu para o fundo",
+                colOwedShare = "Parte correspondente",
+                colFinalNet = "Saldo líquido final",
+                section5Title = "Depósitos registados no fundo comum",
+                defaultPotDesc = "Depósito no fundo comum",
+                section6Title = "Detalhamento das despesas",
+                commonPotName = "🏺 Fundo comum",
+                paidByLabel = "  •  Pago por: ",
+                notesLabel = "Notas: ",
+                attachmentsHeader = "Ficheiros anexos",
+                attachedFilePrefix = "Ficheiro anexo: ",
+                pageFooterPattern = "Página %d   •   %s",
+                defaultTripTitle = "Viagem"
+            )
         }
     }
 }

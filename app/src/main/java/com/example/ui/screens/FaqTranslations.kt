@@ -710,6 +710,108 @@ object FaqTranslations {
             category = "Ustawienia i personalizacja",
             question = "Jak włączyć codzienne przypomnienia o wydatkach?",
             answer = "W «Ustawieniach» włącz przełącznik «Codzienne przypomnienie o wydatkach» i ustaw wybraną godzinę."
+        ),
+
+        // ---------------- PT (Português) ----------------
+        ("faq_create_trip" to AppLanguage.PT) to FaqLocaleText(
+            category = "Gestão de Viagens",
+            question = "Como crio uma nova viagem e de que dados preciso?",
+            answer = "Aceda ao separador «Viagens» na barra inferior e toque em «+ Nova Viagem». Introduza o nome, datas de início e fim, orçamento estimado (opcional), moeda base (EUR, USD...) e participantes. Ao guardar, torna-se a sua viagem ativa para registar despesas."
+        ),
+        ("faq_switch_trip" to AppLanguage.PT) to FaqLocaleText(
+            category = "Gestão de Viagens",
+            question = "Como mudo de viagem ativa ou consulto as minhas viagens anteriores?",
+            answer = "No separador «Viagens», a viagem com a etiqueta «ATIVO» é a que é apresentada nos separadores Despesas, Estatísticas e Contas. Para mudar de viagem, basta tocar no seu cartão para a ativar."
+        ),
+        ("faq_edit_delete_trip" to AppLanguage.PT) to FaqLocaleText(
+            category = "Gestão de Viagens",
+            question = "Como edito ou elimino uma viagem existente?",
+            answer = "No separador «Viagens», toque no ícone de lápis para editar o título, datas, orçamento ou participantes. Para a eliminar, toque no caixote do lixo (é pedida confirmação)."
+        ),
+        ("faq_trip_header_photo" to AppLanguage.PT) to FaqLocaleText(
+            category = "Gestão de Viagens",
+            question = "Como altero a fotografia ou o ícone de cabeçalho de uma viagem?",
+            answer = "No cartão de cabeçalho da viagem ativa, toque no ícone redondo de estrada. Pode tirar uma fotografia com a câmara, escolher da galeria ou restaurar o ícone predefinido."
+        ),
+        ("faq_common_pot" to AppLanguage.PT) to FaqLocaleText(
+            category = "Fundo Comum",
+            question = "Como funciona o fundo comum e o que é o «Saldo restante»?",
+            answer = "O fundo comum é um mealheiro coletivo para despesas partilhadas (táxis, refeições, entradas...). O cartão «SALDO RESTANTE» indica o montante líquido disponível em caixa. Verde se positivo, vermelho em caso de défice que necessite de reforço."
+        ),
+        ("faq_golden_rule" to AppLanguage.PT) to FaqLocaleText(
+            category = "Fundo Comum",
+            question = "O que é a «Regra de Ouro» no depósito por pessoa?",
+            answer = "Ao selecionar «Montante por pessoa» no depósito para o fundo, a aplicação deduz automaticamente o que é devido aos participantes que adiantaram dinheiro do próprio bolso. Quem adiantou paga menos ou nada, equilibrando as contas sem transferências intermediárias."
+        ),
+        ("faq_pot_vs_personal" to AppLanguage.PT) to FaqLocaleText(
+            category = "Fundo Comum",
+            question = "Quando marcar uma despesa paga pelo «Fundo Comum» ou por um participante?",
+            answer = "Selecione «🏺 Bote Común» (Fundo Comum) se o dinheiro saiu da caixa comum. Escolha o nome do participante se este pagou do seu bolso com dinheiro ou cartão pessoal."
+        ),
+        ("faq_leftover_pot" to AppLanguage.PT) to FaqLocaleText(
+            category = "Fundo Comum",
+            question = "O que acontece ao dinheiro que sobra no fundo comum no final da viagem?",
+            answer = "O excedente é dividido em partes iguais entre os participantes que contribuíram para o fundo, sendo refletido no separador «Contas» como montante a favor a ser devolvido."
+        ),
+        ("faq_add_expense" to AppLanguage.PT) to FaqLocaleText(
+            category = "Despesas e Divisão",
+            question = "Como adiciono uma despesa e preencho os dados?",
+            answer = "Toque em «+ Adicionar Despesa». Introduza o montante, moeda, categoria, quem pagou e para quem é a despesa. Pode também indicar local, morada e anexar fotos do recibo."
+        ),
+        ("faq_split_modes" to AppLanguage.PT) to FaqLocaleText(
+            category = "Despesas e Divisão",
+            question = "Que modos de divisão existem (Equitativa, Montantes, Percentagens)?",
+            answer = "Equitativa: divide em partes iguais entre os selecionados. Por montantes: define a quantia exata de cada um. Por percentagens: distribui por percentagens cuja soma perfaça 100%."
+        ),
+        ("faq_multi_currency" to AppLanguage.PT) to FaqLocaleText(
+            category = "Moedas e Câmbios",
+            question = "Como funcionam as despesas noutra moeda e a taxa de câmbio?",
+            answer = "Ao adicionar a despesa, selecione a moeda em que pagou (por exemplo, USD ou GBP). A aplicação calcula automaticamente o valor na moeda base da viagem de acordo com a taxa de câmbio indicada."
+        ),
+        ("faq_settle_debts" to AppLanguage.PT) to FaqLocaleText(
+            category = "Contas e Liquidações",
+            question = "Como sei quem deve a quem e como liquidar dívidas?",
+            answer = "No separador «Contas», a secção «Resumo de Dívidas» apresenta a lista mínima otimizada de transferências para saldar todas as contas. Toque em «Liquidar» para registar o pagamento total ou parcial."
+        ),
+        ("faq_individual_balances" to AppLanguage.PT) to FaqLocaleText(
+            category = "Contas e Liquidações",
+            question = "Como consultar o saldo individual e movimentos de cada viajante?",
+            answer = "No separador «Contas», toque no cartão de qualquer participante para ver o seu saldo líquido, o que pagou do bolso, o que contribuiu para o fundo e o seu histórico detalhado de movimentos."
+        ),
+        ("faq_export_pdf" to AppLanguage.PT) to FaqLocaleText(
+            category = "Relatórios e Exportação",
+            question = "Como gero o relatório financeiro em PDF da viagem?",
+            answer = "No cabeçalho ou nas opções da viagem, toque em «PDF». A aplicação gera um documento PDF completo e formatado com métricas, gráficos, repartição por categorias e liquidações, pronto a partilhar."
+        ),
+        ("faq_export_csv" to AppLanguage.PT) to FaqLocaleText(
+            category = "Relatórios e Exportação",
+            question = "Como exporto as despesas para CSV (Excel / Folhas de cálculo)?",
+            answer = "Toque em «Exportar» no cartão da viagem para descarregar ou partilhar um ficheiro CSV legível pelo Excel com todas as despesas detalhadas."
+        ),
+        ("faq_export_backup_zip" to AppLanguage.PT) to FaqLocaleText(
+            category = "Relatórios e Exportação",
+            question = "Como faço uma cópia de segurança completa em ZIP e restauro?",
+            answer = "No separador «Ajustes», toque em «Exportar cópia de segurança (ZIP)». Gera um ficheiro comprimido com todas as viagens, participantes e contas em formato JSON. Pode restaurá-lo em qualquer dispositivo com «Importar cópia de segurança»."
+        ),
+        ("faq_gps_places" to AppLanguage.PT) to FaqLocaleText(
+            category = "Mapas e Localização",
+            question = "Como funciona a localização GPS e sugestões de locais ao registar despesas?",
+            answer = "Ao introduzir o nome de um comércio ou restaurante, a aplicação pesquisa locais próximos com base no seu GPS atual e preenche automaticamente o endereço e coordenadas."
+        ),
+        ("faq_receipt_photos" to AppLanguage.PT) to FaqLocaleText(
+            category = "Fotos e Comprovativos",
+            question = "Como anexo fotos de faturas ou recibos a uma despesa?",
+            answer = "No formulário de despesa, na secção «Fotos do recibo», toque em «Adicionar foto» para capturar diretamente com a câmara ou selecionar da sua galeria."
+        ),
+        ("faq_offline_mode" to AppLanguage.PT) to FaqLocaleText(
+            category = "Modo Sem Ligação e Privacidade",
+            question = "A aplicação funciona sem ligação à Internet (offline)?",
+            answer = "Sim, a Travel Cash funciona 100% offline. Todos os seus dados, cálculos e contas ficam guardados localmente na base de dados segura do seu dispositivo."
+        ),
+        ("faq_daily_reminders" to AppLanguage.PT) to FaqLocaleText(
+            category = "Ajustes e Personalização",
+            question = "Como ativo os lembretes diários para registar despesas?",
+            answer = "No separador «Ajustes», ative o botão «Lembrete diário de despesas» e defina a hora pretendida para receber notificações."
         )
     )
 

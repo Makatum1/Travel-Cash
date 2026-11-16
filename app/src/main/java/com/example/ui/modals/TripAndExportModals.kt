@@ -1,4 +1,4 @@
-package com.example.ui.modals
+﻿package com.example.ui.modals
 
 import android.app.DatePickerDialog
 import android.content.ClipData
@@ -235,6 +235,7 @@ fun CreateTripModal(
                                         AppLanguage.NL -> "Welkom bij Travel Cash!"
                                         AppLanguage.DE -> "Willkommen bei Travel Cash!"
                                         AppLanguage.PL -> "Witamy w Travel Cash!"
+                                        AppLanguage.PT -> "Bem-vindo ao Travel Cash!"
                                     }
                                     val welcomeSubtitle = when (currentLang) {
                                         AppLanguage.ES -> "Bienvenido a travel cash crea tu viaje para empezar a utilizar la aplicación."
@@ -245,6 +246,7 @@ fun CreateTripModal(
                                         AppLanguage.NL -> "Maak je reis aan om de applicatie te gaan gebruiken."
                                         AppLanguage.DE -> "Erstellen Sie Ihre Reise, um die Anwendung zu nutzen."
                                         AppLanguage.PL -> "Utwórz podróż, aby zacząć korzystać z aplikacji."
+                                        AppLanguage.PT -> "Bem-vindo ao travel cash, crie a sua viagem para começar a utilizar a aplicação."
                                     }
                                     Text(
                                         text = welcomeTitle,
@@ -271,6 +273,7 @@ fun CreateTripModal(
                         AppLanguage.NL -> "Reisnaam (bijv. Rondreis door IJsland)"
                         AppLanguage.DE -> "Reisename (z.B. Rundreise durch Island)"
                         AppLanguage.PL -> "Nazwa podróży (np. Trasa po Islandii)"
+                        AppLanguage.PT -> "Nome da Viagem (ex. Roteiro pela Islândia)"
                     }
                     OutlinedTextField(
                         value = title,
@@ -315,6 +318,7 @@ fun CreateTripModal(
                                     AppLanguage.NL -> "Startdatum"
                                     AppLanguage.DE -> "Startdatum"
                                     AppLanguage.PL -> "Data rozpoczęcia"
+                                    AppLanguage.PT -> "Data de início"
                                 }
                                 Text(
                                     text = startDateLabel,
@@ -353,6 +357,7 @@ fun CreateTripModal(
                                     AppLanguage.NL -> "Einddatum"
                                     AppLanguage.DE -> "Enddatum"
                                     AppLanguage.PL -> "Data zakończenia"
+                                    AppLanguage.PT -> "Data de fim"
                                 }
                                 Text(
                                     text = endDateLabel,
@@ -373,6 +378,7 @@ fun CreateTripModal(
                         AppLanguage.NL -> "Optioneel budget"
                         AppLanguage.DE -> "Optionales Budget"
                         AppLanguage.PL -> "Opcjonalny budżet"
+                        AppLanguage.PT -> "Orçamento opcional"
                     }
                     val noLimitPlaceholder = when (currentLang) {
                         AppLanguage.ES -> "Sin límite si vacío"
@@ -383,6 +389,7 @@ fun CreateTripModal(
                         AppLanguage.NL -> "Geen limiet indien leeg"
                         AppLanguage.DE -> "Keine Grenze falls leer"
                         AppLanguage.PL -> "Bez limitu, jeśli puste"
+                        AppLanguage.PT -> "Sem limite se vazio"
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -416,6 +423,7 @@ fun CreateTripModal(
                                     AppLanguage.NL -> "Valuta"
                                     AppLanguage.DE -> "Währung"
                                     AppLanguage.PL -> "Waluta"
+                                    AppLanguage.PT -> "Moeda"
                                 }
                                 Text(
                                     text = "$currencyBtnLabel: $baseCurrency (${CurrencyCatalog.getSymbol(baseCurrency)})",
@@ -451,6 +459,7 @@ fun CreateTripModal(
                             AppLanguage.NL -> "Deelnemers aan de reis"
                             AppLanguage.DE -> "Reiseteilnehmer"
                             AppLanguage.PL -> "Uczestnicy podróży"
+                            AppLanguage.PT -> "Participantes da viagem"
                         }
                     } else {
                         when (currentLang) {
@@ -462,6 +471,7 @@ fun CreateTripModal(
                             AppLanguage.NL -> "Initiële reisdeelnemers"
                             AppLanguage.DE -> "Erste Reiseteilnehmer"
                             AppLanguage.PL -> "Początkowi uczestnicy podróży"
+                            AppLanguage.PT -> "Participantes iniciais da viagem"
                         }
                     }
                     Text(
@@ -566,6 +576,7 @@ fun CreateTripModal(
                                 AppLanguage.NL -> "Reis ${LocalDate.now().year}"
                                 AppLanguage.DE -> "Reise ${LocalDate.now().year}"
                                 AppLanguage.PL -> "Podróż ${LocalDate.now().year}"
+                                AppLanguage.PT -> "Viagem ${LocalDate.now().year}"
                             }
                             onCreateTrip(
                                 title.ifBlank { defaultTripTitle },
@@ -590,6 +601,7 @@ fun CreateTripModal(
                                 AppLanguage.NL -> "Wijzigingen opslaan"
                                 AppLanguage.DE -> "Änderungen speichern"
                                 AppLanguage.PL -> "Zapisz zmiany"
+                                AppLanguage.PT -> "Guardar Alterações"
                             }
                         } else texts.saveTripBtn
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -652,6 +664,7 @@ fun CsvColumnMappingModal(
                     AppLanguage.NL -> "📥 Handmatige CSV-kolomtoewijzing"
                     AppLanguage.DE -> "📥 Manuelle CSV-Spaltenzuordnung"
                     AppLanguage.PL -> "📥 Ręczne mapowanie kolumn CSV"
+                    AppLanguage.PT -> "📥 Mapeamento Manual de Colunas CSV"
                 }
                 Row(
                     modifier = Modifier
@@ -691,6 +704,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Aangepaste kolommen gedetecteerd in je CSV-bestand. Wijs elk veld toe aan de corresponderende kolom:"
                         AppLanguage.DE -> "Benutzerdefinierte Spalten in Ihrer CSV-Datei erkannt. Weisen Sie jedes Feld der entsprechenden Spalte zu:"
                         AppLanguage.PL -> "Wykryto niestandardowe kolumny w pliku CSV. Przypisz każde pole do odpowiedniej kolumny:"
+                        AppLanguage.PT -> "Detetámos colunas personalizadas no seu ficheiro CSV. Atribua a que campo corresponde cada coluna:"
                     }
                     Text(
                         text = subtitleText,
@@ -708,6 +722,7 @@ fun CsvColumnMappingModal(
                             AppLanguage.NL -> "Titel voor de nieuw geïmporteerde reis"
                             AppLanguage.DE -> "Titel für die neu importierte Reise"
                             AppLanguage.PL -> "Tytuł nowej zaimportowanej podróży"
+                            AppLanguage.PT -> "Título para a nova viagem importada"
                         }
                         OutlinedTextField(
                             value = tripTitle,
@@ -727,6 +742,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Bedragkolom (verplicht)"
                         AppLanguage.DE -> "Betragsspalte (erforderlich)"
                         AppLanguage.PL -> "Kolumna kwoty (wymagana)"
+                        AppLanguage.PT -> "Coluna de Montante (Obrigatória)"
                     }
                     val dateColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Fecha"
@@ -737,6 +753,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Datumkolom"
                         AppLanguage.DE -> "Datumspalte"
                         AppLanguage.PL -> "Kolumna daty"
+                        AppLanguage.PT -> "Coluna de Data"
                     }
                     val placeColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Lugar / Establecimiento"
@@ -747,6 +764,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Locatiekolom"
                         AppLanguage.DE -> "Ort / Betriebsspalte"
                         AppLanguage.PL -> "Kolumna miejsca / lokalu"
+                        AppLanguage.PT -> "Coluna de Local / Estabelecimento"
                     }
                     val categoryColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Categoría"
@@ -757,6 +775,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Categoriekolom"
                         AppLanguage.DE -> "Kategoriespalte"
                         AppLanguage.PL -> "Kolumna kategorii"
+                        AppLanguage.PT -> "Coluna de Categoria"
                     }
                     val paidByColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Pagador (Quién pagó)"
@@ -767,6 +786,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Betalerkolom (wie heeft betaald)"
                         AppLanguage.DE -> "Zahlerspalte (wer bezahlt hat)"
                         AppLanguage.PL -> "Kolumna płatnika (kto zapłacił)"
+                        AppLanguage.PT -> "Coluna de Pagador (Quem pagou)"
                     }
                     val currencyColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Moneda (ISO)"
@@ -777,6 +797,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Valutakolom (ISO)"
                         AppLanguage.DE -> "Währungsspalte (ISO)"
                         AppLanguage.PL -> "Kolumna waluty (ISO)"
+                        AppLanguage.PT -> "Coluna de Moeda (ISO)"
                     }
                     val notesColLabel = when (currentLang) {
                         AppLanguage.ES -> "Columna de Notas"
@@ -787,6 +808,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Notitieskolom"
                         AppLanguage.DE -> "Notizenspalte"
                         AppLanguage.PL -> "Kolumna notatek"
+                        AppLanguage.PT -> "Coluna de Notas"
                     }
 
                     ColumnSelectorRow(
@@ -849,6 +871,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Voorbeeld van eerste rijen (${sheet.rows.size} rijen in totaal):"
                         AppLanguage.DE -> "Vorschau der ersten Zeilen (${sheet.rows.size} Zeilen insgesamt):"
                         AppLanguage.PL -> "Podgląd pierwszych wierszy (łącznie ${sheet.rows.size} wierszy):"
+                        AppLanguage.PT -> "Pré-visualização das primeiras linhas (${sheet.rows.size} linhas no total):"
                     }
                     Text(
                         text = previewRowsLabel,
@@ -865,6 +888,7 @@ fun CsvColumnMappingModal(
                         AppLanguage.NL -> "Rij"
                         AppLanguage.DE -> "Zeile"
                         AppLanguage.PL -> "Wiersz"
+                        AppLanguage.PT -> "Linha"
                     }
                     sheet.rows.take(4).forEachIndexed { idx, row ->
                         Surface(
@@ -920,6 +944,7 @@ fun CsvColumnMappingModal(
                             AppLanguage.NL -> "${sheet.rows.size} rijen importeren"
                             AppLanguage.DE -> "${sheet.rows.size} Zeilen importieren"
                             AppLanguage.PL -> "Zaimportuj ${sheet.rows.size} wierszy"
+                            AppLanguage.PT -> "Importar ${sheet.rows.size} linhas"
                         }
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
@@ -954,6 +979,7 @@ private fun ColumnSelectorRow(
         AppLanguage.NL -> "(Niet toewijzen)"
         AppLanguage.DE -> "(Nicht zuweisen)"
         AppLanguage.PL -> "(Nie przypisuj)"
+        AppLanguage.PT -> "(Não atribuir)"
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1064,6 +1090,7 @@ fun BackupRestoreModal(
                         AppLanguage.NL -> "JSON-back-up en herstel"
                         AppLanguage.DE -> "JSON-Sicherung & Wiederherstellung"
                         AppLanguage.PL -> "Kopia zapasowa i Przywracanie JSON"
+                        AppLanguage.PT -> "Cópia de Segurança JSON"
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Backup, contentDescription = null, tint = TravelBlue)
@@ -1089,6 +1116,7 @@ fun BackupRestoreModal(
                     AppLanguage.NL -> "Huidige apparaatgegevens: $tripCount reizen, $participantCount deelnemers, $expenseCount uitgaven en $incomeCount potbijdragen."
                     AppLanguage.DE -> "Aktuelle Gerätedaten: $tripCount Reisen, $participantCount Teilnehmer, $expenseCount Ausgaben & $incomeCount Kassenbeiträge."
                     AppLanguage.PL -> "Aktualne dane w urządzeniu: $tripCount podróży, $participantCount uczestników, $expenseCount wydatków i $incomeCount wpłat do budżetu."
+                    AppLanguage.PT -> "Dados atuais no dispositivo: $tripCount viagens, $participantCount participantes, $expenseCount despesas e $incomeCount contribuições para o fundo."
                 }
                 Text(
                     text = deviceDataText,
@@ -1115,6 +1143,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "1. Volledige app-status exporteren (.json)"
                             AppLanguage.DE -> "1. Gesamten App-Zustand exportieren (.json)"
                             AppLanguage.PL -> "1. Eksportuj pełny stan aplikacji (.json)"
+                            AppLanguage.PT -> "1. Exportar Estado Completo (.json)"
                         }
                         val section1Desc = when (currentLang) {
                             AppLanguage.ES -> "Guarda todos tus viajes, participantes, gastos, fotos, ingresos del bote y ajustes en un archivo JSON."
@@ -1125,6 +1154,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Slaat alle reizen, deelnemers, uitgaven, foto's, potinkomsten en voorkeuren op in een JSON-back-up."
                             AppLanguage.DE -> "Speichert alle Reisen, Teilnehmer, Ausgaben, Fotos, Kasseneinnahmen und Einstellungen in einer JSON-Sicherung."
                             AppLanguage.PL -> "Zapisuje wszystkie podróże, uczestników, wydatki, zdjęcia, wpłaty do budżetu i ustawienia w kopii zapasowej JSON."
+                            AppLanguage.PT -> "Guarda todas as suas viagens, participantes, despesas, fotos, receitas do fundo e definições num ficheiro JSON."
                         }
                         Text(
                             text = section1Title,
@@ -1146,6 +1176,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Back-upbestand exporteren (.json)"
                             AppLanguage.DE -> "Sicherungsdatei exportieren (.json)"
                             AppLanguage.PL -> "Eksportuj plik kopii (.json)"
+                            AppLanguage.PT -> "Exportar Backup (.json)"
                         }
                         Button(
                             onClick = {
@@ -1176,6 +1207,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "JSON-back-up naar klembord gekopieerd"
                             AppLanguage.DE -> "JSON-Sicherung in die Zwischenablage kopiert"
                             AppLanguage.PL -> "Kopia JSON skopiowana do schowka"
+                            AppLanguage.PT -> "JSON de cópia de segurança copiado para a área de transferência"
                         }
                         val copyJsonBtn = when (currentLang) {
                             AppLanguage.ES -> "Copiar JSON"
@@ -1186,6 +1218,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "JSON kopiëren"
                             AppLanguage.DE -> "JSON kopieren"
                             AppLanguage.PL -> "Kopiuj JSON"
+                            AppLanguage.PT -> "Copiar JSON"
                         }
                         val viewEditJsonBtn = when (currentLang) {
                             AppLanguage.ES -> "Ver / Pegar JSON"
@@ -1196,6 +1229,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "JSON bekijken / plakken"
                             AppLanguage.DE -> "JSON anzeigen / einfügen"
                             AppLanguage.PL -> "Pokaż / Wklej JSON"
+                            AppLanguage.PT -> "Ver / Colar JSON"
                         }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1253,6 +1287,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "2. Back-up importeren / herstellen (.json)"
                             AppLanguage.DE -> "2. Sicherung importieren / wiederherstellen (.json)"
                             AppLanguage.PL -> "2. Importuj / Przywróć kopię (.json)"
+                            AppLanguage.PT -> "2. Importar / Restaurar Backup (.json)"
                         }
                         Text(
                             text = section2Title,
@@ -1270,6 +1305,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Samenvoegen met huidige gegevens"
                             AppLanguage.DE -> "Mit aktuellen Daten zusammenführen"
                             AppLanguage.PL -> "Połącz z aktualnymi danymi"
+                            AppLanguage.PT -> "Fundir com os dados atuais"
                         }
                         val mergeDesc = when (currentLang) {
                             AppLanguage.ES -> "Conserva tus viajes actuales y añade o actualiza los del archivo."
@@ -1280,6 +1316,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Behoudt huidige reizen en voegt die uit de back-up toe of werkt ze bij."
                             AppLanguage.DE -> "Behält aktuelle Reisen bei und fügt die aus der Sicherung hinzu oder aktualisiert sie."
                             AppLanguage.PL -> "Zachowuje bieżące podróże i dodaje lub aktualizuje te z kopii zapasowej."
+                            AppLanguage.PT -> "Conserva as suas viagens atuais e adiciona ou atualiza as do ficheiro."
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1312,6 +1349,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Alles vervangen"
                             AppLanguage.DE -> "Alle Daten ersetzen"
                             AppLanguage.PL -> "Zastąp wszystkie dane"
+                            AppLanguage.PT -> "Substituir tudo"
                         }
                         val replaceDesc = when (currentLang) {
                             AppLanguage.ES -> "Borra los datos actuales antes de restaurar la copia."
@@ -1322,6 +1360,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> "Wist huidige gegevens alvorens de back-up te herstellen."
                             AppLanguage.DE -> "Löscht aktuelle Daten vor der Wiederherstellung der Sicherung."
                             AppLanguage.PL -> "Usuwa bieżące dane przed przywróceniem kopii zapasowej."
+                            AppLanguage.PT -> "Apaga os dados atuais antes de restaurar a cópia."
                         }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -1355,6 +1394,7 @@ fun BackupRestoreModal(
                             AppLanguage.NL -> ".json-bestand selecteren en herstellen"
                             AppLanguage.DE -> ".json-Datei auswählen & wiederherstellen"
                             AppLanguage.PL -> "Wybierz plik .json i przywróć"
+                            AppLanguage.PT -> "Selecionar ficheiro .json e Restaurar"
                         }
                         Button(
                             onClick = {
@@ -1390,6 +1430,7 @@ fun BackupRestoreModal(
                                     AppLanguage.NL -> "JSON-inhoud:"
                                     AppLanguage.DE -> "JSON-Inhalt:"
                                     AppLanguage.PL -> "Zawartość JSON:"
+                                    AppLanguage.PT -> "Conteúdo JSON:"
                                 }
                                 val pasteBtnLabel = when (currentLang) {
                                     AppLanguage.ES -> "Pegar"
@@ -1400,6 +1441,7 @@ fun BackupRestoreModal(
                                     AppLanguage.NL -> "Plakken"
                                     AppLanguage.DE -> "Einfügen"
                                     AppLanguage.PL -> "Wklej"
+                                    AppLanguage.PT -> "Colar"
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -1438,6 +1480,7 @@ fun BackupRestoreModal(
                                     AppLanguage.NL -> "Plak hier de JSON-inhoud van je back-up..."
                                     AppLanguage.DE -> "Fügen Sie hier den JSON-Inhalt Ihrer Sicherung ein..."
                                     AppLanguage.PL -> "Wklej tutaj zawartość JSON swojej kopii..."
+                                    AppLanguage.PT -> "Cole aqui o conteúdo JSON da sua cópia..."
                                 }
                                 OutlinedTextField(
                                     value = rawJsonText,
@@ -1459,6 +1502,7 @@ fun BackupRestoreModal(
                                         AppLanguage.NL -> "✓ Geldige JSON gedetecteerd: ${parsedPreview.trips.size} reizen, ${parsedPreview.participants.size} deelnemers, ${parsedPreview.expenses.size} uitgaven, ${parsedPreview.incomes.size} potbijdragen."
                                         AppLanguage.DE -> "✓ Gültiges JSON erkannt: ${parsedPreview.trips.size} Reisen, ${parsedPreview.participants.size} Teilnehmer, ${parsedPreview.expenses.size} Ausgaben, ${parsedPreview.incomes.size} Kasseneinnahmen."
                                         AppLanguage.PL -> "✓ Wykryto prawidłowy JSON: ${parsedPreview.trips.size} podróży, ${parsedPreview.participants.size} uczestników, ${parsedPreview.expenses.size} wydatków, ${parsedPreview.incomes.size} wpłat."
+                                        AppLanguage.PT -> "✓ JSON válido detetado: ${parsedPreview.trips.size} viagens, ${parsedPreview.participants.size} participantes, ${parsedPreview.expenses.size} despesas e ${parsedPreview.incomes.size} receitas."
                                     }
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
@@ -1484,6 +1528,7 @@ fun BackupRestoreModal(
                                     AppLanguage.NL -> "Herstellen vanuit geplakte JSON"
                                     AppLanguage.DE -> "Aus eingefügtem JSON wiederherstellen"
                                     AppLanguage.PL -> "Przywróć z wklejonego JSON"
+                                    AppLanguage.PT -> "Restaurar a partir de texto JSON"
                                 }
                                 Button(
                                     onClick = {
@@ -1533,6 +1578,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Travel Cash Help"
         AppLanguage.DE -> "Travel Cash Hilfe"
         AppLanguage.PL -> "Pomoc Travel Cash"
+        AppLanguage.PT -> "Ajuda Travel Cash"
     }
 
     val closeDesc = when (currentLang) {
@@ -1544,6 +1590,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Sluiten"
         AppLanguage.DE -> "Schließen"
         AppLanguage.PL -> "Zamknij"
+        AppLanguage.PT -> "Fechar"
     }
 
     val sendEmailDesc = when (currentLang) {
@@ -1555,6 +1602,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "E-mail verzenden"
         AppLanguage.DE -> "E-Mail senden"
         AppLanguage.PL -> "Wyślij e-mail"
+        AppLanguage.PT -> "Enviar e-mail"
     }
 
     val gotItBtn = when (currentLang) {
@@ -1566,6 +1614,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Begrepen"
         AppLanguage.DE -> "Verstanden"
         AppLanguage.PL -> "Rozumiem"
+        AppLanguage.PT -> "Entendido"
     }
 
     val potRuleTitle = when (currentLang) {
@@ -1577,6 +1626,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "🏺 Gouden regel van de gemeenschappelijke pot"
         AppLanguage.DE -> "🏺 Goldene Regel der Gemeinschaftskasse"
         AppLanguage.PL -> "🏺 Złota zasada wspólnej kasy"
+        AppLanguage.PT -> "🏺 Regra de Ouro do Fundo Comum"
     }
     val potRuleBody = when (currentLang) {
         AppLanguage.ES -> "Al pulsar '+ Ingreso (Bote)' en modo 'Cuantía por persona', si algún viajero adelantó pagos de su bolsillo, el sistema descuenta automáticamente lo que se le debe de su cuota de bote."
@@ -1587,6 +1637,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Bij het toevoegen van een potbijdrage in de modus 'Bedrag per persoon': als een reiziger uit eigen zak heeft betaald, verrekent het systeem automatisch wat hij tegoed heeft."
         AppLanguage.DE -> "Beim Hinzufügen einer Kasseneinzahlung im Modus 'Betrag pro Person': Wenn ein Reisender Auslagen vorgelegt hat, zieht das System den geschuldeten Betrag automatisch von seinem Kassenanteil ab."
         AppLanguage.PL -> "Dodając wpłatę do kasy w trybie „Kwota na osobę”, jeśli któryś z podróżnych wyłożył z własnej kieszeni, system automatycznie odlicza należność od jego składki."
+        AppLanguage.PT -> "Ao tocar em '+ Receita (Fundo)' no modo 'Quantia por pessoa', se algum viajante adiantou pagamentos do seu bolso, o sistema desconta automaticamente o que lhe é devido da sua quota de fundo."
     }
 
     val gpsTitle = when (currentLang) {
@@ -1598,6 +1649,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "📍 GPS-nabijheid met OpenStreetMap"
         AppLanguage.DE -> "📍 GPS-Nähe mit OpenStreetMap"
         AppLanguage.PL -> "📍 Bliskość GPS z OpenStreetMap"
+        AppLanguage.PT -> "📍 Proximidade GPS com OpenStreetMap"
     }
     val gpsBody = when (currentLang) {
         AppLanguage.ES -> "Al añadir un gasto, escribe el nombre del restaurante o comercio: la app consulta Nominatim con tu GPS actual, ordena primero los más cercanos y rellena la dirección."
@@ -1608,6 +1660,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Typ bij het toevoegen van een uitgave de naam van het restaurant of de winkel: de app raadpleegt Nominatim met je huidige GPS, toont de dichtstbijzijnde eerst en vult het adres in."
         AppLanguage.DE -> "Geben Sie beim Hinzufügen einer Ausgabe den Namen des Restaurants oder Geschäfts ein: Die App fragt Nominatim mit Ihrem aktuellen GPS ab, sortiert die nächstgelegenen zuerst und füllt die Adresse aus."
         AppLanguage.PL -> "Dodając wydatek, wpisz nazwę lokalu lub sklepu: aplikacja sprawdza Nominatim z Twoim GPS, sortuje najbliższe miejsca i automatycznie uzupełnia adres."
+        AppLanguage.PT -> "Ao adicionar uma despesa, escreva o nome do restaurante ou comércio: a aplicação consulta o Nominatim com o seu GPS atual, ordena primeiro os mais próximos e preenche a morada."
     }
 
     val statsTitle = when (currentLang) {
@@ -1619,6 +1672,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "📊 Interactieve gegevens & afrekeningen"
         AppLanguage.DE -> "📊 Interaktive Daten & Abrechnungen"
         AppLanguage.PL -> "📊 Interaktywne dane i rozliczenia"
+        AppLanguage.PT -> "📊 Dados e Contas Interativas"
     }
     val statsBody = when (currentLang) {
         AppLanguage.ES -> "En las pestañas 'Datos' y 'Cuentas', pulsa sobre cualquier categoría, persona o pago de liquidación para desplegar su desglose matemático completo."
@@ -1629,6 +1683,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Tik in de tabbladen 'Gegevens' en 'Afrekeningen' op een categorie, persoon of vereffening om de volledige wiskundige uitsplitsing te zien."
         AppLanguage.DE -> "Tippen Sie in den Reitern 'Daten' und 'Abrechnung' auf eine Kategorie, Person oder Ausgleichszahlung, um die vollständige Aufschlüsselung anzuzeigen."
         AppLanguage.PL -> "W zakładkach „Dane” i „Rozliczenia” dotknij dowolnej kategorii, osoby lub płatności wyrównawczej, aby rozwinąć pełne zestawienie."
+        AppLanguage.PT -> "Nos separadores 'Dados' e 'Contas', toque em qualquer categoria, pessoa ou pagamento de liquidação para ver o seu detalhe matemático completo."
     }
 
     val exportTitle = when (currentLang) {
@@ -1640,6 +1695,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "⚙️ Exporteren en importeren in Instellingen"
         AppLanguage.DE -> "⚙️ Export und Import in den Einstellungen"
         AppLanguage.PL -> "⚙️ Eksport i import w Ustawieniach"
+        AppLanguage.PT -> "⚙️ Exportação e Importação nas Definições"
     }
     val exportBody = when (currentLang) {
         AppLanguage.ES -> "En la pestaña Ajustes puedes exportar e importar tus viajes en formato comprimido .zip con archivos JSON."
@@ -1650,6 +1706,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "In het tabblad Instellingen kun je je reizen exporteren en importeren in gecomprimeerd .zip-formaat met JSON-bestanden."
         AppLanguage.DE -> "Im Reiter Einstellungen können Sie Ihre Reisen im komprimierten .zip-Format mit JSON-Dateien exportieren und importieren."
         AppLanguage.PL -> "W zakładce Ustawienia możesz eksportować i importować swoje podróże w skompresowanym formacie .zip z plikami JSON."
+        AppLanguage.PT -> "No separador Definições pode exportar e importar as suas viagens em formato comprimido .zip com ficheiros JSON."
     }
 
     val faqButtonText = when (currentLang) {
@@ -1661,6 +1718,7 @@ fun SuggestionsModal(
         AppLanguage.NL -> "Help & FAQ"
         AppLanguage.DE -> "Hilfe & FAQ"
         AppLanguage.PL -> "Pomoc i FAQ"
+        AppLanguage.PT -> "Ajuda e Perguntas Frequentes"
     }
 
     Dialog(
@@ -1752,6 +1810,7 @@ fun SuggestionsModal(
                                     AppLanguage.NL -> "E-mail voor vragen en suggesties:"
                                     AppLanguage.DE -> "E-Mail für Fragen und Anregungen:"
                                     AppLanguage.PL -> "E-mail do pytań i sugestii:"
+                                    AppLanguage.PT -> "Correio eletrónico para dúvidas e sugestões:"
                                 },
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,

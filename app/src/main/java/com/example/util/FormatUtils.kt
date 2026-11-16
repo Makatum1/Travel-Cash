@@ -59,7 +59,7 @@ object FormatUtils {
                 "pl" -> "EEEE, d MMMM yyyy"
                 "nl", "fr", "it" -> "EEEE d MMMM yyyy"
                 "en" -> "EEEE, MMMM d, yyyy"
-                else -> "EEEE, d 'de' MMMM 'de' yyyy" // es
+                else -> "EEEE, d 'de' MMMM 'de' yyyy" // es, pt
             }
             val formatter = DateTimeFormatter.ofPattern(pattern, locale)
             val text = parsed.format(formatter)
@@ -261,6 +261,24 @@ object CurrencyCatalog {
                 "AUD" -> "Dolar australijski"
                 "MAD" -> "Dirham marokański"
                 "THB" -> "Bat tajlandzki"
+                else -> curr.nameEn
+            }
+            AppLanguage.PT -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "Dólar americano"
+                "JPY" -> "Iene japonês"
+                "GBP" -> "Libra esterlina"
+                "CHF" -> "Franco suíço"
+                "MXN" -> "Peso mexicano"
+                "COP" -> "Peso colombiano"
+                "ARS" -> "Peso argentino"
+                "CLP" -> "Peso chileno"
+                "PEN" -> "Sol peruano"
+                "BRL" -> "Real brasileiro"
+                "CAD" -> "Dólar canadiano"
+                "AUD" -> "Dólar australiano"
+                "MAD" -> "Dirham marroquino"
+                "THB" -> "Baht tailandês"
                 else -> curr.nameEn
             }
         }

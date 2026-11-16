@@ -142,6 +142,7 @@ fun StatsTabScreen(
                         AppLanguage.NL -> "${expenses.size} geregistreerde uitgaven"
                         AppLanguage.DE -> "${expenses.size} erfasste Ausgaben"
                         AppLanguage.PL -> "${expenses.size} zarejestrowanych wydatków"
+                        AppLanguage.PT -> "${expenses.size} despesas registadas"
                     }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
@@ -159,6 +160,7 @@ fun StatsTabScreen(
                         AppLanguage.NL -> "Over $tripDays reisdagen"
                         AppLanguage.DE -> "Über $tripDays Reisetage"
                         AppLanguage.PL -> "W ciągu $tripDays dni podróży"
+                        AppLanguage.PT -> "Em $tripDays dias de viagem"
                     }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
@@ -181,6 +183,7 @@ fun StatsTabScreen(
                         AppLanguage.NL -> "${participants.size} deelnemers"
                         AppLanguage.DE -> "${participants.size} Teilnehmer"
                         AppLanguage.PL -> "${participants.size} uczestników"
+                        AppLanguage.PT -> "${participants.size} participantes"
                     }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
@@ -233,6 +236,7 @@ fun StatsTabScreen(
                             AppLanguage.NL -> "Tik om overzicht te bekijken"
                             AppLanguage.DE -> "Tippen für Aufschlüsselung"
                             AppLanguage.PL -> "Dotknij, aby zobaczyć zestawienie"
+                            AppLanguage.PT -> "Tocar para ver detalhes"
                         }
                         Text(
                             text = tapToViewBreakdown,
@@ -313,6 +317,7 @@ fun StatsTabScreen(
                                                         AppLanguage.NL -> "Categorie uitvouwen"
                                                         AppLanguage.DE -> "Kategorie erweitern"
                                                         AppLanguage.PL -> "Rozwiń kategorię"
+                                                        AppLanguage.PT -> "Expandir categoria"
                                                     },
                                                     tint = Color(0xFF64748B),
                                                     modifier = Modifier.size(18.dp)
@@ -339,6 +344,7 @@ fun StatsTabScreen(
                                             AppLanguage.NL -> "${catExpenses.size} uitgaven · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
                                             AppLanguage.DE -> "${catExpenses.size} Ausgaben · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
                                             AppLanguage.PL -> "${catExpenses.size} wydatków · ${String.format(Locale.US, "%.1f", pct)}% całości"
+                                            AppLanguage.PT -> "${catExpenses.size} despesas · ${String.format(Locale.US, "%.1f", pct)}% do total"
                                         }
                                         Text(
                                             text = pctText,
@@ -377,6 +383,7 @@ fun StatsTabScreen(
                                                     AppLanguage.NL -> "Betaald door"
                                                     AppLanguage.DE -> "Bezahlt von"
                                                     AppLanguage.PL -> "Zapłacone przez"
+                                                    AppLanguage.PT -> "Pago por"
                                                 }
                                                 Row(
                                                     modifier = Modifier
@@ -450,6 +457,7 @@ fun StatsTabScreen(
                             AppLanguage.NL -> "Tik om betalingen te bekijken"
                             AppLanguage.DE -> "Tippen für Zahlungen"
                             AppLanguage.PL -> "Dotknij, aby zobaczyć płatności"
+                            AppLanguage.PT -> "Tocar para ver pagamentos"
                         }
                         Text(
                             text = tapToViewPayments,
@@ -515,6 +523,7 @@ fun StatsTabScreen(
                                                     AppLanguage.NL -> "Persoon uitvouwen"
                                                     AppLanguage.DE -> "Person erweitern"
                                                     AppLanguage.PL -> "Rozwiń osobę"
+                                                    AppLanguage.PT -> "Expandir pessoa"
                                                 },
                                                 tint = Color(0xFF64748B),
                                                 modifier = Modifier.size(18.dp)
@@ -541,6 +550,7 @@ fun StatsTabScreen(
                                         AppLanguage.NL -> "${personExpenses.size} betalingen gedaan · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
                                         AppLanguage.DE -> "${personExpenses.size} Zahlungen getätigt · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
                                         AppLanguage.PL -> "${personExpenses.size} dokonanych płatności · ${String.format(Locale.US, "%.1f", pct)}% całości"
+                                        AppLanguage.PT -> "${personExpenses.size} pagamentos efetuados · ${String.format(Locale.US, "%.1f", pct)}% do total"
                                     }
                                     Text(
                                         text = paymentsMadeText,
@@ -574,6 +584,7 @@ fun StatsTabScreen(
                                                 AppLanguage.NL -> "${person.name} heeft nog geen uitgaven uit eigen zak betaald."
                                                 AppLanguage.DE -> "${person.name} hat noch keine Ausgaben aus eigener Tasche bezahlt."
                                                 AppLanguage.PL -> "${person.name} nie poniósł jeszcze żadnych wydatków z własnej kieszeni."
+                                                AppLanguage.PT -> "${person.name} ainda não realizou pagamentos do seu próprio bolso."
                                             }
                                             Text(
                                                 text = noExpensesPerson,
