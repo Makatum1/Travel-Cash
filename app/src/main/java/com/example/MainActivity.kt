@@ -95,6 +95,7 @@ import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.SplitsTabScreen
 import com.example.ui.screens.StatsTabScreen
 import com.example.ui.screens.TripsTabScreen
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.isEnglish
 import com.example.ui.theme.CoralRed
 import com.example.ui.theme.TravelBlue
@@ -349,19 +350,35 @@ fun TravelCashApp(
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val incs = uiState.allIncomes.filter { it.tripId == trip.id }
             FileOutputStream(targetFile).use { out ->
-                ExportImportManager.writeTripPdfReport(out, trip, parts, exps, incs, context)
+                ExportImportManager.writeTripPdfReport(out, trip, parts, exps, incs, context, language)
             }
-            val title = if (isEn) "Share PDF Report - ${trip.title}" else "Compartir Reporte PDF - ${trip.title}"
+            val title = when (language) {
+                AppLanguage.ES -> "Compartir Reporte PDF - ${trip.title}"
+                AppLanguage.EN -> "Share PDF Report - ${trip.title}"
+                AppLanguage.FR -> "Partager le rapport PDF - ${trip.title}"
+                AppLanguage.IT -> "Condividi report PDF - ${trip.title}"
+                AppLanguage.ZH -> "分享 PDF 报表 - ${trip.title}"
+                AppLanguage.NL -> "PDF-rapport delen - ${trip.title}"
+                AppLanguage.DE -> "PDF-Bericht teilen - ${trip.title}"
+                AppLanguage.PL -> "Udostępnij raport PDF - ${trip.title}"
+            }
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "application/pdf",
                 dialogTitle = title
             )
         } catch (e: Exception) {
-            viewModel.showToast(
-                if (isEn) "Error generating PDF report" else "Error al generar el reporte PDF",
-                isError = true
-            )
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al generar el reporte PDF"
+                AppLanguage.EN -> "Error generating PDF report"
+                AppLanguage.FR -> "Erreur lors de la génération du rapport PDF"
+                AppLanguage.IT -> "Errore durante la generazione del report PDF"
+                AppLanguage.ZH -> "生成 PDF 报表时出错"
+                AppLanguage.NL -> "Fout bij genereren van PDF-rapport"
+                AppLanguage.DE -> "Fehler beim Erstellen des PDF-Berichts"
+                AppLanguage.PL -> "Błąd podczas generowania raportu PDF"
+            }
+            viewModel.showToast(errorMsg, isError = true)
         }
     }
 
@@ -373,17 +390,33 @@ fun TravelCashApp(
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val csvStr = ExportImportManager.generateTripExpensesCsv(trip, parts, exps)
             targetFile.writeText(csvStr, Charsets.UTF_8)
-            val title = if (isEn) "Share CSV Expenses - ${trip.title}" else "Compartir Gastos CSV - ${trip.title}"
+            val title = when (language) {
+                AppLanguage.ES -> "Compartir Gastos CSV - ${trip.title}"
+                AppLanguage.EN -> "Share CSV Expenses - ${trip.title}"
+                AppLanguage.FR -> "Partager les dépenses CSV - ${trip.title}"
+                AppLanguage.IT -> "Condividi spese CSV - ${trip.title}"
+                AppLanguage.ZH -> "分享 CSV 支出 - ${trip.title}"
+                AppLanguage.NL -> "CSV-uitgaven delen - ${trip.title}"
+                AppLanguage.DE -> "CSV-Ausgaben teilen - ${trip.title}"
+                AppLanguage.PL -> "Udostępnij wydatki CSV - ${trip.title}"
+            }
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "text/csv",
                 dialogTitle = title
             )
         } catch (e: Exception) {
-            viewModel.showToast(
-                if (isEn) "Error exporting CSV" else "Error al exportar CSV",
-                isError = true
-            )
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al exportar CSV"
+                AppLanguage.EN -> "Error exporting CSV"
+                AppLanguage.FR -> "Erreur lors de l'exportation CSV"
+                AppLanguage.IT -> "Errore durante l'esportazione CSV"
+                AppLanguage.ZH -> "导出 CSV 时出错"
+                AppLanguage.NL -> "Fout bij exporteren van CSV"
+                AppLanguage.DE -> "Fehler beim Exportieren von CSV"
+                AppLanguage.PL -> "Błąd podczas eksportowania CSV"
+            }
+            viewModel.showToast(errorMsg, isError = true)
         }
     }
 
@@ -402,17 +435,33 @@ fun TravelCashApp(
                 incomes = incs
             )
             targetFile.writeText(jsonStr, Charsets.UTF_8)
-            val title = if (isEn) "Share Trip JSON - ${trip.title}" else "Compartir Viaje JSON - ${trip.title}"
+            val title = when (language) {
+                AppLanguage.ES -> "Compartir Viaje JSON - ${trip.title}"
+                AppLanguage.EN -> "Share Trip JSON - ${trip.title}"
+                AppLanguage.FR -> "Partager le voyage JSON - ${trip.title}"
+                AppLanguage.IT -> "Condividi viaggio JSON - ${trip.title}"
+                AppLanguage.ZH -> "分享行程 JSON - ${trip.title}"
+                AppLanguage.NL -> "Reis JSON delen - ${trip.title}"
+                AppLanguage.DE -> "Reise-JSON teilen - ${trip.title}"
+                AppLanguage.PL -> "Udostępnij podróż JSON - ${trip.title}"
+            }
             shareGeneratedFile(
                 file = targetFile,
                 mimeType = "application/json",
                 dialogTitle = title
             )
         } catch (e: Exception) {
-            viewModel.showToast(
-                if (isEn) "Error exporting JSON" else "Error al exportar JSON",
-                isError = true
-            )
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al exportar JSON"
+                AppLanguage.EN -> "Error exporting JSON"
+                AppLanguage.FR -> "Erreur lors de l'exportation JSON"
+                AppLanguage.IT -> "Errore durante l'esportazione JSON"
+                AppLanguage.ZH -> "导出 JSON 时出错"
+                AppLanguage.NL -> "Fout bij exporteren van JSON"
+                AppLanguage.DE -> "Fehler beim Exportieren von JSON"
+                AppLanguage.PL -> "Błąd podczas eksportowania JSON"
+            }
+            viewModel.showToast(errorMsg, isError = true)
         }
     }
 
@@ -450,9 +499,27 @@ fun TravelCashApp(
                 ExportImportManager.writeTripsToZip(out, tripsToExport, parts, exps, incs)
             }
             val title = if (targetTrip != null) {
-                if (isEn) "Share Trip ZIP - ${targetTrip.title}" else "Compartir Viaje ZIP - ${targetTrip.title}"
+                when (language) {
+                    AppLanguage.ES -> "Compartir Viaje ZIP - ${targetTrip.title}"
+                    AppLanguage.EN -> "Share Trip ZIP - ${targetTrip.title}"
+                    AppLanguage.FR -> "Partager le voyage ZIP - ${targetTrip.title}"
+                    AppLanguage.IT -> "Condividi viaggio ZIP - ${targetTrip.title}"
+                    AppLanguage.ZH -> "分享行程 ZIP - ${targetTrip.title}"
+                    AppLanguage.NL -> "Reis ZIP delen - ${targetTrip.title}"
+                    AppLanguage.DE -> "Reise-ZIP teilen - ${targetTrip.title}"
+                    AppLanguage.PL -> "Udostępnij podróż ZIP - ${targetTrip.title}"
+                }
             } else {
-                if (isEn) "Share Travel Cash Backup ZIP" else "Compartir Copia de Seguridad ZIP"
+                when (language) {
+                    AppLanguage.ES -> "Compartir Copia de Seguridad ZIP"
+                    AppLanguage.EN -> "Share Travel Cash Backup ZIP"
+                    AppLanguage.FR -> "Partager la sauvegarde ZIP Travel Cash"
+                    AppLanguage.IT -> "Condividi backup ZIP Travel Cash"
+                    AppLanguage.ZH -> "分享 Travel Cash 备份 ZIP"
+                    AppLanguage.NL -> "Travel Cash back-up ZIP delen"
+                    AppLanguage.DE -> "Travel Cash Backup-ZIP teilen"
+                    AppLanguage.PL -> "Udostępnij kopię zapasową ZIP Travel Cash"
+                }
             }
             shareGeneratedFile(
                 file = targetFile,
@@ -460,10 +527,17 @@ fun TravelCashApp(
                 dialogTitle = title
             )
         } catch (e: Exception) {
-            viewModel.showToast(
-                if (isEn) "Error exporting ZIP" else "Error al exportar ZIP",
-                isError = true
-            )
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al exportar ZIP"
+                AppLanguage.EN -> "Error exporting ZIP"
+                AppLanguage.FR -> "Erreur lors de l'exportation ZIP"
+                AppLanguage.IT -> "Errore durante l'esportazione ZIP"
+                AppLanguage.ZH -> "导出 ZIP 时出错"
+                AppLanguage.NL -> "Fout bij exporteren van ZIP"
+                AppLanguage.DE -> "Fehler beim Exportieren von ZIP"
+                AppLanguage.PL -> "Błąd podczas eksportowania ZIP"
+            }
+            viewModel.showToast(errorMsg, isError = true)
         }
     }
 
@@ -498,6 +572,16 @@ fun TravelCashApp(
         },
         floatingActionButton = {
             if (selectedTab == MainTab.EXPENSES && uiState.activeTrip != null) {
+                val addExpenseLabel = when (language) {
+                    AppLanguage.ES -> "Añadir Gasto"
+                    AppLanguage.EN -> "Add Expense"
+                    AppLanguage.FR -> "Ajouter une dépense"
+                    AppLanguage.IT -> "Aggiungi spesa"
+                    AppLanguage.ZH -> "添加支出"
+                    AppLanguage.NL -> "Uitgave toevoegen"
+                    AppLanguage.DE -> "Ausgabe hinzufügen"
+                    AppLanguage.PL -> "Dodaj wydatek"
+                }
                 ExtendedFloatingActionButton(
                     onClick = {
                         editingExpense = null
@@ -508,10 +592,10 @@ fun TravelCashApp(
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.testTag("fab_add_expense")
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = if (isEn) "Add Expense" else "Añadir Gasto")
+                    Icon(Icons.Default.Add, contentDescription = addExpenseLabel)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isEn) "Add Expense" else "Añadir Gasto",
+                        text = addExpenseLabel,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold)
                     )
                 }
@@ -534,7 +618,7 @@ fun TravelCashApp(
 
                 navItems.forEach { (tab, icon) ->
                     val selected = selectedTab == tab
-                    val label = if (isEn) tab.titleEn else tab.titleEs
+                    val label = tab.getTitle(language)
                     val iconSize = if (tab == MainTab.SETTINGS) 20.dp else 25.dp
                     NavigationBarItem(
                         selected = selected,

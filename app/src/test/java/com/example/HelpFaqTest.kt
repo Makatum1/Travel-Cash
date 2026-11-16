@@ -66,4 +66,24 @@ class HelpFaqTest {
     fun faqs_isComprehensiveAndCoversAllKeyAreas() {
         assertTrue("Debe contener al menos 20 preguntas frecuentes", TRAVEL_CASH_FAQS.size >= 20)
     }
+
+    @Test
+    fun faqs_provideTranslationsForAllSupportedLanguages() {
+        val languages = com.example.ui.theme.AppLanguage.entries
+        assertEquals(8, languages.size)
+        TRAVEL_CASH_FAQS.forEach { item ->
+            languages.forEach { lang ->
+                val q = item.getQuestion(lang)
+                val a = item.getAnswer(lang)
+                val cat = item.getCategory(lang)
+                assertTrue("Question must not be blank for ${item.id} in $lang", q.isNotBlank())
+                assertTrue("Answer must not be blank for ${item.id} in $lang", a.isNotBlank())
+                assertTrue("Category must not be blank for ${item.id} in $lang", cat.isNotBlank())
+
+                val allText = "$q $a $cat".lowercase()
+                assertFalse("FAQ ${item.id} in $lang should not mention 'camino'", allText.contains("camino"))
+                assertFalse("FAQ ${item.id} in $lang should not mention 'etapa'", allText.contains("etapa"))
+            }
+        }
+    }
 }

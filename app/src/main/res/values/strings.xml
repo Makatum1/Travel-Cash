@@ -7,7 +7,7 @@
     <string name="tab_splits">Cuentas</string>
     <string name="tab_trips">Viajes</string>
     <string name="btn_backup">Backup</string>
-    <string name="btn_suggestions">Sugerencias</string>
+    <string name="btn_suggestions">Ayuda</string>
     <string name="btn_csv">CSV</string>
     <string name="btn_pdf">PDF</string>
     <string name="btn_import_csv">Importar CSV</string>

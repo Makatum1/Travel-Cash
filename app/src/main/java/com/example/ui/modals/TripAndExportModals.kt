@@ -1127,8 +1127,31 @@ fun SuggestionsModal(
     onDismiss: () -> Unit,
     onOpenHelpFaq: () -> Unit = {}
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     val context = LocalContext.current
+
+    val modalTitle = when (currentLang) {
+        AppLanguage.ES -> "Ayuda Travel Cash"
+        AppLanguage.EN -> "Travel Cash Help"
+        AppLanguage.FR -> "Aide Travel Cash"
+        AppLanguage.IT -> "Aiuto Travel Cash"
+        AppLanguage.ZH -> "Travel Cash 帮助"
+        AppLanguage.NL -> "Travel Cash Help"
+        AppLanguage.DE -> "Travel Cash Hilfe"
+        AppLanguage.PL -> "Pomoc Travel Cash"
+    }
+
+    val faqButtonText = when (currentLang) {
+        AppLanguage.ES -> "Ayuda y Preguntas Frecuentes"
+        AppLanguage.EN -> "Help & FAQ"
+        AppLanguage.FR -> "Aide et FAQ"
+        AppLanguage.IT -> "Aiuto e FAQ"
+        AppLanguage.ZH -> "帮助与常见问题"
+        AppLanguage.NL -> "Help & FAQ"
+        AppLanguage.DE -> "Hilfe & FAQ"
+        AppLanguage.PL -> "Pomoc i FAQ"
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         ModalLightSurfaceTheme {
@@ -1149,7 +1172,7 @@ fun SuggestionsModal(
                         Icon(Icons.Default.Lightbulb, contentDescription = null, tint = Color(0xFFF59E0B))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isEn) "Travel Cash Tips" else "Sugerencias Travel Cash",
+                            text = modalTitle,
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                             color = OceanNavy
                         )
@@ -1166,7 +1189,7 @@ fun SuggestionsModal(
                         try {
                             val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
                                 data = android.net.Uri.parse("mailto:sugerenciastravelcash@gmail.com")
-                                putExtra(android.content.Intent.EXTRA_SUBJECT, if (isEn) "Travel Cash Suggestions" else "Sugerencias Travel Cash")
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, modalTitle)
                             }
                             context.startActivity(intent)
                         } catch (e: Exception) {
@@ -1203,7 +1226,16 @@ fun SuggestionsModal(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (isEn) "Questions & suggestions email:" else "Correo para dudas y sugerencias:",
+                                text = when (currentLang) {
+                                    AppLanguage.ES -> "Correo para dudas y sugerencias:"
+                                    AppLanguage.EN -> "Questions & suggestions email:"
+                                    AppLanguage.FR -> "Courriel pour questions et suggestions :"
+                                    AppLanguage.IT -> "Email per dubbi e suggerimenti:"
+                                    AppLanguage.ZH -> "疑问与建议反馈邮箱："
+                                    AppLanguage.NL -> "E-mail voor vragen en suggesties:"
+                                    AppLanguage.DE -> "E-Mail für Fragen und Anregungen:"
+                                    AppLanguage.PL -> "E-mail do pytań i sugestii:"
+                                },
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 color = Color(0xFF475569)
                             )
@@ -1245,7 +1277,7 @@ fun SuggestionsModal(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isEn) "Help & FAQ" else "Ayuda y Preguntas Frecuentes",
+                            text = faqButtonText,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = Color.White
                         )

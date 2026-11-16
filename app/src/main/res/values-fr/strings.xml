@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Travel Cash</string>
+    <string name="app_subtitle">Gestionnaire de dépenses de voyage</string>
+    <string name="tab_expenses">Dépenses</string>
+    <string name="tab_map">Carte</string>
+    <string name="tab_stats">Données</string>
+    <string name="tab_splits">Comptes</string>
+    <string name="tab_trips">Voyages</string>
+    <string name="btn_backup">Sauvegarde</string>
+    <string name="btn_suggestions">Aide</string>
+    <string name="btn_csv">CSV</string>
+    <string name="btn_pdf">PDF</string>
+    <string name="btn_import_csv">Importer CSV</string>
+    <string name="btn_add_income">+ Cagnotte</string>
+    <string name="label_spent">Dépensé</string>
+    <string name="label_income">Revenus</string>
+    <string name="label_extra_balance">Solde restant</string>
+    <string name="btn_help_faq">Aide et FAQ</string>
+    <string name="help_faq_title">Aide et FAQ</string>
+    <string name="search_faq_placeholder">Rechercher des questions ou solutions…</string>
+    <string name="no_faq_results">Aucun résultat trouvé pour votre recherche</string>
+    <string name="clear_search">Effacer la recherche</string>
+</resources>

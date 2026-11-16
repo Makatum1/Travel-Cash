@@ -45,7 +45,60 @@ enum class MainTab(val titleEs: String, val titleEn: String) {
     STATS("Datos", "Data"),
     MAP("Mapa", "Map"),
     TRIPS("Viajes", "Trips"),
-    SETTINGS("Ajustes", "Settings")
+    SETTINGS("Ajustes", "Settings");
+
+    fun getTitle(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ES -> titleEs
+        AppLanguage.EN -> titleEn
+        AppLanguage.FR -> when (this) {
+            EXPENSES -> "Dépenses"
+            SPLITS -> "Comptes"
+            STATS -> "Données"
+            MAP -> "Carte"
+            TRIPS -> "Voyages"
+            SETTINGS -> "Paramètres"
+        }
+        AppLanguage.IT -> when (this) {
+            EXPENSES -> "Spese"
+            SPLITS -> "Saldi"
+            STATS -> "Dati"
+            MAP -> "Mappa"
+            TRIPS -> "Viaggi"
+            SETTINGS -> "Impostazioni"
+        }
+        AppLanguage.ZH -> when (this) {
+            EXPENSES -> "支出"
+            SPLITS -> "结算"
+            STATS -> "统计"
+            MAP -> "地图"
+            TRIPS -> "行程"
+            SETTINGS -> "设置"
+        }
+        AppLanguage.NL -> when (this) {
+            EXPENSES -> "Uitgaven"
+            SPLITS -> "Splitsen"
+            STATS -> "Gegevens"
+            MAP -> "Kaart"
+            TRIPS -> "Reizen"
+            SETTINGS -> "Instellingen"
+        }
+        AppLanguage.DE -> when (this) {
+            EXPENSES -> "Ausgaben"
+            SPLITS -> "Abrechnung"
+            STATS -> "Daten"
+            MAP -> "Karte"
+            TRIPS -> "Reisen"
+            SETTINGS -> "Einstellungen"
+        }
+        AppLanguage.PL -> when (this) {
+            EXPENSES -> "Wydatki"
+            SPLITS -> "Rozliczenia"
+            STATS -> "Dane"
+            MAP -> "Mapa"
+            TRIPS -> "Podróże"
+            SETTINGS -> "Ustawienia"
+        }
+    }
 }
 
 data class ToastMessage(
@@ -578,9 +631,9 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             if (saved != null && saved != "SYSTEM") {
                 AppLanguage.valueOf(saved)
             } else {
-                AppLanguage.ES
+                AppLanguage.detectSystemLanguage()
             }
-        }.getOrDefault(AppLanguage.ES)
+        }.getOrElse { AppLanguage.detectSystemLanguage() }
     )
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
@@ -598,8 +651,14 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         _language.value = lang
         prefs.edit().putString("app_language", lang.name).apply()
         val msg = when (lang) {
-            AppLanguage.EN -> "Language changed to English"
             AppLanguage.ES -> "Idioma cambiado a Español"
+            AppLanguage.EN -> "Language changed to English"
+            AppLanguage.FR -> "Langue changée en Français"
+            AppLanguage.IT -> "Lingua cambiata in Italiano"
+            AppLanguage.ZH -> "语言已切换为中文"
+            AppLanguage.NL -> "Taal gewijzigd in Nederlands"
+            AppLanguage.DE -> "Sprache auf Deutsch geändert"
+            AppLanguage.PL -> "Język zmieniony na Polski"
         }
         showToast(msg)
     }

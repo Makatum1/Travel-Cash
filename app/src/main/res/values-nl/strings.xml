@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Travel Cash</string>
+    <string name="app_subtitle">Reiskostenbeheer</string>
+    <string name="tab_expenses">Uitgaven</string>
+    <string name="tab_map">Kaart</string>
+    <string name="tab_stats">Gegevens</string>
+    <string name="tab_splits">Splitsen</string>
+    <string name="tab_trips">Reizen</string>
+    <string name="btn_backup">Back-up</string>
+    <string name="btn_suggestions">Help</string>
+    <string name="btn_csv">CSV</string>
+    <string name="btn_pdf">PDF</string>
+    <string name="btn_import_csv">CSV importeren</string>
+    <string name="btn_add_income">+ Inleg pot</string>
+    <string name="label_spent">Uitgegeven</string>
+    <string name="label_income">Inkomsten</string>
+    <string name="label_extra_balance">Extra saldo</string>
+    <string name="btn_help_faq">Help &amp; FAQ</string>
+    <string name="help_faq_title">Help &amp; FAQ</string>
+    <string name="search_faq_placeholder">Zoek vragen of oplossingen…</string>
+    <string name="no_faq_results">Geen resultaten gevonden voor je zoekopdracht</string>
+    <string name="clear_search">Zoekopdracht wissen</string>
+</resources>

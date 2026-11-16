@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">Travel Cash</string>
+    <string name="app_subtitle">旅行记账与费用分摊</string>
+    <string name="tab_expenses">支出</string>
+    <string name="tab_map">地图</string>
+    <string name="tab_stats">统计</string>
+    <string name="tab_splits">结算</string>
+    <string name="tab_trips">行程</string>
+    <string name="btn_backup">备份</string>
+    <string name="btn_suggestions">帮助</string>
+    <string name="btn_csv">CSV</string>
+    <string name="btn_pdf">PDF</string>
+    <string name="btn_import_csv">导入 CSV</string>
+    <string name="btn_add_income">+ 公账存入</string>
+    <string name="label_spent">已支出</string>
+    <string name="label_income">已存入</string>
+    <string name="label_extra_balance">公账余额</string>
+    <string name="btn_help_faq">帮助与常见问题</string>
+    <string name="help_faq_title">帮助与常见问题</string>
+    <string name="search_faq_placeholder">搜索问题或解答…</string>
+    <string name="no_faq_results">未找到符合您搜索条件的结果</string>
+    <string name="clear_search">清除搜索</string>
+</resources>

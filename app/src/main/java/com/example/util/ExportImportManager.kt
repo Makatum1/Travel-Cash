@@ -25,6 +25,7 @@ import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
+import com.example.ui.theme.AppLanguage
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayInputStream
@@ -597,12 +598,16 @@ object ExportImportManager {
         participants: List<ParticipantEntity>,
         expenses: List<ExpenseEntity>,
         incomes: List<IncomeEntity>,
-        context: Context? = null
+        context: Context? = null,
+        language: AppLanguage = AppLanguage.ES
     ) {
         val pdfDocument = PdfDocument()
         val pageWidth = 595 // A4 standard points
         val pageHeight = 842
         val margin = 32f
+
+        val texts = PdfTexts.get(language)
+        val locale = language.locale
 
         val debtResult = DebtCalculator.calculateDebtBalances(participants, expenses, incomes)
         val totalSpent = expenses.sumOf { it.amountInBaseCurrency }
@@ -687,14 +692,16 @@ object ExportImportManager {
 
         fun drawFooter() {
             val maxFooterTitleWidth = pageWidth - margin * 2 - 100f
-            var titleText = if (trip.title.isNotBlank()) trip.title.trim() else "Viaje"
-            if (footerPaint.measureText("Página $pageNumber   •   $titleText") > maxFooterTitleWidth) {
-                while (titleText.length > 3 && footerPaint.measureText("Página $pageNumber   •   $titleText...") > maxFooterTitleWidth) {
+            var titleText = if (trip.title.isNotBlank()) trip.title.trim() else texts.defaultTripTitle
+            var footerStr = String.format(locale, texts.pageFooterPattern, pageNumber, titleText)
+            if (footerPaint.measureText(footerStr) > maxFooterTitleWidth) {
+                while (titleText.length > 3 && footerPaint.measureText(String.format(locale, texts.pageFooterPattern, pageNumber, "$titleText...")) > maxFooterTitleWidth) {
                     titleText = titleText.dropLast(1)
                 }
                 titleText = "$titleText..."
+                footerStr = String.format(locale, texts.pageFooterPattern, pageNumber, titleText)
             }
-            canvas.drawText("Página $pageNumber   •   $titleText", pageWidth / 2f, pageHeight - 16f, footerPaint)
+            canvas.drawText(footerStr, pageWidth / 2f, pageHeight - 16f, footerPaint)
         }
 
         fun ensureSpace(requiredHeight: Float) {
@@ -803,16 +810,16 @@ object ExportImportManager {
 
         // Textos del encabezado
         val textLeft = iconX + iconSize + 14f
-        canvas.drawText("TRAVEL CASH • INFORME FINANCIERO Y LIQUIDACIÓN", textLeft, y + 23f, headerBadgePaint)
+        canvas.drawText(texts.headerBadge, textLeft, y + 23f, headerBadgePaint)
         canvas.drawText(trip.title.take(36), textLeft, y + 44f, headerTitlePaint)
         canvas.drawText(
-            "Fechas: ${FormatUtils.formatShortDate(trip.startDate)} - ${FormatUtils.formatShortDate(trip.endDate)}   •   Moneda Base: ${trip.baseCurrency}",
+            "${texts.datesLabel} ${FormatUtils.formatShortDate(trip.startDate, locale)} - ${FormatUtils.formatShortDate(trip.endDate, locale)}   •   ${texts.baseCurrencyLabel} ${trip.baseCurrency}",
             textLeft,
             y + 61f,
             headerSubPaint
         )
         canvas.drawText(
-            "Generado: $genTime   •   Viajeros: ${participants.size}   •   Gastos registrados: ${expenses.size}",
+            "${texts.generatedLabel} $genTime   •   ${texts.travelersLabel} ${participants.size}   •   ${texts.recordedExpensesLabel} ${expenses.size}",
             textLeft,
             y + 76f,
             headerMetaPaint
@@ -823,7 +830,7 @@ object ExportImportManager {
         // =====================================================================
         // 1. RESUMEN FINANCIERO Y ESTADÍSTICAS (TARJETAS ESTILIZADAS CON COLORES)
         // =====================================================================
-        canvas.drawText("1. Resumen Financiero y Métricas Clave", margin, y, sectionPaint)
+        canvas.drawText(texts.section1Title, margin, y, sectionPaint)
         y += 14f
         val boxW = (pageWidth - margin * 2 - 16f) / 3f
 
@@ -837,12 +844,12 @@ object ExportImportManager {
         )
 
         val row1Cards = listOf(
-            MetricCard("PRESUPUESTO TOTAL", trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency) } ?: "Sin Límite", "#F0F9FF", "#BAE6FD", "#0369A1", "#0C4A6E"),
-            MetricCard("GASTADO TOTAL", FormatUtils.formatCurrency(totalSpent, trip.baseCurrency), "#F8FAFC", "#CBD5E1", "#475569", "#0F172A"),
+            MetricCard(texts.totalBudget, trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency, locale) } ?: texts.noLimit, "#F0F9FF", "#BAE6FD", "#0369A1", "#0C4A6E"),
+            MetricCard(texts.totalSpent, FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, locale), "#F8FAFC", "#CBD5E1", "#475569", "#0F172A"),
             if (extraBalance >= 0) {
-                MetricCard("SALDO EXTRA DISPONIBLE", FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
+                MetricCard(texts.extraBalance, FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, locale), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
             } else {
-                MetricCard("SOBRECOSTE PRESUPUESTO", FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
+                MetricCard(texts.budgetOverrun, FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, locale), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
             }
         )
 
@@ -864,12 +871,12 @@ object ExportImportManager {
         y += 52f
 
         val row2Cards = listOf(
-            MetricCard("APORTACIONES AL BOTE", "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency)}", "#F0FDF4", "#86EFAC", "#15803D", "#14532D"),
-            MetricCard("GASTADO DESDE BOTE", FormatUtils.formatCurrency(boteExpenses, trip.baseCurrency), "#FFFBEB", "#FDE68A", "#B45309", "#78350F"),
+            MetricCard(texts.potContributions, "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency, locale)}", "#F0FDF4", "#86EFAC", "#15803D", "#14532D"),
+            MetricCard(texts.spentFromPot, FormatUtils.formatCurrency(boteExpenses, trip.baseCurrency, locale), "#FFFBEB", "#FDE68A", "#B45309", "#78350F"),
             if (commonPotBalance >= 0) {
-                MetricCard("SALDO ACTUAL DEL BOTE", FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
+                MetricCard(texts.currentPotBalance, FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency, locale), "#ECFDF5", "#6EE7B7", "#047857", "#065F46")
             } else {
-                MetricCard("DÉFICIT DEL BOTE", FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
+                MetricCard(texts.potDeficit, FormatUtils.formatSignedCurrency(commonPotBalance, trip.baseCurrency, locale), "#FEF2F2", "#FCA5A5", "#B91C1C", "#991B1B")
             }
         )
 
@@ -894,7 +901,7 @@ object ExportImportManager {
         // 2. DESGLOSE POR CATEGORÍA CON GRÁFICA VISUAL DE PORCENTAJES
         // =====================================================================
         ensureSpace(70f)
-        canvas.drawText("2. Desglose por Categoría y Distribución", margin, y, sectionPaint)
+        canvas.drawText(texts.section2Title, margin, y, sectionPaint)
         y += 14f
 
         val catStats = expenses.groupBy { it.category }
@@ -907,7 +914,7 @@ object ExportImportManager {
             .sortedByDescending { it.third.first }
 
         if (catStats.isEmpty()) {
-            canvas.drawText("No hay gastos registrados para categorizar.", margin + 10f, y + 12f, bodyPaint)
+            canvas.drawText(texts.noCategories, margin + 10f, y + 12f, bodyPaint)
             y += 20f
         } else {
             fillPaint.color = Color.parseColor("#F1F5F9")
@@ -916,10 +923,10 @@ object ExportImportManager {
             strokePaint.strokeWidth = 0.8f
             canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 19f), 4f, 4f, strokePaint)
 
-            canvas.drawText("Categoría", margin + 12f, y + 13f, bodyBoldPaint)
-            canvas.drawText("Nº Gastos", margin + 180f, y + 13f, bodyBoldPaint)
-            canvas.drawText("Importe Total", margin + 270f, y + 13f, bodyBoldPaint)
-            canvas.drawText("% y Proporción Visual", margin + 380f, y + 13f, bodyBoldPaint)
+            canvas.drawText(texts.colCategory, margin + 12f, y + 13f, bodyBoldPaint)
+            canvas.drawText(texts.colExpenseCount, margin + 180f, y + 13f, bodyBoldPaint)
+            canvas.drawText(texts.colTotalAmount, margin + 270f, y + 13f, bodyBoldPaint)
+            canvas.drawText(texts.colVisualShare, margin + 380f, y + 13f, bodyBoldPaint)
             y += 22f
 
             catStats.forEach { (cat, count, sumAndPct) ->
@@ -932,9 +939,9 @@ object ExportImportManager {
                 canvas.drawCircle(margin + 16f, y + 8.5f, 4f, fillPaint)
 
                 canvas.drawText(cat.take(24), margin + 26f, y + 12f, bodyBoldPaint)
-                canvas.drawText("$count gastos", margin + 180f, y + 12f, bodyPaint)
-                canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency), margin + 270f, y + 12f, bodyBoldPaint)
-                canvas.drawText(String.format(Locale.US, "%.1f%%", pct), margin + 380f, y + 12f, bodyBoldPaint)
+                canvas.drawText("$count ${texts.expensesUnit}", margin + 180f, y + 12f, bodyPaint)
+                canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency, locale), margin + 270f, y + 12f, bodyBoldPaint)
+                canvas.drawText(String.format(locale, "%.1f%%", pct), margin + 380f, y + 12f, bodyBoldPaint)
 
                 // Barra visual de porcentaje proporcional
                 val maxBarW = 75f
@@ -953,7 +960,7 @@ object ExportImportManager {
         // 3. LIQUIDACIÓN DE CUENTAS (TRANSFERENCIAS PENDIENTES)
         // =====================================================================
         ensureSpace(70f)
-        canvas.drawText("3. Liquidación de Cuentas (Transferencias entre Viajeros)", margin, y, sectionPaint)
+        canvas.drawText(texts.section3Title, margin, y, sectionPaint)
         y += 14f
 
         if (debtResult.transactions.isEmpty()) {
@@ -969,7 +976,7 @@ object ExportImportManager {
                 textSize = 9.5f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             }
-            canvas.drawText("✓ ¡Cuentas totalmente saldadas al 100%! No existen transferencias pendientes.", margin + 14f, y + 18f, okPaint)
+            canvas.drawText(texts.accountsSettledOk, margin + 14f, y + 18f, okPaint)
             y += 28f
         } else {
             debtResult.transactions.forEach { tx ->
@@ -984,8 +991,8 @@ object ExportImportManager {
                 // Texto quién paga a quién
                 canvas.drawText(tx.fromName, margin + 12f, y + 17f, bodyBoldPaint)
                 val fromW = bodyBoldPaint.measureText(tx.fromName)
-                canvas.drawText("  →  debe transferir a  →  ", margin + 12f + fromW, y + 17f, bodySubPaint)
-                val arrowW = bodySubPaint.measureText("  →  debe transferir a  →  ")
+                canvas.drawText(texts.mustTransferTo, margin + 12f + fromW, y + 17f, bodySubPaint)
+                val arrowW = bodySubPaint.measureText(texts.mustTransferTo)
 
                 val receiverPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -1009,7 +1016,7 @@ object ExportImportManager {
                     typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     textAlign = Paint.Align.CENTER
                 }
-                canvas.drawText(FormatUtils.formatCurrency(tx.amount, trip.baseCurrency), pillRect.centerX(), y + 16.5f, pillPaint)
+                canvas.drawText(FormatUtils.formatCurrency(tx.amount, trip.baseCurrency, locale), pillRect.centerX(), y + 16.5f, pillPaint)
 
                 y += 32f
             }
@@ -1020,7 +1027,7 @@ object ExportImportManager {
         // 4. BALANCE DETALLADO POR PARTICIPANTE
         // =====================================================================
         ensureSpace(80f)
-        canvas.drawText("4. Balance Individual por Participante", margin, y, sectionPaint)
+        canvas.drawText(texts.section4Title, margin, y, sectionPaint)
         y += 14f
 
         fillPaint.color = Color.parseColor("#F1F5F9")
@@ -1029,11 +1036,11 @@ object ExportImportManager {
         strokePaint.strokeWidth = 0.8f
         canvas.drawRoundRect(RectF(margin, y, pageWidth - margin, y + 20f), 4f, 4f, strokePaint)
 
-        canvas.drawText("Participante", margin + 10f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Pagó Bolsillo", margin + 130f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Aportó al Bote", margin + 220f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Le Correspondía", margin + 315f, y + 14f, bodyBoldPaint)
-        canvas.drawText("Balance Neto Final", margin + 420f, y + 14f, bodyBoldPaint)
+        canvas.drawText(texts.colParticipant, margin + 10f, y + 14f, bodyBoldPaint)
+        canvas.drawText(texts.colPaidPocket, margin + 130f, y + 14f, bodyBoldPaint)
+        canvas.drawText(texts.colContributedPot, margin + 220f, y + 14f, bodyBoldPaint)
+        canvas.drawText(texts.colOwedShare, margin + 315f, y + 14f, bodyBoldPaint)
+        canvas.drawText(texts.colFinalNet, margin + 420f, y + 14f, bodyBoldPaint)
         y += 24f
 
         debtResult.participantBalances.forEachIndexed { idx, b ->
@@ -1043,9 +1050,9 @@ object ExportImportManager {
                 canvas.drawRect(margin, y, pageWidth - margin, y + 18f, fillPaint)
             }
             canvas.drawText(b.participantName, margin + 10f, y + 13f, bodyBoldPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesPaid, trip.baseCurrency), margin + 130f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalBoteContributed, trip.baseCurrency), margin + 220f, y + 13f, bodyPaint)
-            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesOwed, trip.baseCurrency), margin + 315f, y + 13f, bodyPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesPaid, trip.baseCurrency, locale), margin + 130f, y + 13f, bodyPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalBoteContributed, trip.baseCurrency, locale), margin + 220f, y + 13f, bodyPaint)
+            canvas.drawText(FormatUtils.formatCurrency(b.totalExpensesOwed, trip.baseCurrency, locale), margin + 315f, y + 13f, bodyPaint)
 
             // Balance neto con color semántico según resultado
             val netColorHex = when {
@@ -1058,7 +1065,7 @@ object ExportImportManager {
                 textSize = 9.5f
                 color = Color.parseColor(netColorHex)
             }
-            canvas.drawText(FormatUtils.formatSignedCurrency(b.netBalance, trip.baseCurrency), margin + 420f, y + 13f, netPaint)
+            canvas.drawText(FormatUtils.formatSignedCurrency(b.netBalance, trip.baseCurrency, locale), margin + 420f, y + 13f, netPaint)
             y += 19f
         }
 
@@ -1068,7 +1075,7 @@ object ExportImportManager {
         if (incomes.isNotEmpty()) {
             y += sectionSpacing
             ensureSpace(60f)
-            canvas.drawText("5. Aportaciones Registradas al Bote Común (${incomes.size})", margin, y, sectionPaint)
+            canvas.drawText("5. ${texts.section5Title} (${incomes.size})", margin, y, sectionPaint)
             y += 14f
 
             incomes.forEach { inc ->
@@ -1081,7 +1088,7 @@ object ExportImportManager {
                 canvas.drawRoundRect(incRect, 4f, 4f, strokePaint)
 
                 canvas.drawText(
-                    "${FormatUtils.formatShortDate(inc.date)}  •  ${inc.description.ifEmpty { "Aportación al bote común" }}",
+                    "${FormatUtils.formatShortDate(inc.date, locale)}  •  ${inc.description.ifEmpty { texts.defaultPotDesc }}",
                     margin + 10f,
                     y + 14f,
                     bodyPaint
@@ -1093,7 +1100,7 @@ object ExportImportManager {
                     textAlign = Paint.Align.RIGHT
                 }
                 canvas.drawText(
-                    "+${FormatUtils.formatCurrency(inc.amount, trip.baseCurrency)}",
+                    "+${FormatUtils.formatCurrency(inc.amount, trip.baseCurrency, locale)}",
                     pageWidth - margin - 12f,
                     y + 14f,
                     greenIncomePaint
@@ -1108,7 +1115,7 @@ object ExportImportManager {
         y += sectionSpacing
         ensureSpace(60f)
         val sectionIndex = if (incomes.isNotEmpty()) 6 else 5
-        canvas.drawText("$sectionIndex. Desglose Detallado de Gastos (${expenses.size})", margin, y, sectionPaint)
+        canvas.drawText("$sectionIndex. ${texts.section6Title} (${expenses.size})", margin, y, sectionPaint)
         y += 14f
 
         val partNames = participants.associate { it.id to it.name }
@@ -1134,7 +1141,7 @@ object ExportImportManager {
 
             val catInfo = CategoryCatalog.getCategory(exp.category)
             val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { exp.category } }
-            val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) "🏺 Bote Común" else partNames[exp.paidById] ?: "-"
+            val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) texts.commonPotName else partNames[exp.paidById] ?: "-"
 
             // Fila principal del gasto: Tarjeta con borde sutil
             val rowTop = y
@@ -1164,12 +1171,12 @@ object ExportImportManager {
                 color = Color.parseColor("#0F172A")
                 textAlign = Paint.Align.RIGHT
             }
-            canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency), pageWidth - margin - 8f, y + 14f, pricePaint)
+            canvas.drawText(FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, locale), pageWidth - margin - 8f, y + 14f, pricePaint)
             y += 18f
 
             // Fila de metadatos del gasto (Fecha y Quién pagó)
-            canvas.drawText("📅 ${FormatUtils.formatShortDate(exp.date)}", margin + 22f, y + 11f, bodySubPaint)
-            val dateW = bodySubPaint.measureText("📅 ${FormatUtils.formatShortDate(exp.date)}")
+            canvas.drawText("📅 ${FormatUtils.formatShortDate(exp.date, locale)}", margin + 22f, y + 11f, bodySubPaint)
+            val dateW = bodySubPaint.measureText("📅 ${FormatUtils.formatShortDate(exp.date, locale)}")
 
             val payerColor = if (isBote) "#B45309" else "#334155"
             val payerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -1177,25 +1184,25 @@ object ExportImportManager {
                 textSize = 8.5f
                 color = Color.parseColor(payerColor)
             }
-            canvas.drawText("  •  Pagado por: $payer", margin + 22f + dateW, y + 11f, payerPaint)
+            canvas.drawText("${texts.paidByLabel}$payer", margin + 22f + dateW, y + 11f, payerPaint)
 
             // Si tiene notas descriptivas diferentes del lugar
             if (exp.notes.isNotBlank() && exp.notes != exp.placeName) {
                 y += 13f
-                canvas.drawText("Notas: ${exp.notes.take(50)}", margin + 22f, y + 10f, bodySubPaint)
+                canvas.drawText("${texts.notesLabel}${exp.notes.take(50)}", margin + 22f, y + 10f, bodySubPaint)
             }
             y += 16f
 
             // 1. Adjuntos que NO son imagen: sección 'Archivos Adjuntos' con formato 'Archivo adjunto: [Nombre]'
             if (nonImageUris.isNotEmpty()) {
                 ensureSpace(14f + nonImageUris.size * 14f)
-                canvas.drawText("Archivos Adjuntos", margin + 22f, y + 11f, bodyBoldPaint)
+                canvas.drawText(texts.attachmentsHeader, margin + 22f, y + 11f, bodyBoldPaint)
                 y += 14f
                 val maxTextWidth = pageWidth - margin * 2 - 36f
                 nonImageUris.forEach { nonImgUri ->
                     ensureSpace(14f)
                     val fileName = getAttachmentDisplayName(context, nonImgUri)
-                    var line = "Archivo adjunto: $fileName"
+                    var line = "${texts.attachedFilePrefix}$fileName"
                     if (bodyPaint.measureText(line) > maxTextWidth) {
                         while (line.length > 3 && bodyPaint.measureText("$line...") > maxTextWidth) {
                             line = line.dropLast(1)

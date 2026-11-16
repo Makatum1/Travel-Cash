@@ -15,23 +15,25 @@ object FormatUtils {
     private val fullDayFormatterEs = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy", spanishLocale)
     private val fullDayFormatterEn = DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy", englishLocale)
 
-    fun formatCurrency(amount: Double, currencyCode: String = "EUR"): String {
+    fun formatCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = spanishLocale): String {
         val symbol = CurrencyCatalog.getSymbol(currencyCode)
-        val formattedNumber = String.format(spanishLocale, "%,.2f", amount)
+        val formattedNumber = String.format(locale, "%,.2f", amount)
         return "$formattedNumber $symbol"
     }
 
-    fun formatSignedCurrency(amount: Double, currencyCode: String = "EUR"): String {
+    fun formatSignedCurrency(amount: Double, currencyCode: String = "EUR", locale: Locale = spanishLocale): String {
         val symbol = CurrencyCatalog.getSymbol(currencyCode)
         val sign = if (amount > 0.004) "+" else if (amount < -0.004) "-" else ""
-        val formattedNumber = String.format(spanishLocale, "%,.2f", abs(amount))
+        val formattedNumber = String.format(locale, "%,.2f", abs(amount))
         return "$sign$formattedNumber $symbol"
     }
 
-    fun formatShortDate(isoDate: String): String {
+    fun formatShortDate(isoDate: String, locale: Locale = spanishLocale): String {
         return try {
             val parsed = LocalDate.parse(isoDate.take(10))
-            parsed.format(shortDateFormatter)
+            val pattern = if (locale.language == "zh") "yyyy/MM/dd" else "dd/MM/yyyy"
+            val formatter = DateTimeFormatter.ofPattern(pattern, locale)
+            parsed.format(formatter)
         } catch (e: Exception) {
             isoDate
         }

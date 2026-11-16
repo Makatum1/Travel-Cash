@@ -463,12 +463,8 @@ fun SettingsTabScreen(
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                val currentFlag = when (language) {
-                                    AppLanguage.ES -> "🇪🇸 "
-                                    AppLanguage.EN -> "🇬🇧 "
-                                }
                                 Text(
-                                    text = "$currentFlag$currentLangLabel",
+                                    text = "${language.flag} ${language.nativeName}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -486,11 +482,9 @@ fun SettingsTabScreen(
                         Column(modifier = Modifier.padding(top = 8.dp)) {
                             AppLanguage.entries.forEach { lang ->
                                 val selected = language == lang
-                                val label = if (isEn) lang.displayNameEn else lang.displayNameEs
-                                val flag = when (lang) {
-                                    AppLanguage.ES -> "🇪🇸 "
-                                    AppLanguage.EN -> "🇬🇧 "
-                                }
+                                val langDescription = if (isEn) lang.displayNameEn else lang.displayNameEs
+                                val label = "${lang.nativeName} ($langDescription)"
+                                val flag = "${lang.flag} "
                                 Surface(
                                     onClick = { onLanguageChange(lang) },
                                     shape = RoundedCornerShape(10.dp),

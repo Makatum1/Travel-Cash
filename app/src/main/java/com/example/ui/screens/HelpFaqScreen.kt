@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
@@ -78,7 +79,16 @@ data class FaqItem(
     val questionEn: String,
     val answerEs: String,
     val answerEn: String
-)
+) {
+    fun getCategory(lang: AppLanguage): String =
+        FaqTranslations.getCategory(id, lang, categoryEs, categoryEn)
+
+    fun getQuestion(lang: AppLanguage): String =
+        FaqTranslations.getQuestion(id, lang, questionEs, questionEn)
+
+    fun getAnswer(lang: AppLanguage): String =
+        FaqTranslations.getAnswer(id, lang, answerEs, answerEn)
+}
 
 /**
  * Normaliza un texto eliminando diacríticos (tildes, acentos, diéresis), signos y pasándolo a minúsculas
@@ -318,10 +328,10 @@ val TRAVEL_CASH_FAQS = listOf(
         id = "faq_change_language",
         categoryEs = "Ajustes y Personalización",
         categoryEn = "Settings & Customization",
-        questionEs = "¿Cómo cambio el idioma de la app entre Español e Inglés?",
-        questionEn = "How do I switch the app language between Spanish and English?",
-        answerEs = "Ve a la pestaña \"Ajustes\" y en el selector de Idioma elige \"Español\" o \"English\". Toda la interfaz, los menús, las cuentas, los reportes y esta misma sección de Ayuda y FAQ cambiarán de inmediato al idioma seleccionado sin necesidad de reiniciar la app.",
-        answerEn = "Go to the \"Settings\" tab and under the Language selector choose \"Español\" or \"English\". The entire interface, menus, calculations, exports, and this Help & FAQ section will switch immediately to the selected language without needing to restart the app."
+        questionEs = "¿Cómo cambio el idioma de la app?",
+        questionEn = "How do I switch the app language?",
+        answerEs = "Ve a la pestaña \"Ajustes\" y en el selector de Idioma elige tu idioma preferido entre Español, Inglés, Francés, Italiano, Chino, Holandés, Alemán y Polaco. Toda la interfaz, los menús, las cuentas, los reportes PDF y esta sección de Ayuda cambiarán de inmediato al idioma seleccionado.",
+        answerEn = "Go to the \"Settings\" tab and under the Language selector choose your preferred language among Spanish, English, French, Italian, Chinese, Dutch, German, and Polish. The entire interface, menus, calculations, PDF reports, and this Help section will switch immediately to the selected language."
     ),
     FaqItem(
         id = "faq_daily_notifications",
@@ -341,9 +351,76 @@ val TRAVEL_CASH_FAQS = listOf(
 fun HelpFaqModal(
     onDismiss: () -> Unit
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
     var searchQuery by remember { mutableStateOf("") }
     var expandedItemIds by remember { mutableStateOf(setOf<String>()) }
+
+    val titleText = when (currentLang) {
+        AppLanguage.ES -> "Ayuda y Preguntas Frecuentes"
+        AppLanguage.EN -> "Help & FAQ"
+        AppLanguage.FR -> "Aide et FAQ"
+        AppLanguage.IT -> "Aiuto e FAQ"
+        AppLanguage.ZH -> "帮助与常见问题"
+        AppLanguage.NL -> "Help & FAQ"
+        AppLanguage.DE -> "Hilfe & FAQ"
+        AppLanguage.PL -> "Pomoc i FAQ"
+    }
+
+    val backDescription = when (currentLang) {
+        AppLanguage.ES -> "Volver"
+        AppLanguage.EN -> "Back"
+        AppLanguage.FR -> "Retour"
+        AppLanguage.IT -> "Torna indietro"
+        AppLanguage.ZH -> "返回"
+        AppLanguage.NL -> "Terug"
+        AppLanguage.DE -> "Zurück"
+        AppLanguage.PL -> "Wstecz"
+    }
+
+    val searchPlaceholder = when (currentLang) {
+        AppLanguage.ES -> "Buscar preguntas, términos o soluciones…"
+        AppLanguage.EN -> "Search questions, terms or solutions…"
+        AppLanguage.FR -> "Rechercher des questions, termes ou solutions…"
+        AppLanguage.IT -> "Cerca domande, termini o soluzioni…"
+        AppLanguage.ZH -> "搜索问题、术语或解决方案…"
+        AppLanguage.NL -> "Zoek vragen, termen of oplossingen…"
+        AppLanguage.DE -> "Fragen, Begriffe oder Lösungen suchen…"
+        AppLanguage.PL -> "Szukaj pytań, haseł lub rozwiązań…"
+    }
+
+    val clearSearchText = when (currentLang) {
+        AppLanguage.ES -> "Limpiar búsqueda"
+        AppLanguage.EN -> "Clear search"
+        AppLanguage.FR -> "Effacer la recherche"
+        AppLanguage.IT -> "Cancella ricerca"
+        AppLanguage.ZH -> "清除搜索"
+        AppLanguage.NL -> "Zoekopdracht wissen"
+        AppLanguage.DE -> "Suche löschen"
+        AppLanguage.PL -> "Wyczyść wyszukiwanie"
+    }
+
+    val noResultsTitle = when (currentLang) {
+        AppLanguage.ES -> "No se han encontrado resultados para tu búsqueda"
+        AppLanguage.EN -> "No results found for your search"
+        AppLanguage.FR -> "Aucun résultat trouvé pour votre recherche"
+        AppLanguage.IT -> "Nessun risultato trovato per la tua ricerca"
+        AppLanguage.ZH -> "未找到符合您搜索条件的结果"
+        AppLanguage.NL -> "Geen resultaten gevonden voor je zoekopdracht"
+        AppLanguage.DE -> "Keine Ergebnisse für Ihre Suche gefunden"
+        AppLanguage.PL -> "Nie znaleziono wyników dla Twojego wyszukiwania"
+    }
+
+    val noResultsSubtitle = when (currentLang) {
+        AppLanguage.ES -> "Prueba a buscar términos como \"bote\", \"gastos\", \"repartir\", \"presupuesto\" o \"backup\"."
+        AppLanguage.EN -> "Try searching for keywords like \"pot\", \"expenses\", \"split\", \"budget\" or \"backup\"."
+        AppLanguage.FR -> "Essayez de rechercher des termes comme « cagnotte », « dépenses », « partage », « budget » ou « sauvegarde »."
+        AppLanguage.IT -> "Prova a cercare termini come \"cassa comune\", \"spese\", \"divisione\", \"budget\" o \"backup\"."
+        AppLanguage.ZH -> "尝试搜索诸如“公账”、“支出”、“分摊”、“预算”或“备份”等词汇。"
+        AppLanguage.NL -> "Probeer te zoeken op termen zoals \"pot\", \"uitgaven\", \"splitsen\", \"budget\" of \"back-up\"."
+        AppLanguage.DE -> "Versuchen Sie Begriffe wie „Gemeinschaftskasse“, „Ausgaben“, „Aufteilung“, „Budget“ oder „Backup“."
+        AppLanguage.PL -> "Spróbuj wyszukać hasła takie jak „wspólna kasa”, „wydatki”, „podział”, „budżet” lub „kopia zapasowa”."
+    }
 
     BackHandler {
         onDismiss()
@@ -379,13 +456,13 @@ fun HelpFaqModal(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = if (isEn) "Back to Suggestions" else "Volver a Sugerencias",
+                            contentDescription = backDescription,
                             tint = OceanNavy
                         )
                     }
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isEn) "Help & FAQ" else "Ayuda y Preguntas Frecuentes",
+                        text = titleText,
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Black,
                             fontSize = 20.sp
@@ -405,7 +482,7 @@ fun HelpFaqModal(
                     shape = RoundedCornerShape(14.dp),
                     placeholder = {
                         Text(
-                            text = if (isEn) "Search questions, terms or solutions…" else "Buscar preguntas, términos o soluciones…",
+                            text = searchPlaceholder,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF64748B)
                         )
@@ -422,7 +499,7 @@ fun HelpFaqModal(
                             IconButton(onClick = { searchQuery = "" }) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = if (isEn) "Clear search" else "Limpiar búsqueda",
+                                    contentDescription = clearSearchText,
                                     tint = Color(0xFF64748B)
                                 )
                             }
@@ -443,20 +520,27 @@ fun HelpFaqModal(
                     normalizedQuery.split(Regex("\\s+")).filter { it.isNotEmpty() }
                 }
 
-                val filteredFaqs = remember(normalizedQuery, isEn) {
+                val filteredFaqs = remember(normalizedQuery, currentLang) {
                     if (tokens.isEmpty()) {
                         TRAVEL_CASH_FAQS
                     } else {
                         TRAVEL_CASH_FAQS.filter { item ->
-                            val qText = if (isEn) item.questionEn else item.questionEs
-                            val aText = if (isEn) item.answerEn else item.answerEs
-                            val catText = if (isEn) item.categoryEn else item.categoryEs
+                            val qText = item.getQuestion(currentLang)
+                            val aText = item.getAnswer(currentLang)
+                            val catText = item.getCategory(currentLang)
                             val normQ = normalizeFaqSearchText(qText)
                             val normA = normalizeFaqSearchText(aText)
                             val normCat = normalizeFaqSearchText(catText)
 
+                            val normQEs = normalizeFaqSearchText(item.questionEs)
+                            val normAEs = normalizeFaqSearchText(item.answerEs)
+                            val normQEn = normalizeFaqSearchText(item.questionEn)
+                            val normAEn = normalizeFaqSearchText(item.answerEn)
+
                             tokens.all { token ->
-                                normQ.contains(token) || normA.contains(token) || normCat.contains(token)
+                                normQ.contains(token) || normA.contains(token) || normCat.contains(token) ||
+                                normQEs.contains(token) || normAEs.contains(token) ||
+                                normQEn.contains(token) || normAEn.contains(token)
                             }
                         }
                     }
@@ -498,14 +582,14 @@ fun HelpFaqModal(
                                 }
                                 Spacer(modifier = Modifier.height(14.dp))
                                 Text(
-                                    text = if (isEn) "No results found for your search" else "No se han encontrado resultados para tu búsqueda",
+                                    text = noResultsTitle,
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = OceanNavy,
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Text(
-                                    text = if (isEn) "Try searching for keywords like \"pot\", \"expenses\", \"split\", \"budget\" or \"backup\"." else "Prueba a buscar términos como \"bote\", \"gastos\", \"repartir\", \"presupuesto\" o \"backup\".",
+                                    text = noResultsSubtitle,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF64748B),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -517,7 +601,7 @@ fun HelpFaqModal(
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Text(
-                                        text = if (isEn) "Clear search" else "Limpiar búsqueda",
+                                        text = clearSearchText,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -535,9 +619,9 @@ fun HelpFaqModal(
                     ) {
                         items(filteredFaqs, key = { it.id }) { item ->
                             val isExpanded = expandedItemIds.contains(item.id)
-                            val question = if (isEn) item.questionEn else item.questionEs
-                            val answer = if (isEn) item.answerEn else item.answerEs
-                            val category = if (isEn) item.categoryEn else item.categoryEs
+                            val question = item.getQuestion(currentLang)
+                            val answer = item.getAnswer(currentLang)
+                            val category = item.getCategory(currentLang)
 
                             Card(
                                 modifier = Modifier

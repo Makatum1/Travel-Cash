@@ -15,9 +15,57 @@ enum class AppThemeMode {
     DARK
 }
 
-enum class AppLanguage(val code: String, val displayNameEs: String, val displayNameEn: String) {
-    ES("es", "Español", "Spanish"),
-    EN("en", "Inglés (English)", "English")
+enum class AppLanguage(
+    val code: String,
+    val nativeName: String,
+    val flag: String,
+    val locale: java.util.Locale
+) {
+    ES("es", "Español", "🇪🇸", java.util.Locale.forLanguageTag("es")),
+    EN("en", "English", "🇬🇧", java.util.Locale.forLanguageTag("en")),
+    FR("fr", "Français", "🇫🇷", java.util.Locale.forLanguageTag("fr")),
+    IT("it", "Italiano", "🇮🇹", java.util.Locale.forLanguageTag("it")),
+    ZH("zh", "中文 (简体)", "🇨🇳", java.util.Locale.SIMPLIFIED_CHINESE),
+    NL("nl", "Nederlands", "🇳🇱", java.util.Locale.forLanguageTag("nl")),
+    DE("de", "Deutsch", "🇩🇪", java.util.Locale.forLanguageTag("de")),
+    PL("pl", "Polski", "🇵🇱", java.util.Locale.forLanguageTag("pl"));
+
+    val displayNameEs: String
+        get() = when (this) {
+            ES -> "Español"
+            EN -> "Inglés"
+            FR -> "Francés"
+            IT -> "Italiano"
+            ZH -> "Chino (Simplificado)"
+            NL -> "Holandés"
+            DE -> "Alemán"
+            PL -> "Polaco"
+        }
+
+    val displayNameEn: String
+        get() = when (this) {
+            ES -> "Spanish"
+            EN -> "English"
+            FR -> "French"
+            IT -> "Italian"
+            ZH -> "Chinese (Simplified)"
+            NL -> "Dutch"
+            DE -> "German"
+            PL -> "Polish"
+        }
+
+    companion object {
+        fun fromCode(code: String?): AppLanguage? {
+            if (code.isNullOrBlank()) return null
+            val clean = code.lowercase(java.util.Locale.ROOT).take(2)
+            return entries.find { it.code == clean }
+        }
+
+        fun detectSystemLanguage(): AppLanguage {
+            val systemCode = java.util.Locale.getDefault().language
+            return fromCode(systemCode) ?: EN
+        }
+    }
 }
 
 fun AppLanguage.isEnglish(systemLocale: java.util.Locale = java.util.Locale.getDefault()): Boolean {

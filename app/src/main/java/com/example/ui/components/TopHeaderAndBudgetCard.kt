@@ -130,8 +130,64 @@ fun TravelCashTopBar(
     onImportNewTripCsvClick: () -> Unit,
     onSuggestionsClick: () -> Unit
 ) {
-    val isEn = LocalAppLanguage.current == AppLanguage.EN
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang == AppLanguage.EN
     var tripMenuExpanded by remember { mutableStateOf(false) }
+
+    val appSubtitle = when (currentLang) {
+        AppLanguage.ES -> "Gestor de gastos de viajes"
+        AppLanguage.EN -> "Travel expense manager"
+        AppLanguage.FR -> "Gestionnaire de dépenses de voyage"
+        AppLanguage.IT -> "Gestione spese di viaggio"
+        AppLanguage.ZH -> "旅行记账与费用分摊"
+        AppLanguage.NL -> "Reiskostenbeheer"
+        AppLanguage.DE -> "Reisekostenverwaltung"
+        AppLanguage.PL -> "Menedżer wydatków w podróży"
+    }
+
+    val selectOrCreateTripText = when (currentLang) {
+        AppLanguage.ES -> "Seleccionar o crear un viaje..."
+        AppLanguage.EN -> "Select or create a trip..."
+        AppLanguage.FR -> "Sélectionner ou créer un voyage..."
+        AppLanguage.IT -> "Seleziona o crea un viaggio..."
+        AppLanguage.ZH -> "选择或创建行程..."
+        AppLanguage.NL -> "Selecteer of maak een reis..."
+        AppLanguage.DE -> "Reise auswählen oder erstellen..."
+        AppLanguage.PL -> "Wybierz lub utwórz podróż..."
+    }
+
+    val switchActiveTripDesc = when (currentLang) {
+        AppLanguage.ES -> "Cambiar viaje activo"
+        AppLanguage.EN -> "Switch active trip"
+        AppLanguage.FR -> "Changer de voyage actif"
+        AppLanguage.IT -> "Cambia viaggio attivo"
+        AppLanguage.ZH -> "切换当前行程"
+        AppLanguage.NL -> "Actieve reis wisselen"
+        AppLanguage.DE -> "Aktive Reise wechseln"
+        AppLanguage.PL -> "Zmień aktywną podróż"
+    }
+
+    val activeBadgeText = when (currentLang) {
+        AppLanguage.ES -> "ACTIVO"
+        AppLanguage.EN -> "ACTIVE"
+        AppLanguage.FR -> "ACTIF"
+        AppLanguage.IT -> "ATTIVO"
+        AppLanguage.ZH -> "激活"
+        AppLanguage.NL -> "ACTIEF"
+        AppLanguage.DE -> "AKTIV"
+        AppLanguage.PL -> "AKTYWNA"
+    }
+
+    val createNewTripText = when (currentLang) {
+        AppLanguage.ES -> "Crear nuevo viaje"
+        AppLanguage.EN -> "Create new trip"
+        AppLanguage.FR -> "Créer un nouveau voyage"
+        AppLanguage.IT -> "Crea nuovo viaggio"
+        AppLanguage.ZH -> "创建新行程"
+        AppLanguage.NL -> "Nieuwe reis aanmaken"
+        AppLanguage.DE -> "Neue Reise erstellen"
+        AppLanguage.PL -> "Utwórz nową podróż"
+    }
 
     Surface(
         color = OceanNavy,
@@ -169,7 +225,7 @@ fun TravelCashTopBar(
                             color = Color.White
                         )
                         Text(
-                            text = if (isEn) "Travel expense manager" else "Gestor de gastos de viajes",
+                            text = appSubtitle,
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF94A3B8)
                         )
@@ -183,19 +239,29 @@ fun TravelCashTopBar(
                     border = BorderStroke(1.dp, Color(0xFF475569)),
                     modifier = Modifier.testTag("header_suggestions_button")
                 ) {
+                    val helpButtonLabel = when (currentLang) {
+                        AppLanguage.ES -> "Ayuda"
+                        AppLanguage.EN -> "Help"
+                        AppLanguage.FR -> "Aide"
+                        AppLanguage.IT -> "Aiuto"
+                        AppLanguage.ZH -> "帮助"
+                        AppLanguage.NL -> "Help"
+                        AppLanguage.DE -> "Hilfe"
+                        AppLanguage.PL -> "Pomoc"
+                    }
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lightbulb,
-                            contentDescription = if (isEn) "Tips" else "Sugerencias",
+                            contentDescription = helpButtonLabel,
                             tint = Color(0xFFFBBF24),
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = if (isEn) "Tips" else "Sugerencias",
+                            text = helpButtonLabel,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color.White
                         )
@@ -232,7 +298,7 @@ fun TravelCashTopBar(
                             val tripLabel = if (activeTrip != null) {
                                 "${activeTrip.title} (${CurrencyCatalog.getSymbol(activeTrip.baseCurrency)})"
                             } else {
-                                if (isEn) "Select or create a trip..." else "Seleccionar o crear un viaje..."
+                                selectOrCreateTripText
                             }
                             Text(
                                 text = tripLabel,
@@ -244,7 +310,7 @@ fun TravelCashTopBar(
                         }
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = if (isEn) "Switch active trip" else "Cambiar viaje activo",
+                            contentDescription = switchActiveTripDesc,
                             tint = Color(0xFF93C5FD)
                         )
                     }
@@ -274,7 +340,7 @@ fun TravelCashTopBar(
                                     )
                                     if (isSelected) {
                                         Text(
-                                            text = if (isEn) "ACTIVE" else "ACTIVO",
+                                            text = activeBadgeText,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = TravelBlue,
                                             fontWeight = FontWeight.Bold
@@ -323,7 +389,7 @@ fun TravelCashTopBar(
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (isEn) "Create new trip" else "Crear nuevo viaje",
+                                        text = createNewTripText,
                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                                         color = TravelBlue
                                     )
@@ -357,7 +423,89 @@ fun ActiveTripHeaderAndBudgetCard(
     onAddBoteIncomeClick: () -> Unit,
     isSimplified: Boolean = false
 ) {
-    val isEn = LocalAppLanguage.current.isEnglish()
+    val currentLang = LocalAppLanguage.current
+    val isEn = currentLang.isEnglish()
+
+    val statusUpcomingText = when (currentLang) {
+        AppLanguage.ES -> "⏳ Por iniciar"
+        AppLanguage.EN -> "⏳ Upcoming"
+        AppLanguage.FR -> "⏳ À venir"
+        AppLanguage.IT -> "⏳ In arrivo"
+        AppLanguage.ZH -> "⏳ 待出行"
+        AppLanguage.NL -> "⏳ Binnenkort"
+        AppLanguage.DE -> "⏳ Bevorstehend"
+        AppLanguage.PL -> "⏳ Nadchodząca"
+    }
+    val statusCompletedText = when (currentLang) {
+        AppLanguage.ES -> "🏁 Finalizado"
+        AppLanguage.EN -> "🏁 Completed"
+        AppLanguage.FR -> "🏁 Terminé"
+        AppLanguage.IT -> "🏁 Concluso"
+        AppLanguage.ZH -> "🏁 已结束"
+        AppLanguage.NL -> "🏁 Voltooid"
+        AppLanguage.DE -> "🏁 Abgeschlossen"
+        AppLanguage.PL -> "🏁 Zakończona"
+    }
+    val statusOngoingText = when (currentLang) {
+        AppLanguage.ES -> "🟢 En curso"
+        AppLanguage.EN -> "🟢 Ongoing"
+        AppLanguage.FR -> "🟢 En cours"
+        AppLanguage.IT -> "🟢 In corso"
+        AppLanguage.ZH -> "🟢 进行中"
+        AppLanguage.NL -> "🟢 Bezig"
+        AppLanguage.DE -> "🟢 Laufend"
+        AppLanguage.PL -> "🟢 W trakcie"
+    }
+    val potIncomeLabel = when (currentLang) {
+        AppLanguage.ES -> "+ Ingreso (Bote)"
+        AppLanguage.EN -> "+ Pot Income"
+        AppLanguage.FR -> "+ Cagnotte"
+        AppLanguage.IT -> "+ Cassa"
+        AppLanguage.ZH -> "+ 公账存入"
+        AppLanguage.NL -> "+ Inleg pot"
+        AppLanguage.DE -> "+ Kassenbeitrag"
+        AppLanguage.PL -> "+ Wpłata do kasy"
+    }
+    val extraBalanceTitle = when (currentLang) {
+        AppLanguage.ES -> "SALDO EXTRA"
+        AppLanguage.EN -> "EXTRA BALANCE"
+        AppLanguage.FR -> "SOLDE RESTANT"
+        AppLanguage.IT -> "SALDO EXTRA"
+        AppLanguage.ZH -> "公账余额"
+        AppLanguage.NL -> "EXTRA SALDO"
+        AppLanguage.DE -> "EXTRAGUTHABEN"
+        AppLanguage.PL -> "DODATKOWE SALDO"
+    }
+    val spentTitle = when (currentLang) {
+        AppLanguage.ES -> "Gastado"
+        AppLanguage.EN -> "Spent"
+        AppLanguage.FR -> "Dépensé"
+        AppLanguage.IT -> "Speso"
+        AppLanguage.ZH -> "已支出"
+        AppLanguage.NL -> "Uitgegeven"
+        AppLanguage.DE -> "Ausgegeben"
+        AppLanguage.PL -> "Wydano"
+    }
+    val incomeTitle = when (currentLang) {
+        AppLanguage.ES -> "Ingresos"
+        AppLanguage.EN -> "Incomes"
+        AppLanguage.FR -> "Revenus"
+        AppLanguage.IT -> "Entrate"
+        AppLanguage.ZH -> "已存入"
+        AppLanguage.NL -> "Inkomsten"
+        AppLanguage.DE -> "Einnahmen"
+        AppLanguage.PL -> "Wpływy"
+    }
+    val flexibleBudgetTitle = when (currentLang) {
+        AppLanguage.ES -> "Sin límite fijado / Viaje con presupuesto flexible"
+        AppLanguage.EN -> "No fixed limit / Trip with flexible budget"
+        AppLanguage.FR -> "Sans limite fixe / Voyage avec budget flexible"
+        AppLanguage.IT -> "Senza limite fisso / Viaggio con budget flessibile"
+        AppLanguage.ZH -> "无固定预算上限 / 灵活预算行程"
+        AppLanguage.NL -> "Geen vaste limiet / Reis met flexibel budget"
+        AppLanguage.DE -> "Kein festes Limit / Reise mit flexiblem Budget"
+        AppLanguage.PL -> "Brak limitu / Podróż z elastycznym budżetem"
+    }
 
     val today = remember { java.time.LocalDate.now() }
     val startLocal = remember(trip.startDate) {
@@ -369,7 +517,7 @@ fun ActiveTripHeaderAndBudgetCard(
     val (statusText, statusBgColor, statusContentColor, statusBorderColor) = when {
         startLocal != null && today.isBefore(startLocal) -> {
             Quadruple(
-                if (isEn) "⏳ Upcoming" else "⏳ Por iniciar",
+                statusUpcomingText,
                 Color(0xFFFEF3C7),
                 Color(0xFFB45309),
                 Color(0xFFF59E0B)
@@ -377,7 +525,7 @@ fun ActiveTripHeaderAndBudgetCard(
         }
         endLocal != null && today.isAfter(endLocal) -> {
             Quadruple(
-                if (isEn) "🏁 Completed" else "🏁 Finalizado",
+                statusCompletedText,
                 Color(0xFFF1F5F9),
                 Color(0xFF475569),
                 Color(0xFFCBD5E1)
@@ -385,7 +533,7 @@ fun ActiveTripHeaderAndBudgetCard(
         }
         else -> {
             Quadruple(
-                if (isEn) "🟢 Ongoing" else "🟢 En curso",
+                statusOngoingText,
                 EmeraldGreenLight,
                 EmeraldGreenDark,
                 EmeraldGreen
@@ -512,13 +660,13 @@ fun ActiveTripHeaderAndBudgetCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Savings,
-                                contentDescription = if (isEn) "+ Income (Pot)" else "+ Ingreso (Bote)",
+                                contentDescription = potIncomeLabel,
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isEn) "+ Income (Pot)" else "+ Ingreso (Bote)",
+                                text = potIncomeLabel,
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White,
                                 maxLines = 1
@@ -539,7 +687,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = if (isEn) "EXTRA BALANCE" else "SALDO EXTRA",
+                                text = extraBalanceTitle,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 9.sp,
@@ -549,7 +697,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             )
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
-                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency),
+                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp
@@ -575,7 +723,7 @@ fun ActiveTripHeaderAndBudgetCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     PillActionButton(
-                        label = if (isEn) "+ Income (Pot)" else "+ Ingreso (Bote)",
+                        label = potIncomeLabel,
                         icon = Icons.Default.Savings,
                         bgColor = EmeraldGreen,
                         contentColor = Color.White,
@@ -593,26 +741,39 @@ fun ActiveTripHeaderAndBudgetCard(
                     val isOver90 = (totalSpent / budgetVal) >= 0.90
                     val barColor = if (isOver90) CoralRed else TravelBlue
 
+                    val budgetPrefix = when (currentLang) {
+                        AppLanguage.ES -> "Presupuesto: "
+                        AppLanguage.EN -> "Budget: "
+                        AppLanguage.FR -> "Budget : "
+                        AppLanguage.IT -> "Budget: "
+                        AppLanguage.ZH -> "预算："
+                        AppLanguage.NL -> "Budget: "
+                        AppLanguage.DE -> "Budget: "
+                        AppLanguage.PL -> "Budżet: "
+                    }
+                    val usedSuffix = when (currentLang) {
+                        AppLanguage.ES -> "% usado"
+                        AppLanguage.EN -> "% used"
+                        AppLanguage.FR -> " % utilisé"
+                        AppLanguage.IT -> "% utilizzato"
+                        AppLanguage.ZH -> "% 已使用"
+                        AppLanguage.NL -> "% verbruikt"
+                        AppLanguage.DE -> "% verbraucht"
+                        AppLanguage.PL -> "% wykorzystano"
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) {
-                                "Budget: ${FormatUtils.formatCurrency(budgetVal, trip.baseCurrency)}"
-                            } else {
-                                "Presupuesto: ${FormatUtils.formatCurrency(budgetVal, trip.baseCurrency)}"
-                            },
+                            text = "$budgetPrefix${FormatUtils.formatCurrency(budgetVal, trip.baseCurrency, currentLang.locale)}",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = if (isEn) {
-                                "${((totalSpent / budgetVal) * 100).toInt()}% used"
-                            } else {
-                                "${((totalSpent / budgetVal) * 100).toInt()}% usado"
-                            },
+                            text = "${((totalSpent / budgetVal) * 100).toInt()}$usedSuffix",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = barColor
                         )
@@ -635,11 +796,7 @@ fun ActiveTripHeaderAndBudgetCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = if (isEn) {
-                                "No fixed limit / Trip with flexible budget"
-                            } else {
-                                "Sin límite fijado / Viaje con presupuesto flexible"
-                            },
+                            text = flexibleBudgetTitle,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -665,13 +822,13 @@ fun ActiveTripHeaderAndBudgetCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = if (isEn) "Spent" else "Gastado",
+                                text = spentTitle,
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
                                 color = Color(0xFF64748B)
                             )
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
-                                text = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency),
+                                text = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.5.sp),
                                 color = OceanNavy,
                                 maxLines = 1,
@@ -691,13 +848,13 @@ fun ActiveTripHeaderAndBudgetCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = if (isEn) "Incomes" else "Ingresos",
+                                text = incomeTitle,
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.5.sp),
                                 color = EmeraldGreenDark
                             )
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
-                                text = "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency)}",
+                                text = "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency, currentLang.locale)}",
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.5.sp),
                                 color = EmeraldGreenDark,
                                 maxLines = 1,
@@ -720,7 +877,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
                         ) {
                             Text(
-                                text = if (isEn) "EXTRA BALANCE" else "SALDO EXTRA",
+                                text = extraBalanceTitle,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 9.5.sp,
@@ -730,7 +887,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             )
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
-                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency),
+                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Black,
                                     fontSize = 14.sp
