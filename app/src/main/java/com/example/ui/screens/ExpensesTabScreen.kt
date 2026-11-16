@@ -69,6 +69,7 @@ import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
 import com.example.util.FormatUtils
+import com.example.util.UiTexts
 import java.time.LocalDate
 import java.util.Locale
 
@@ -90,7 +91,7 @@ fun ExpensesTabScreen(
 ) {
     val context = LocalContext.current
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang == AppLanguage.EN
+    val texts = UiTexts.get(currentLang)
     val locale = currentLang.locale
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
@@ -181,7 +182,7 @@ fun ExpensesTabScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = if (isEn) "Search" else "Buscar",
+                                contentDescription = null,
                                 tint = Color(0xFF64748B),
                                 modifier = Modifier.size(16.dp)
                             )
@@ -202,11 +203,7 @@ fun ExpensesTabScreen(
                                     Box(contentAlignment = Alignment.CenterStart) {
                                         if (searchQuery.isEmpty()) {
                                             Text(
-                                                text = if (isEn) {
-                                                    "Search place, note, category or date..."
-                                                } else {
-                                                    "Buscar lugar, nota, categoría o fecha..."
-                                                },
+                                                text = texts.searchPlaceholder,
                                                 style = TextStyle(
                                                     color = Color(0xFF94A3B8),
                                                     fontSize = 11.5.sp
@@ -229,7 +226,7 @@ fun ExpensesTabScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
-                                        contentDescription = if (isEn) "Clear search" else "Limpiar búsqueda",
+                                        contentDescription = null,
                                         tint = Color(0xFF64748B),
                                         modifier = Modifier.size(14.dp)
                                     )
@@ -276,7 +273,7 @@ fun ExpensesTabScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CalendarMonth,
-                                contentDescription = if (isEn) "Filter by date" else "Filtrar por fecha",
+                                contentDescription = null,
                                 tint = if (selectedDateFilter != null) Color.White else OceanNavy,
                                 modifier = Modifier.size(17.dp)
                             )
@@ -344,7 +341,7 @@ fun ExpensesTabScreen(
                         )
                     ) {
                         Text(
-                            text = "${if (isEn) "All" else "Todas"} (${expenses.size})",
+                            text = "${texts.allFilter} (${expenses.size})",
                             fontSize = 11.sp,
                             fontWeight = if (selectedCategoryFilter == null) FontWeight.Bold else FontWeight.Medium,
                             color = if (selectedCategoryFilter == null) Color.White else Color(0xFF475569),
@@ -355,7 +352,7 @@ fun ExpensesTabScreen(
                     CategoryCatalog.categories.forEach { cat ->
                         val count = categoryCounts[cat.name] ?: 0
                         val isSelected = selectedCategoryFilter.equals(cat.name, ignoreCase = true)
-                        val displayCatName = CategoryCatalog.displayName(cat.name, isEn)
+                        val displayCatName = CategoryCatalog.displayName(cat.name, currentLang)
                         Surface(
                             onClick = { onCategoryFilterChange(cat.name) },
                             shape = RoundedCornerShape(7.dp),
@@ -406,21 +403,13 @@ fun ExpensesTabScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (expenses.isEmpty()) {
-                                    if (isEn) "No expenses recorded in this trip yet" else "Aún no hay gastos en este viaje"
-                                } else {
-                                    if (isEn) "No expenses match the filter" else "No hay gastos que coincidan con el filtro"
-                                },
+                                text = if (expenses.isEmpty()) texts.noExpensesRecorded else texts.noExpensesMatchFilter,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (expenses.isEmpty()) {
-                                    if (isEn) "Tap '+ Add Expense' to record your first entry." else "Pulsa el botón '+ Añadir Gasto' para registrar tu primer movimiento."
-                                } else {
-                                    if (isEn) "Try clearing the date or category filters." else "Prueba a limpiar los filtros de fecha o categoría."
-                                },
+                                text = if (expenses.isEmpty()) texts.noExpensesRecordedSubtitle else texts.noExpensesMatchFilterSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -432,7 +421,7 @@ fun ExpensesTabScreen(
                                     color = TravelBlue
                                 ) {
                                     Text(
-                                        text = if (isEn) "Clear filters" else "Limpiar filtros",
+                                        text = texts.clearFilters,
                                         color = Color.White,
                                         style = MaterialTheme.typography.labelLarge,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -459,11 +448,11 @@ fun ExpensesTabScreen(
                             expense = expense,
                             baseCurrency = trip.baseCurrency,
                             payerName = if (expense.paidById == DebtCalculator.BOTE_COMUN_ID) {
-                                if (isEn) "Common Pot" else "Bote Común"
+                                texts.commonPotName
                             } else {
-                                participantMap[expense.paidById]?.name ?: if (isEn) "Traveler" else "Viajero"
+                                participantMap[expense.paidById]?.name ?: texts.defaultTravelerName
                             },
-                            isEn = isEn,
+                            currentLang = currentLang,
                             onClick = { onExpenseClick(expense) }
                         )
                     }
@@ -532,12 +521,45 @@ private fun ExpenseItemCard(
     expense: ExpenseEntity,
     baseCurrency: String,
     payerName: String,
-    isEn: Boolean,
+    currentLang: AppLanguage,
     onClick: () -> Unit
 ) {
     val categoryInfo = CategoryCatalog.getCategory(expense.category)
-    val translatedCategory = CategoryCatalog.displayName(expense.category, isEn)
-    val translatedPaymentMethod = PaymentMethodCatalog.displayName(expense.paymentMethod, isEn)
+    val translatedCategory = CategoryCatalog.displayName(expense.category, currentLang)
+    val translatedPaymentMethod = PaymentMethodCatalog.displayName(expense.paymentMethod, currentLang)
+
+    val perDayUnit = when (currentLang) {
+        AppLanguage.ES -> "día"
+        AppLanguage.EN -> "day"
+        AppLanguage.FR -> "jour"
+        AppLanguage.IT -> "giorno"
+        AppLanguage.ZH -> "天"
+        AppLanguage.NL -> "dag"
+        AppLanguage.DE -> "Tag"
+        AppLanguage.PL -> "dzień"
+    }
+
+    val receiptsDesc = when (currentLang) {
+        AppLanguage.ES -> "Recibos y recuerdos adjuntos"
+        AppLanguage.EN -> "Attached receipts & memories"
+        AppLanguage.FR -> "Reçus et souvenirs joints"
+        AppLanguage.IT -> "Ricevute e ricordi allegati"
+        AppLanguage.ZH -> "附加收据与照片"
+        AppLanguage.NL -> "Bijgevoegde bonnen en herinneringen"
+        AppLanguage.DE -> "Angehängte Belege und Erinnerungen"
+        AppLanguage.PL -> "Załączone paragony i wspomnienia"
+    }
+
+    val geoDesc = when (currentLang) {
+        AppLanguage.ES -> "Con coordenadas en mapa"
+        AppLanguage.EN -> "Geolocated on map"
+        AppLanguage.FR -> "Géolocalisé sur la carte"
+        AppLanguage.IT -> "Geolocalizzato sulla mappa"
+        AppLanguage.ZH -> "地图已定位"
+        AppLanguage.NL -> "Geolocatie op kaart"
+        AppLanguage.DE -> "Auf Karte geolokalisiert"
+        AppLanguage.PL -> "Zlokalizowane na mapie"
+    }
 
     Card(
         modifier = Modifier
@@ -633,7 +655,7 @@ private fun ExpenseItemCard(
                             color = Color(0xFFEDE9FE)
                         ) {
                             Text(
-                                text = "📅 ${expense.prorationDays}d (${FormatUtils.formatCurrency(perDay, baseCurrency)}/${if (isEn) "day" else "día"})",
+                                text = "📅 ${expense.prorationDays}d (${FormatUtils.formatCurrency(perDay, baseCurrency)}/$perDayUnit)",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 10.sp
@@ -658,7 +680,7 @@ private fun ExpenseItemCard(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoCamera,
-                                    contentDescription = if (isEn) "Attached receipts & memories" else "Recibos y recuerdos adjuntos",
+                                    contentDescription = receiptsDesc,
                                     tint = Color(0xFFD97706),
                                     modifier = Modifier.size(11.dp)
                                 )
@@ -675,7 +697,7 @@ private fun ExpenseItemCard(
                     if (expense.latitude != null && expense.longitude != null) {
                         Icon(
                             imageVector = Icons.Default.LocationOn,
-                            contentDescription = if (isEn) "Geolocated on map" else "Con coordenadas en mapa",
+                            contentDescription = geoDesc,
                             tint = TravelBlue,
                             modifier = Modifier.size(14.dp)
                         )

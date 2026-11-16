@@ -57,7 +57,7 @@ import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
 import com.example.util.FormatUtils
-import com.example.ui.theme.isEnglish
+import com.example.util.UiTexts
 import java.util.Locale
 
 @Composable
@@ -70,7 +70,7 @@ fun StatsTabScreen(
     topHeader: @Composable () -> Unit = {}
 ) {
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
+    val texts = UiTexts.get(currentLang)
     val participantMap = remember(participants) { participants.associateBy { it.id } }
     val totalSpent = remember(expenses) { expenses.sumOf { it.amountInBaseCurrency } }
     val tripDays = remember(trip.startDate, trip.endDate) {
@@ -110,8 +110,8 @@ fun StatsTabScreen(
             .sortedByDescending { it.second }
     }
 
-    val unspecifiedLabel = if (isEn) "Unspecified" else "Sin especificar"
-    val byAddressOrZone = remember(expenses, isEn) {
+    val unspecifiedLabel = texts.unspecifiedLabel
+    val byAddressOrZone = remember(expenses, unspecifiedLabel) {
         expenses.groupBy { it.country.trim().ifEmpty { unspecifiedLabel } }
             .map { (zone, list) -> zone to list.sumOf { it.amountInBaseCurrency } }
             .sortedByDescending { it.second }
@@ -133,18 +133,38 @@ fun StatsTabScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val expCountSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "${expenses.size} gastos registrados"
+                        AppLanguage.EN -> "${expenses.size} expenses recorded"
+                        AppLanguage.FR -> "${expenses.size} dépenses enregistrées"
+                        AppLanguage.IT -> "${expenses.size} spese registrate"
+                        AppLanguage.ZH -> "已记录 ${expenses.size} 笔支出"
+                        AppLanguage.NL -> "${expenses.size} geregistreerde uitgaven"
+                        AppLanguage.DE -> "${expenses.size} erfasste Ausgaben"
+                        AppLanguage.PL -> "${expenses.size} zarejestrowanych wydatków"
+                    }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
-                        title = if (isEn) "Total Spent" else "Gasto Total",
-                        value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency),
-                        subtitle = if (isEn) "${expenses.size} expenses recorded" else "${expenses.size} gastos registrados",
+                        title = texts.totalSpentTitle,
+                        value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
+                        subtitle = expCountSubtitle,
                         accentColor = TravelBlue
                     )
+                    val daysSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "En $tripDays días de viaje"
+                        AppLanguage.EN -> "Over $tripDays trip days"
+                        AppLanguage.FR -> "Sur $tripDays jours de voyage"
+                        AppLanguage.IT -> "In $tripDays giorni di viaggio"
+                        AppLanguage.ZH -> "在 $tripDays 天的行程中"
+                        AppLanguage.NL -> "Over $tripDays reisdagen"
+                        AppLanguage.DE -> "Über $tripDays Reisetage"
+                        AppLanguage.PL -> "W ciągu $tripDays dni podróży"
+                    }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
-                        title = if (isEn) "Daily Average" else "Media por Día",
-                        value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency),
-                        subtitle = if (isEn) "Over $tripDays trip days" else "En $tripDays días de viaje",
+                        title = texts.avgPerDayTitle,
+                        value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency, currentLang.locale),
+                        subtitle = daysSubtitle,
                         accentColor = EmeraldGreenDark
                     )
                 }
@@ -152,22 +172,32 @@ fun StatsTabScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val partCountSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "${participants.size} participantes"
+                        AppLanguage.EN -> "${participants.size} participants"
+                        AppLanguage.FR -> "${participants.size} participants"
+                        AppLanguage.IT -> "${participants.size} partecipanti"
+                        AppLanguage.ZH -> "${participants.size} 位参与者"
+                        AppLanguage.NL -> "${participants.size} deelnemers"
+                        AppLanguage.DE -> "${participants.size} Teilnehmer"
+                        AppLanguage.PL -> "${participants.size} uczestników"
+                    }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
-                        title = if (isEn) "Average per Person" else "Media por Persona",
-                        value = FormatUtils.formatCurrency(avgPerPerson, trip.baseCurrency),
-                        subtitle = if (isEn) "${participants.size} participants" else "${participants.size} participantes",
+                        title = texts.avgPerPersonTitle,
+                        value = FormatUtils.formatCurrency(avgPerPerson, trip.baseCurrency, currentLang.locale),
+                        subtitle = partCountSubtitle,
                         accentColor = Color(0xFF6366F1)
                     )
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
-                        title = if (isEn) "Highest Spending Day" else "Día Mayor Gasto",
+                        title = texts.highestDayTitle,
                         value = highestSpendingDay?.let {
-                            FormatUtils.formatCurrency(it.value, trip.baseCurrency)
-                        } ?: "0,00",
+                            FormatUtils.formatCurrency(it.value, trip.baseCurrency, currentLang.locale)
+                        } ?: texts.noDataLabel,
                         subtitle = highestSpendingDay?.let {
                             FormatUtils.formatShortDate(it.key, currentLang.locale)
-                        } ?: if (isEn) "No data" else "Sin datos",
+                        } ?: texts.noDataLabel,
                         accentColor = Color(0xFFF59E0B)
                     )
                 }
@@ -190,12 +220,22 @@ fun StatsTabScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "Expenses by Category" else "Gastos por Categoría",
+                            text = texts.expensesByCategoryTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
+                        val tapToViewBreakdown = when (currentLang) {
+                            AppLanguage.ES -> "Pulsa para ver desglose"
+                            AppLanguage.EN -> "Tap to view breakdown"
+                            AppLanguage.FR -> "Appuyer pour voir le détail"
+                            AppLanguage.IT -> "Tocca per vedere i dettagli"
+                            AppLanguage.ZH -> "点击查看明细"
+                            AppLanguage.NL -> "Tik om overzicht te bekijken"
+                            AppLanguage.DE -> "Tippen für Aufschlüsselung"
+                            AppLanguage.PL -> "Dotknij, aby zobaczyć zestawienie"
+                        }
                         Text(
-                            text = if (isEn) "Tap to view breakdown" else "Pulsa para ver desglose",
+                            text = tapToViewBreakdown,
                             style = MaterialTheme.typography.labelSmall,
                             color = TravelBlue
                         )
@@ -204,14 +244,14 @@ fun StatsTabScreen(
 
                     if (byCategory.isEmpty()) {
                         Text(
-                            text = if (isEn) "No expenses recorded yet." else "No hay gastos registrados aún.",
+                            text = texts.noExpensesYetStats,
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF64748B)
                         )
                     } else {
                         byCategory.forEachIndexed { idx, (catName, catExpenses, catSum) ->
                             val catInfo = CategoryCatalog.getCategory(catName)
-                            val displayCatName = CategoryCatalog.displayName(catName, isEn)
+                            val displayCatName = CategoryCatalog.displayName(catName, currentLang)
                             val pct = if (totalSpent > 0) (catSum / totalSpent) * 100.0 else 0.0
                             val isExpanded = expandedCategoryName == catName
 
@@ -257,14 +297,23 @@ fun StatsTabScreen(
                                             )
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(
-                                                    text = FormatUtils.formatCurrency(catSum, trip.baseCurrency),
+                                                    text = FormatUtils.formatCurrency(catSum, trip.baseCurrency, currentLang.locale),
                                                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
                                                     color = OceanNavy
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
                                                 Icon(
                                                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                    contentDescription = if (isEn) "Expand category" else "Desplegar categoría",
+                                                    contentDescription = when (currentLang) {
+                                                        AppLanguage.ES -> "Desplegar categoría"
+                                                        AppLanguage.EN -> "Expand category"
+                                                        AppLanguage.FR -> "Développer la catégorie"
+                                                        AppLanguage.IT -> "Espandi categoria"
+                                                        AppLanguage.ZH -> "展开类别"
+                                                        AppLanguage.NL -> "Categorie uitvouwen"
+                                                        AppLanguage.DE -> "Kategorie erweitern"
+                                                        AppLanguage.PL -> "Rozwiń kategorię"
+                                                    },
                                                     tint = Color(0xFF64748B),
                                                     modifier = Modifier.size(18.dp)
                                                 )
@@ -281,12 +330,18 @@ fun StatsTabScreen(
                                             trackColor = Color(0xFFE2E8F0)
                                         )
                                         Spacer(modifier = Modifier.height(3.dp))
+                                        val pctText = when (currentLang) {
+                                            AppLanguage.ES -> "${catExpenses.size} gastos · ${String.format(Locale.US, "%.1f", pct)}% del total"
+                                            AppLanguage.EN -> "${catExpenses.size} expenses · ${String.format(Locale.US, "%.1f", pct)}% of total"
+                                            AppLanguage.FR -> "${catExpenses.size} dépenses · ${String.format(Locale.US, "%.1f", pct)}% du total"
+                                            AppLanguage.IT -> "${catExpenses.size} spese · ${String.format(Locale.US, "%.1f", pct)}% del totale"
+                                            AppLanguage.ZH -> "${catExpenses.size} 笔支出 · 占总额 ${String.format(Locale.US, "%.1f", pct)}%"
+                                            AppLanguage.NL -> "${catExpenses.size} uitgaven · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
+                                            AppLanguage.DE -> "${catExpenses.size} Ausgaben · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
+                                            AppLanguage.PL -> "${catExpenses.size} wydatków · ${String.format(Locale.US, "%.1f", pct)}% całości"
+                                        }
                                         Text(
-                                            text = if (isEn) {
-                                                "${catExpenses.size} expenses · ${String.format(Locale.US, "%.1f", pct)}% of total"
-                                            } else {
-                                                "${catExpenses.size} gastos · ${String.format(Locale.US, "%.1f", pct)}% del total"
-                                            },
+                                            text = pctText,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = Color(0xFF64748B)
                                         )
@@ -309,9 +364,19 @@ fun StatsTabScreen(
                                         ) {
                                             catExpenses.sortedByDescending { it.date }.forEach { exp ->
                                                 val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) {
-                                                    if (isEn) "Common Pot" else "Bote Común"
+                                                    texts.commonPotName
                                                 } else {
-                                                    participantMap[exp.paidById]?.name ?: if (isEn) "Traveler" else "Viajero"
+                                                    participantMap[exp.paidById]?.name ?: texts.defaultTravelerName
+                                                }
+                                                val paidLabel = when (currentLang) {
+                                                    AppLanguage.ES -> "Pagó"
+                                                    AppLanguage.EN -> "Paid by"
+                                                    AppLanguage.FR -> "Payé par"
+                                                    AppLanguage.IT -> "Pagato da"
+                                                    AppLanguage.ZH -> "付款人"
+                                                    AppLanguage.NL -> "Betaald door"
+                                                    AppLanguage.DE -> "Bezahlt von"
+                                                    AppLanguage.PL -> "Zapłacone przez"
                                                 }
                                                 Row(
                                                     modifier = Modifier
@@ -330,13 +395,13 @@ fun StatsTabScreen(
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                         Text(
-                                                            text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${if (isEn) "Paid by" else "Pagó"}: $payer",
+                                                            text = "${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · $paidLabel: $payer",
                                                             style = MaterialTheme.typography.labelSmall,
                                                             color = Color(0xFF64748B)
                                                         )
                                                     }
                                                     Text(
-                                                        text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency),
+                                                        text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale),
                                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                                                         color = catInfo.color
                                                     )
@@ -372,12 +437,22 @@ fun StatsTabScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "Expenses Paid by Person" else "Gastos Pagados por Persona",
+                            text = texts.expensesByParticipantTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
+                        val tapToViewPayments = when (currentLang) {
+                            AppLanguage.ES -> "Pulsa para ver pagos"
+                            AppLanguage.EN -> "Tap to view payments"
+                            AppLanguage.FR -> "Appuyer pour voir les paiements"
+                            AppLanguage.IT -> "Tocca per vedere i pagamenti"
+                            AppLanguage.ZH -> "点击查看付款"
+                            AppLanguage.NL -> "Tik om betalingen te bekijken"
+                            AppLanguage.DE -> "Tippen für Zahlungen"
+                            AppLanguage.PL -> "Dotknij, aby zobaczyć płatności"
+                        }
                         Text(
-                            text = if (isEn) "Tap to view payments" else "Pulsa para ver pagos",
+                            text = tapToViewPayments,
                             style = MaterialTheme.typography.labelSmall,
                             color = TravelBlue
                         )
@@ -424,14 +499,23 @@ fun StatsTabScreen(
                                         )
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = FormatUtils.formatCurrency(personSum, trip.baseCurrency),
+                                                text = FormatUtils.formatCurrency(personSum, trip.baseCurrency, currentLang.locale),
                                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
                                                 color = OceanNavy
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Icon(
                                                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                contentDescription = if (isEn) "Expand person" else "Desplegar persona",
+                                                contentDescription = when (currentLang) {
+                                                    AppLanguage.ES -> "Desplegar persona"
+                                                    AppLanguage.EN -> "Expand person"
+                                                    AppLanguage.FR -> "Développer la personne"
+                                                    AppLanguage.IT -> "Espandi persona"
+                                                    AppLanguage.ZH -> "展开参与人"
+                                                    AppLanguage.NL -> "Persoon uitvouwen"
+                                                    AppLanguage.DE -> "Person erweitern"
+                                                    AppLanguage.PL -> "Rozwiń osobę"
+                                                },
                                                 tint = Color(0xFF64748B),
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -448,12 +532,18 @@ fun StatsTabScreen(
                                         trackColor = Color(0xFFE2E8F0)
                                     )
                                     Spacer(modifier = Modifier.height(3.dp))
+                                    val paymentsMadeText = when (currentLang) {
+                                        AppLanguage.ES -> "${personExpenses.size} pagos realizados · ${String.format(Locale.US, "%.1f", pct)}% del total"
+                                        AppLanguage.EN -> "${personExpenses.size} payments made · ${String.format(Locale.US, "%.1f", pct)}% of total"
+                                        AppLanguage.FR -> "${personExpenses.size} paiements effectués · ${String.format(Locale.US, "%.1f", pct)}% du total"
+                                        AppLanguage.IT -> "${personExpenses.size} pagamenti effettuati · ${String.format(Locale.US, "%.1f", pct)}% del totale"
+                                        AppLanguage.ZH -> "${personExpenses.size} 次付款 · 占总额 ${String.format(Locale.US, "%.1f", pct)}%"
+                                        AppLanguage.NL -> "${personExpenses.size} betalingen gedaan · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
+                                        AppLanguage.DE -> "${personExpenses.size} Zahlungen getätigt · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
+                                        AppLanguage.PL -> "${personExpenses.size} dokonanych płatności · ${String.format(Locale.US, "%.1f", pct)}% całości"
+                                    }
                                     Text(
-                                        text = if (isEn) {
-                                            "${personExpenses.size} payments made · ${String.format(Locale.US, "%.1f", pct)}% of total"
-                                        } else {
-                                            "${personExpenses.size} pagos realizados · ${String.format(Locale.US, "%.1f", pct)}% del total"
-                                        },
+                                        text = paymentsMadeText,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF64748B)
                                     )
@@ -475,18 +565,24 @@ fun StatsTabScreen(
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         if (personExpenses.isEmpty()) {
+                                            val noExpensesPerson = when (currentLang) {
+                                                AppLanguage.ES -> "${person.name} no ha realizado pagos de su bolsillo aún."
+                                                AppLanguage.EN -> "${person.name} has not paid any out-of-pocket expenses yet."
+                                                AppLanguage.FR -> "${person.name} n'a pas encore payé de dépenses de sa poche."
+                                                AppLanguage.IT -> "${person.name} non ha ancora sostenuto spese di tasca propria."
+                                                AppLanguage.ZH -> "${person.name} 尚未自掏腰包支付任何费用。"
+                                                AppLanguage.NL -> "${person.name} heeft nog geen uitgaven uit eigen zak betaald."
+                                                AppLanguage.DE -> "${person.name} hat noch keine Ausgaben aus eigener Tasche bezahlt."
+                                                AppLanguage.PL -> "${person.name} nie poniósł jeszcze żadnych wydatków z własnej kieszeni."
+                                            }
                                             Text(
-                                                text = if (isEn) {
-                                                    "${person.name} has not paid any out-of-pocket expenses yet."
-                                                } else {
-                                                    "${person.name} aún no ha pagado gastos de su bolsillo."
-                                                },
+                                                text = noExpensesPerson,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color(0xFF64748B)
                                             )
                                         } else {
                                             personExpenses.sortedByDescending { it.date }.forEach { exp ->
-                                                val displayCat = CategoryCatalog.displayName(exp.category, isEn)
+                                                val displayCat = CategoryCatalog.displayName(exp.category, currentLang)
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -510,7 +606,7 @@ fun StatsTabScreen(
                                                         )
                                                     }
                                                     Text(
-                                                        text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency),
+                                                        text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale),
                                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                                                         color = avatarColor
                                                     )
@@ -548,7 +644,7 @@ fun StatsTabScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (isEn) "By Payment Method" else "Por Método de Pago",
+                            text = texts.expensesByMethodTitle,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
@@ -560,7 +656,7 @@ fun StatsTabScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = PaymentMethodCatalog.displayName(method, isEn),
+                                        text = PaymentMethodCatalog.displayName(method, currentLang),
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = OceanNavy
                                     )
@@ -571,7 +667,7 @@ fun StatsTabScreen(
                                     )
                                 }
                                 Text(
-                                    text = FormatUtils.formatCurrency(sum, trip.baseCurrency),
+                                    text = FormatUtils.formatCurrency(sum, trip.baseCurrency, currentLang.locale),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF64748B)
                                 )
@@ -592,7 +688,7 @@ fun StatsTabScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (isEn) "By Address / Zone" else "Por Dirección / Zona",
+                            text = texts.expensesByZoneTitle,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
@@ -618,7 +714,7 @@ fun StatsTabScreen(
                                     )
                                 }
                                 Text(
-                                    text = FormatUtils.formatCurrency(sum, trip.baseCurrency),
+                                    text = FormatUtils.formatCurrency(sum, trip.baseCurrency, currentLang.locale),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF64748B)
                                 )

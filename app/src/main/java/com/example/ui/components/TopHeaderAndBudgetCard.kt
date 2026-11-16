@@ -131,7 +131,6 @@ fun TravelCashTopBar(
     onSuggestionsClick: () -> Unit
 ) {
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang == AppLanguage.EN
     var tripMenuExpanded by remember { mutableStateOf(false) }
 
     val appSubtitle = when (currentLang) {
@@ -424,7 +423,6 @@ fun ActiveTripHeaderAndBudgetCard(
     isSimplified: Boolean = false
 ) {
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
 
     val statusUpcomingText = when (currentLang) {
         AppLanguage.ES -> "⏳ Por iniciar"

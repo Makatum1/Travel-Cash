@@ -1,5 +1,6 @@
 package com.example.util
 
+import com.example.ui.theme.AppLanguage
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -71,6 +72,10 @@ object FormatUtils {
     fun formatLongSpanishDate(isoDate: String, isEn: Boolean = false): String {
         val locale = if (isEn) englishLocale else spanishLocale
         return formatLongDate(isoDate, locale)
+    }
+
+    fun formatLongSpanishDate(isoDate: String, lang: AppLanguage): String {
+        return formatLongDate(isoDate, lang.locale)
     }
 
     fun parseFlexibleDateToIso(raw: String): String {
@@ -146,8 +151,123 @@ object CurrencyCatalog {
         return currencies.find { it.code.equals(code, ignoreCase = true) }?.symbol ?: code
     }
 
+    fun getDisplayName(curr: CurrencyInfo, lang: AppLanguage): String {
+        return when (lang) {
+            AppLanguage.ES -> curr.name
+            AppLanguage.EN -> curr.nameEn
+            AppLanguage.FR -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "Dollar américain"
+                "JPY" -> "Yen japonais"
+                "GBP" -> "Livre sterling"
+                "CHF" -> "Franc suisse"
+                "MXN" -> "Peso mexicain"
+                "COP" -> "Peso colombien"
+                "ARS" -> "Peso argentin"
+                "CLP" -> "Peso chilien"
+                "PEN" -> "Sol péruvien"
+                "BRL" -> "Real brésilien"
+                "CAD" -> "Dollar canadien"
+                "AUD" -> "Dollar australien"
+                "MAD" -> "Dirham marocain"
+                "THB" -> "Baht thaïlandais"
+                else -> curr.nameEn
+            }
+            AppLanguage.IT -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "Dollaro statunitense"
+                "JPY" -> "Yen giapponese"
+                "GBP" -> "Sterlina britannica"
+                "CHF" -> "Franco svizzero"
+                "MXN" -> "Peso messicano"
+                "COP" -> "Peso colombiano"
+                "ARS" -> "Peso argentino"
+                "CLP" -> "Peso cileno"
+                "PEN" -> "Sol peruviano"
+                "BRL" -> "Real brasiliano"
+                "CAD" -> "Dollaro canadese"
+                "AUD" -> "Dollaro australiano"
+                "MAD" -> "Dirham marocchino"
+                "THB" -> "Baht thailandese"
+                else -> curr.nameEn
+            }
+            AppLanguage.ZH -> when (curr.code) {
+                "EUR" -> "欧元"
+                "USD" -> "美元"
+                "JPY" -> "日元"
+                "GBP" -> "英镑"
+                "CHF" -> "瑞士法郎"
+                "MXN" -> "墨西哥比索"
+                "COP" -> "哥伦比亚比索"
+                "ARS" -> "阿根廷比索"
+                "CLP" -> "智利比索"
+                "PEN" -> "秘鲁索尔"
+                "BRL" -> "巴西雷亚尔"
+                "CAD" -> "加元"
+                "AUD" -> "澳元"
+                "MAD" -> "摩洛哥迪拉姆"
+                "THB" -> "泰铢"
+                else -> curr.nameEn
+            }
+            AppLanguage.NL -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "Amerikaanse dollar"
+                "JPY" -> "Japanse yen"
+                "GBP" -> "Britse pond"
+                "CHF" -> "Zwitserse frank"
+                "MXN" -> "Mexicaanse peso"
+                "COP" -> "Colombiaanse peso"
+                "ARS" -> "Argentijnse peso"
+                "CLP" -> "Chileense peso"
+                "PEN" -> "Peruaanse sol"
+                "BRL" -> "Braziliaanse real"
+                "CAD" -> "Canadese dollar"
+                "AUD" -> "Australische dollar"
+                "MAD" -> "Marokkaanse dirham"
+                "THB" -> "Thaise baht"
+                else -> curr.nameEn
+            }
+            AppLanguage.DE -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "US-Dollar"
+                "JPY" -> "Japanischer Yen"
+                "GBP" -> "Britisches Pfund"
+                "CHF" -> "Schweizer Franken"
+                "MXN" -> "Mexikanischer Peso"
+                "COP" -> "Kolumbianischer Peso"
+                "ARS" -> "Argentinischer Peso"
+                "CLP" -> "Chilenischer Peso"
+                "PEN" -> "Peruanischer Sol"
+                "BRL" -> "Brasilianischer Real"
+                "CAD" -> "Kanadischer Dollar"
+                "AUD" -> "Australischer Dollar"
+                "MAD" -> "Marokkanischer Dirham"
+                "THB" -> "Thailändischer Baht"
+                else -> curr.nameEn
+            }
+            AppLanguage.PL -> when (curr.code) {
+                "EUR" -> "Euro"
+                "USD" -> "Dolar amerykański"
+                "JPY" -> "Jen japoński"
+                "GBP" -> "Funt brytyjski"
+                "CHF" -> "Frank szwajcarski"
+                "MXN" -> "Peso meksykańskie"
+                "COP" -> "Peso kolumbijskie"
+                "ARS" -> "Peso argentyńskie"
+                "CLP" -> "Peso chilijskie"
+                "PEN" -> "Sol peruwiański"
+                "BRL" -> "Real brazylijski"
+                "CAD" -> "Dolar kanadyjski"
+                "AUD" -> "Dolar australijski"
+                "MAD" -> "Dirham marokański"
+                "THB" -> "Bat tajlandzki"
+                else -> curr.nameEn
+            }
+        }
+    }
+
     fun getDisplayName(curr: CurrencyInfo, isEn: Boolean): String {
-        return if (isEn) curr.nameEn else curr.name
+        return getDisplayName(curr, if (isEn) AppLanguage.EN else AppLanguage.ES)
     }
 
     /**

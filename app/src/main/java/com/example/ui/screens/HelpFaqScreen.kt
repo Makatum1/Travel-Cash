@@ -352,7 +352,6 @@ fun HelpFaqModal(
     onDismiss: () -> Unit
 ) {
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
     var searchQuery by remember { mutableStateOf("") }
     var expandedItemIds by remember { mutableStateOf(setOf<String>()) }
 

@@ -75,11 +75,11 @@ import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.EmeraldGreenLight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
-import com.example.ui.theme.isEnglish
 import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
 import com.example.util.CurrencyCatalog
 import com.example.util.FormatUtils
+import com.example.util.UiTexts
 import java.time.LocalDate
 import java.util.Locale
 import java.util.UUID
@@ -100,7 +100,7 @@ fun IncomeModal(
 ) {
     val context = LocalContext.current
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
+    val texts = UiTexts.get(currentLang)
     val isEdit = existingIncome != null
     val symbol = CurrencyCatalog.getSymbol(trip.baseCurrency)
 
@@ -307,11 +307,7 @@ fun IncomeModal(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isEdit) {
-                                if (isEn) "Edit Common Pot" else "Editar Bote Común"
-                            } else {
-                                if (isEn) "Add Common Pot Income" else "Añadir Ingreso al Bote Común"
-                            },
+                            text = if (isEdit) texts.editPotIncomeTitle else texts.potIncomeTitle,
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                             color = Color.White
                         )
@@ -319,7 +315,7 @@ fun IncomeModal(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = if (isEn) "Close" else "Cerrar",
+                            contentDescription = texts.closeBtn,
                             tint = Color.White
                         )
                     }
@@ -333,8 +329,18 @@ fun IncomeModal(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // SELECTOR SUPERIOR DE MODO DE CÁLCULO DEL BOTE
+                    val calculationModeTitle = when (currentLang) {
+                        AppLanguage.ES -> "Modo de Cálculo del Bote"
+                        AppLanguage.EN -> "Pot Calculation Mode"
+                        AppLanguage.FR -> "Mode de calcul de la cagnotte"
+                        AppLanguage.IT -> "Modalità di calcolo della cassa"
+                        AppLanguage.ZH -> "公账计算模式"
+                        AppLanguage.NL -> "Berekeningsmethode pot"
+                        AppLanguage.DE -> "Berechnungsmodus der Kasse"
+                        AppLanguage.PL -> "Tryb obliczania budżetu"
+                    }
                     Text(
-                        text = if (isEn) "Pot Calculation Mode" else "Modo de Cálculo del Bote",
+                        text = calculationModeTitle,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = grayAmountAndNameColor
                     )
@@ -356,7 +362,7 @@ fun IncomeModal(
                             border = BorderStroke(1.5.dp, if (isPerPerson) EmeraldGreenDark else Color(0xFFCBD5E1))
                         ) {
                             Text(
-                                text = if (isEn) "Amount per person" else "Cuantía por persona",
+                                text = texts.amountPerPersonLabel,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isPerPerson) Color.White else grayAmountAndNameColor,
                                 modifier = Modifier.padding(vertical = 11.dp, horizontal = 10.dp)
@@ -386,7 +392,7 @@ fun IncomeModal(
                             border = BorderStroke(1.5.dp, if (isGlobal) EmeraldGreenDark else Color(0xFFCBD5E1))
                         ) {
                             Text(
-                                text = if (isEn) "Total global amount" else "Importe total global",
+                                text = texts.globalAmountLabel,
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isGlobal) Color.White else grayAmountAndNameColor,
                                 modifier = Modifier.padding(vertical = 11.dp, horizontal = 10.dp)
@@ -403,22 +409,38 @@ fun IncomeModal(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
+                                val amountPerPersonTitle = when (currentLang) {
+                                    AppLanguage.ES -> "Cuantía que pone cada persona ($symbol)"
+                                    AppLanguage.EN -> "Amount contributed per person ($symbol)"
+                                    AppLanguage.FR -> "Montant versé par personne ($symbol)"
+                                    AppLanguage.IT -> "Importo versato per persona ($symbol)"
+                                    AppLanguage.ZH -> "每人出资金额 ($symbol)"
+                                    AppLanguage.NL -> "Inleg per persoon ($symbol)"
+                                    AppLanguage.DE -> "Beitrag pro Person ($symbol)"
+                                    AppLanguage.PL -> "Kwota wpłacana przez osobę ($symbol)"
+                                }
                                 Text(
-                                    text = if (isEn) {
-                                        "Amount contributed per person ($symbol)"
-                                    } else {
-                                        "Cuantía que pone cada persona ($symbol)"
-                                    },
+                                    text = amountPerPersonTitle,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                                     color = EmeraldGreenDark
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
+                                val fixedQuotaLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Cuota fija ($symbol)"
+                                    AppLanguage.EN -> "Fixed quota ($symbol)"
+                                    AppLanguage.FR -> "Quote-part fixe ($symbol)"
+                                    AppLanguage.IT -> "Quota fissa ($symbol)"
+                                    AppLanguage.ZH -> "固定份额 ($symbol)"
+                                    AppLanguage.NL -> "Vaste bijdrage ($symbol)"
+                                    AppLanguage.DE -> "Feste Quote ($symbol)"
+                                    AppLanguage.PL -> "Stała składka ($symbol)"
+                                }
                                 OutlinedTextField(
                                     value = basePerPersonText,
                                     onValueChange = { recalculatePerPersonQuotas(it) },
                                     label = {
                                         Text(
-                                            text = if (isEn) "Fixed quota ($symbol)" else "Cuota fija ($symbol)",
+                                            text = fixedQuotaLabel,
                                             color = graySecondaryLabelColor
                                         )
                                     },
@@ -436,18 +458,34 @@ fun IncomeModal(
                                         .testTag("quota_per_person_input")
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
+                                val discountHintText = when (currentLang) {
+                                    AppLanguage.ES -> "💡 Si a algún participante se le debe dinero por gastos adelantados, se le resta automáticamente de su cuota (nunca menor que 0 $symbol)."
+                                    AppLanguage.EN -> "💡 If any participant is owed money for out-of-pocket expenses, it is automatically deducted from their quota (never less than 0 $symbol)."
+                                    AppLanguage.FR -> "💡 Si un participant a droit à un remboursement pour frais avancés, il est automatiquement déduit de sa part (jamais moins de 0 $symbol)."
+                                    AppLanguage.IT -> "💡 Se a un partecipante spetta un rimborso per spese anticipate, viene automaticamente sottratto dalla sua quota (mai meno di 0 $symbol)."
+                                    AppLanguage.ZH -> "💡 如果有参与者垫付了费用，将自动从其份额中扣除（绝不少于 0 $symbol）。"
+                                    AppLanguage.NL -> "💡 Als een deelnemer geld tegoed heeft voor voorgeschoten uitgaven, wordt dit automatisch van diens bijdrage afgetrokken (nooit minder dan 0 $symbol)."
+                                    AppLanguage.DE -> "💡 Wenn einem Teilnehmer Geld für vorgestreckte Ausgaben geschuldet wird, wird dies automatisch von seinem Beitrag abgezogen (nie weniger als 0 $symbol)."
+                                    AppLanguage.PL -> "💡 Jeśli uczestnikowi należy się zwrot za wyłożone wydatki, kwota ta zostanie automatycznie odjęta od jego składki (nigdy mniej niż 0 $symbol)."
+                                }
                                 Text(
-                                    text = if (isEn) {
-                                        "💡 If any participant is owed money for out-of-pocket expenses, it is automatically deducted from their quota (never less than 0 $symbol)."
-                                    } else {
-                                        "💡 Si a algún participante se le debe dinero por gastos adelantados, se le resta automáticamente de su cuota (nunca menor que 0 $symbol)."
-                                    },
+                                    text = discountHintText,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF065F46)
                                 )
                             }
                         }
                     } else {
+                        val totalSplitLabel = when (currentLang) {
+                            AppLanguage.ES -> "Total a repartir ($symbol)"
+                            AppLanguage.EN -> "Total to split ($symbol)"
+                            AppLanguage.FR -> "Total à répartir ($symbol)"
+                            AppLanguage.IT -> "Totale da dividere ($symbol)"
+                            AppLanguage.ZH -> "待分摊总额 ($symbol)"
+                            AppLanguage.NL -> "Totaal te verdelen ($symbol)"
+                            AppLanguage.DE -> "Zu verteilender Gesamtbetrag ($symbol)"
+                            AppLanguage.PL -> "Łącznie do podziału ($symbol)"
+                        }
                         OutlinedTextField(
                             value = globalTotalText,
                             onValueChange = { newVal ->
@@ -464,7 +502,7 @@ fun IncomeModal(
                             },
                             label = {
                                 Text(
-                                    text = if (isEn) "Total to split ($symbol)" else "Total a repartir ($symbol)",
+                                    text = totalSplitLabel,
                                     color = graySecondaryLabelColor
                                 )
                             },
@@ -493,14 +531,34 @@ fun IncomeModal(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val totalCollectedTitle = when (currentLang) {
+                                AppLanguage.ES -> "Total Recaudado en Caja"
+                                AppLanguage.EN -> "Total Collected in Cash"
+                                AppLanguage.FR -> "Total collecté en caisse"
+                                AppLanguage.IT -> "Totale raccolto in cassa"
+                                AppLanguage.ZH -> "实收现金总计"
+                                AppLanguage.NL -> "Totaal opgehaald in kas"
+                                AppLanguage.DE -> "In Kasse gesammelt"
+                                AppLanguage.PL -> "Łącznie zebrane w kasie"
+                            }
+                            val totalCollectedSubtitle = when (currentLang) {
+                                AppLanguage.ES -> "Importe Total del Bote (efectivo real)"
+                                AppLanguage.EN -> "Total Pot Amount (actual cash)"
+                                AppLanguage.FR -> "Montant total de la cagnotte (espèces réelles)"
+                                AppLanguage.IT -> "Importo totale cassa (denaro effettivo)"
+                                AppLanguage.ZH -> "公账总金额（实际资金）"
+                                AppLanguage.NL -> "Totaalbedrag van de pot (werkelijk geld)"
+                                AppLanguage.DE -> "Gesamter Kassenbetrag (tatsächliches Geld)"
+                                AppLanguage.PL -> "Całkowita kwota budżetu (rzeczywista gotówka)"
+                            }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = if (isEn) "Total Collected in Cash" else "Total Recaudado en Caja",
+                                    text = totalCollectedTitle,
                                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                     color = Color.White
                                 )
                                 Text(
-                                    text = if (isEn) "Total Pot Amount (actual cash)" else "Importe Total del Bote (efectivo real)",
+                                    text = totalCollectedSubtitle,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color(0xFF94A3B8)
                                 )
@@ -518,17 +576,33 @@ fun IncomeModal(
                     }
 
                     // DESGLOSE POR PARTICIPANTE CON REGLA DE ORO Y ETIQUETA ÁMBAR
+                    val breakdownTitle = when (currentLang) {
+                        AppLanguage.ES -> "Desglose por Participante (editable)"
+                        AppLanguage.EN -> "Breakdown by Participant (editable)"
+                        AppLanguage.FR -> "Ventilation par participant (modifiable)"
+                        AppLanguage.IT -> "Ripartizione per partecipante (modificabile)"
+                        AppLanguage.ZH -> "参与者明细（可编辑）"
+                        AppLanguage.NL -> "Uitsplitsing per deelnemer (bewerkbaar)"
+                        AppLanguage.DE -> "Aufteilung nach Teilnehmer (bearbeitbar)"
+                        AppLanguage.PL -> "Podział według uczestników (edytowalny)"
+                    }
+                    val breakdownSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "Indica quién aporta o paga para el bote, su forma de pago (Bizum/Efectivo) y su importe:"
+                        AppLanguage.EN -> "Indicate who contributes or pays into the pot, payment method (Bizum/Cash) and amount:"
+                        AppLanguage.FR -> "Indiquez qui contribue ou verse dans la cagnotte, son mode de paiement (Bizum/Espèces) et son montant :"
+                        AppLanguage.IT -> "Indica chi versa o contribuisce alla cassa, il metodo di pagamento (Bizum/Contanti) e l'importo:"
+                        AppLanguage.ZH -> "注明谁向公账出资、付款方式（Bizum/现金）及出资金额："
+                        AppLanguage.NL -> "Geef aan wie bijdraagt aan de pot, de betaalmethode (Bizum/Contant) en het bedrag:"
+                        AppLanguage.DE -> "Geben Sie an, wer in die Kasse einzahlt, die Zahlungsmethode (Bizum/Bar) und den Betrag:"
+                        AppLanguage.PL -> "Wskaż, kto wpłaca na wspólny budżet, metodę płatności (Bizum/Gotówka) oraz kwotę:"
+                    }
                     Text(
-                        text = if (isEn) "Breakdown by Participant (editable)" else "Desglose por Participante (editable)",
+                        text = breakdownTitle,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = grayAmountAndNameColor
                     )
                     Text(
-                        text = if (isEn) {
-                            "Indicate who contributes or pays into the pot, payment method (Bizum/Cash) and amount:"
-                        } else {
-                            "Indica quién aporta o paga para el bote, su forma de pago (Bizum/Efectivo) y su importe:"
-                        },
+                        text = breakdownSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = graySecondaryLabelColor
                     )
@@ -591,12 +665,18 @@ fun IncomeModal(
                                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                 )
                                                 if (deudaAFavor > 0.009) {
+                                                    val owedPrefix = when (currentLang) {
+                                                        AppLanguage.ES -> "A favor: +"
+                                                        AppLanguage.EN -> "Owed: +"
+                                                        AppLanguage.FR -> "À percevoir : +"
+                                                        AppLanguage.IT -> "A favore: +"
+                                                        AppLanguage.ZH -> "待收：+"
+                                                        AppLanguage.NL -> "Tegoed: +"
+                                                        AppLanguage.DE -> "Zugunsten: +"
+                                                        AppLanguage.PL -> "Na korzyść: +"
+                                                    }
                                                     Text(
-                                                        text = if (isEn) {
-                                                            "Owed: +${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)}"
-                                                        } else {
-                                                            "A favor: +${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)}"
-                                                        },
+                                                        text = "$owedPrefix${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)}",
                                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
                                                         color = EmeraldGreenDark
                                                     )
@@ -682,8 +762,18 @@ fun IncomeModal(
                                                         color = if (currentMethod == "Efectivo") EmeraldGreenDark else Color(0xFF64748B)
                                                     )
                                                     Spacer(modifier = Modifier.width(2.dp))
+                                                    val cashLabel = when (currentLang) {
+                                                        AppLanguage.ES -> "Efectivo"
+                                                        AppLanguage.EN -> "Cash"
+                                                        AppLanguage.FR -> "Espèces"
+                                                        AppLanguage.IT -> "Contanti"
+                                                        AppLanguage.ZH -> "现金"
+                                                        AppLanguage.NL -> "Contant"
+                                                        AppLanguage.DE -> "Bargeld"
+                                                        AppLanguage.PL -> "Gotówka"
+                                                    }
                                                     Text(
-                                                        text = if (isEn) "Cash" else "Efectivo",
+                                                        text = cashLabel,
                                                         style = MaterialTheme.typography.labelSmall.copy(
                                                             fontWeight = if (currentMethod == "Efectivo") FontWeight.Bold else FontWeight.Medium,
                                                             fontSize = 9.sp
@@ -696,6 +786,16 @@ fun IncomeModal(
 
                                         Spacer(modifier = Modifier.width(8.dp))
 
+                                        val putsLabel = when (currentLang) {
+                                            AppLanguage.ES -> "Pone ($symbol)"
+                                            AppLanguage.EN -> "Puts ($symbol)"
+                                            AppLanguage.FR -> "Verse ($symbol)"
+                                            AppLanguage.IT -> "Versa ($symbol)"
+                                            AppLanguage.ZH -> "出资 ($symbol)"
+                                            AppLanguage.NL -> "Legt in ($symbol)"
+                                            AppLanguage.DE -> "Zahlt ($symbol)"
+                                            AppLanguage.PL -> "Wpłaca ($symbol)"
+                                        }
                                         OutlinedTextField(
                                             value = individualAmounts[p.id] ?: "0.00",
                                             onValueChange = { newAmtStr ->
@@ -708,7 +808,7 @@ fun IncomeModal(
                                             enabled = isIncluded,
                                             label = {
                                                 Text(
-                                                    text = if (isEn) "Puts ($symbol)" else "Pone ($symbol)",
+                                                    text = putsLabel,
                                                     color = graySecondaryLabelColor,
                                                     fontSize = 10.5.sp
                                                 )
@@ -735,18 +835,50 @@ fun IncomeModal(
                                         border = BorderStroke(1.dp, Color(0xFFF59E0B)),
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        val formulaText = if (isEn) {
-                                            if (currentCashVal <= 0.009) {
-                                                "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} (quota) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} (owed) → Puts 0 $symbol (compensates ${FormatUtils.formatCurrency(appliedDiscount, trip.baseCurrency)})"
-                                            } else {
-                                                "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} (quota) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} (owed) → Puts ${FormatUtils.formatCurrency(currentCashVal, trip.baseCurrency)}"
-                                            }
+                                        val quotaWord = when (currentLang) {
+                                            AppLanguage.ES -> "cuantía"
+                                            AppLanguage.EN -> "quota"
+                                            AppLanguage.FR -> "part"
+                                            AppLanguage.IT -> "quota"
+                                            AppLanguage.ZH -> "份额"
+                                            AppLanguage.NL -> "bijdrage"
+                                            AppLanguage.DE -> "Quote"
+                                            AppLanguage.PL -> "składka"
+                                        }
+                                        val owedWord = when (currentLang) {
+                                            AppLanguage.ES -> "se le debe"
+                                            AppLanguage.EN -> "owed"
+                                            AppLanguage.FR -> "dû"
+                                            AppLanguage.IT -> "dovuto"
+                                            AppLanguage.ZH -> "垫付待收"
+                                            AppLanguage.NL -> "tegoed"
+                                            AppLanguage.DE -> "geschuldet"
+                                            AppLanguage.PL -> "należne"
+                                        }
+                                        val putsWord = when (currentLang) {
+                                            AppLanguage.ES -> "Pone"
+                                            AppLanguage.EN -> "Puts"
+                                            AppLanguage.FR -> "Verse"
+                                            AppLanguage.IT -> "Versa"
+                                            AppLanguage.ZH -> "出资"
+                                            AppLanguage.NL -> "Legt in"
+                                            AppLanguage.DE -> "Zahlt"
+                                            AppLanguage.PL -> "Wpłaca"
+                                        }
+                                        val compensatesWord = when (currentLang) {
+                                            AppLanguage.ES -> "compensa"
+                                            AppLanguage.EN -> "compensates"
+                                            AppLanguage.FR -> "compense"
+                                            AppLanguage.IT -> "compensa"
+                                            AppLanguage.ZH -> "抵扣"
+                                            AppLanguage.NL -> "compenseert"
+                                            AppLanguage.DE -> "verrechnet"
+                                            AppLanguage.PL -> "kompensuje"
+                                        }
+                                        val formulaText = if (currentCashVal <= 0.009) {
+                                            "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} ($quotaWord) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} ($owedWord) → $putsWord 0 $symbol ($compensatesWord ${FormatUtils.formatCurrency(appliedDiscount, trip.baseCurrency)})"
                                         } else {
-                                            if (currentCashVal <= 0.009) {
-                                                "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} (cuantía) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} (se le debe) → Pone 0 $symbol (compensa ${FormatUtils.formatCurrency(appliedDiscount, trip.baseCurrency)})"
-                                            } else {
-                                                "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} (cuantía) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} (se le debe) → Pone ${FormatUtils.formatCurrency(currentCashVal, trip.baseCurrency)}"
-                                            }
+                                            "${FormatUtils.formatCurrency(quotaValue, trip.baseCurrency)} ($quotaWord) - ${FormatUtils.formatCurrency(deudaAFavor, trip.baseCurrency)} ($owedWord) → $putsWord ${FormatUtils.formatCurrency(currentCashVal, trip.baseCurrency)}"
                                         }
                                         Text(
                                             text = "⚖️ $formulaText",
@@ -761,12 +893,22 @@ fun IncomeModal(
                     }
 
                     // Concepto y Fecha de la aportación al bote
+                    val potDescriptionLabel = when (currentLang) {
+                        AppLanguage.ES -> "Descripción / Motivo del bote"
+                        AppLanguage.EN -> "Description / Pot reason"
+                        AppLanguage.FR -> "Description / Motif de la cagnotte"
+                        AppLanguage.IT -> "Descrizione / Motivo della cassa"
+                        AppLanguage.ZH -> "说明 / 公账事由"
+                        AppLanguage.NL -> "Beschrijving / Reden van de pot"
+                        AppLanguage.DE -> "Beschreibung / Grund der Kasse"
+                        AppLanguage.PL -> "Opis / Powód budżetu"
+                    }
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
                         label = {
                             Text(
-                                text = if (isEn) "Description / Pot reason" else "Descripción / Motivo del bote",
+                                text = potDescriptionLabel,
                                 color = graySecondaryLabelColor
                             )
                         },
@@ -869,16 +1011,21 @@ fun IncomeModal(
                         border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isEn) "Cancel" else "Cancelar", fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(texts.cancel, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                     Button(
                         onClick = {
                             val activePartList = participants.filter { selectedMap[it.id] == true }
                             if (activePartList.isEmpty()) {
-                                errorText = if (isEn) {
-                                    "Select at least one participant for this pot round."
-                                } else {
-                                    "Selecciona al menos un participante para esta ronda de bote."
+                                errorText = when (currentLang) {
+                                    AppLanguage.ES -> "Selecciona al menos un participante para esta ronda de bote."
+                                    AppLanguage.EN -> "Select at least one participant for this pot round."
+                                    AppLanguage.FR -> "Sélectionnez au moins un participant pour cette cagnotte."
+                                    AppLanguage.IT -> "Seleziona almeno un partecipante per questa cassa."
+                                    AppLanguage.ZH -> "请至少为此轮公账选择一名参与者。"
+                                    AppLanguage.NL -> "Selecteer ten minste één deelnemer voor deze potronde."
+                                    AppLanguage.DE -> "Wählen Sie mindestens einen Teilnehmer für diese Kassenrunde aus."
+                                    AppLanguage.PL -> "Wybierz przynajmniej jednego uczestnika dla tej zbiórki."
                                 }
                                 return@Button
                             }
@@ -899,16 +1046,35 @@ fun IncomeModal(
                             val totalReal = contribs.sumOf { it.amount }
                             val totalDiscounts = contribs.sumOf { it.debtDiscount ?: 0.0 }
                             if (totalReal <= 0.0 && totalDiscounts <= 0.0) {
-                                errorText = if (isEn) "Enter a valid amount greater than 0." else "Introduce una cuantía válida mayor que 0."
+                                errorText = when (currentLang) {
+                                    AppLanguage.ES -> "Introduce una cuantía válida mayor que 0."
+                                    AppLanguage.EN -> "Enter a valid amount greater than 0."
+                                    AppLanguage.FR -> "Saisissez un montant valide supérieur à 0."
+                                    AppLanguage.IT -> "Inserisci un importo valido maggiore di 0."
+                                    AppLanguage.ZH -> "请输入大于 0 的有效金额。"
+                                    AppLanguage.NL -> "Voer een geldig bedrag in groter dan 0."
+                                    AppLanguage.DE -> "Geben Sie einen gültigen Betrag größer als 0 ein."
+                                    AppLanguage.PL -> "Wprowadź prawidłową kwotę większą niż 0."
+                                }
                                 return@Button
                             }
 
+                            val defaultIncomeDesc = when (currentLang) {
+                                AppLanguage.ES -> "Aportación al Bote Común"
+                                AppLanguage.EN -> "Contribution to Common Pot"
+                                AppLanguage.FR -> "Contribution à la cagnotte commune"
+                                AppLanguage.IT -> "Versamento nella cassa comune"
+                                AppLanguage.ZH -> "公账出资"
+                                AppLanguage.NL -> "Bijdrage aan gemeenschappelijke pot"
+                                AppLanguage.DE -> "Beitrag zur Gemeinschaftskasse"
+                                AppLanguage.PL -> "Wpłata do wspólnego budżetu"
+                            }
                             val incomeEntity = IncomeEntity(
                                 id = existingIncome?.id ?: "inc-${UUID.randomUUID().toString().take(8)}",
                                 tripId = trip.id,
                                 amount = ((totalReal * 100.0).roundToLong()) / 100.0,
                                 date = selectedDate,
-                                description = description.trim().ifEmpty { "Aportación al Bote Común" },
+                                description = description.trim().ifEmpty { defaultIncomeDesc },
                                 basePerPerson = if (calculationMethod == "perPerson") {
                                     basePerPersonText.replace(",", ".").toDoubleOrNull()
                                 } else null,
@@ -925,9 +1091,19 @@ fun IncomeModal(
                             .testTag("save_income_button"),
                         shape = RoundedCornerShape(12.dp)
                     ) {
+                        val savePotLabel = when (currentLang) {
+                            AppLanguage.ES -> "Guardar Bote"
+                            AppLanguage.EN -> "Save Pot"
+                            AppLanguage.FR -> "Enregistrer la cagnotte"
+                            AppLanguage.IT -> "Salva cassa"
+                            AppLanguage.ZH -> "保存公账"
+                            AppLanguage.NL -> "Pot opslaan"
+                            AppLanguage.DE -> "Kasse speichern"
+                            AppLanguage.PL -> "Zapisz budżet"
+                        }
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (isEn) "Save Pot" else "Guardar Bote", fontWeight = FontWeight.Bold, maxLines = 1)
+                        Text(savePotLabel, fontWeight = FontWeight.Bold, maxLines = 1)
                     }
                 }
             }

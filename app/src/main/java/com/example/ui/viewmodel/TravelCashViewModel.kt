@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.util.TripPackage
+import com.example.util.UiTexts
 import java.time.LocalDate
 import java.util.UUID
 
@@ -397,22 +398,39 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             repository.insertTrip(newTrip)
             repository.insertParticipants(parts)
             _activeTripId.value = tripId
-            val isEn = _language.value == AppLanguage.EN
-            showToast(
-                if (isEn) "Trip \"${newTrip.title}\" created successfully"
-                else "Viaje \"${newTrip.title}\" creado correctamente"
-            )
+            val lang = _language.value
+            val msg = when (lang) {
+                AppLanguage.ES -> "Viaje \"${newTrip.title}\" creado correctamente"
+                AppLanguage.EN -> "Trip \"${newTrip.title}\" created successfully"
+                AppLanguage.FR -> "Voyage « ${newTrip.title} » créé avec succès"
+                AppLanguage.IT -> "Viaggio \"${newTrip.title}\" creato con successo"
+                AppLanguage.ZH -> "行程 \"${newTrip.title}\" 创建成功"
+                AppLanguage.NL -> "Reis \"${newTrip.title}\" succesvol aangemaakt"
+                AppLanguage.DE -> "Reise „${newTrip.title}“ erfolgreich erstellt"
+                AppLanguage.PL -> "Podróż „${newTrip.title}” utworzona pomyślnie"
+            }
+            showToast(msg)
         }
     }
 
     fun createSampleTrip() {
         viewModelScope.launch {
-            val isEn = _language.value == AppLanguage.EN
+            val lang = _language.value
+            val tripTitle = when (lang) {
+                AppLanguage.ES -> "Viaje a Roma"
+                AppLanguage.EN -> "Trip to Rome"
+                AppLanguage.FR -> "Voyage à Rome"
+                AppLanguage.IT -> "Viaggio a Roma"
+                AppLanguage.ZH -> "罗马之旅"
+                AppLanguage.NL -> "Reis naar Rome"
+                AppLanguage.DE -> "Reise nach Rom"
+                AppLanguage.PL -> "Wycieczka do Rzymu"
+            }
             val tripId = "trip-${UUID.randomUUID().toString().take(8)}"
             val now = LocalDate.now()
             val sampleTrip = TripEntity(
                 id = tripId,
-                title = if (isEn) "Trip to Rome" else "Viaje a Roma",
+                title = tripTitle,
                 startDate = now.minusDays(2).toString(),
                 endDate = now.plusDays(5).toString(),
                 budget = 1200.0,
@@ -425,10 +443,70 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             val p2Id = "part-${UUID.randomUUID().toString().take(8)}"
             val p3Id = "part-${UUID.randomUUID().toString().take(8)}"
 
-            val p1 = ParticipantEntity(id = p1Id, tripId = tripId, name = if (isEn) "Alex" else "Alejandro", avatarColor = AvatarColorPalette.colors[0])
-            val p2 = ParticipantEntity(id = p2Id, tripId = tripId, name = if (isEn) "Maria" else "María", avatarColor = AvatarColorPalette.colors[1])
-            val p3 = ParticipantEntity(id = p3Id, tripId = tripId, name = "Carlos", avatarColor = AvatarColorPalette.colors[2])
+            val p1Name = when (lang) {
+                AppLanguage.ES -> "Alejandro"
+                AppLanguage.EN -> "Alex"
+                AppLanguage.FR -> "Alexandre"
+                AppLanguage.IT -> "Alessandro"
+                AppLanguage.ZH -> "亚历克斯"
+                AppLanguage.NL -> "Alex"
+                AppLanguage.DE -> "Alexander"
+                AppLanguage.PL -> "Aleksander"
+            }
+            val p2Name = when (lang) {
+                AppLanguage.ES -> "María"
+                AppLanguage.EN -> "Maria"
+                AppLanguage.FR -> "Marie"
+                AppLanguage.IT -> "Maria"
+                AppLanguage.ZH -> "玛丽亚"
+                AppLanguage.NL -> "Maria"
+                AppLanguage.DE -> "Maria"
+                AppLanguage.PL -> "Maria"
+            }
+            val p3Name = when (lang) {
+                AppLanguage.ES, AppLanguage.EN -> "Carlos"
+                AppLanguage.FR -> "Charles"
+                AppLanguage.IT -> "Carlo"
+                AppLanguage.ZH -> "卡洛斯"
+                AppLanguage.NL -> "Karel"
+                AppLanguage.DE -> "Karl"
+                AppLanguage.PL -> "Karol"
+            }
+
+            val p1 = ParticipantEntity(id = p1Id, tripId = tripId, name = p1Name, avatarColor = AvatarColorPalette.colors[0])
+            val p2 = ParticipantEntity(id = p2Id, tripId = tripId, name = p2Name, avatarColor = AvatarColorPalette.colors[1])
+            val p3 = ParticipantEntity(id = p3Id, tripId = tripId, name = p3Name, avatarColor = AvatarColorPalette.colors[2])
             val participants = listOf(p1, p2, p3)
+
+            val exp1Notes = when (lang) {
+                AppLanguage.ES -> "Cena en Trattoria Romana"
+                AppLanguage.EN -> "Dinner at Trattoria Romana"
+                AppLanguage.FR -> "Dîner à la Trattoria Romana"
+                AppLanguage.IT -> "Cena alla Trattoria Romana"
+                AppLanguage.ZH -> "罗马餐厅晚餐"
+                AppLanguage.NL -> "Diner in Trattoria Romana"
+                AppLanguage.DE -> "Abendessen in der Trattoria Romana"
+                AppLanguage.PL -> "Kolacja w Trattoria Romana"
+            }
+            val exp1Place = when (lang) {
+                AppLanguage.ES -> "Coliseo, Roma"
+                AppLanguage.EN -> "Colosseum, Rome"
+                AppLanguage.FR -> "Colisée, Rome"
+                AppLanguage.IT -> "Colosseo, Roma"
+                AppLanguage.ZH -> "罗马斗兽场"
+                AppLanguage.NL -> "Colosseum, Rome"
+                AppLanguage.DE -> "Kolosseum, Rom"
+                AppLanguage.PL -> "Koloseum, Rzym"
+            }
+            val exp1Country = when (lang) {
+                AppLanguage.ES, AppLanguage.IT -> "Italia"
+                AppLanguage.EN -> "Italy"
+                AppLanguage.FR -> "Italie"
+                AppLanguage.ZH -> "意大利"
+                AppLanguage.NL -> "Italië"
+                AppLanguage.DE -> "Italien"
+                AppLanguage.PL -> "Włochy"
+            }
 
             val exp1Id = "exp-${UUID.randomUUID().toString().take(8)}"
             val receiptUri = com.example.util.SampleReceiptGenerator.getOrCreateSampleReceipt(getApplication())
@@ -442,11 +520,11 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 category = "Restaurantes y Comida",
                 date = now.minusDays(1).toString(),
                 paymentMethod = "Tarjeta",
-                notes = if (isEn) "Dinner at Trattoria Romana" else "Cena en Trattoria Romana",
+                notes = exp1Notes,
                 latitude = 41.8902,
                 longitude = 12.4922,
-                placeName = if (isEn) "Colosseum, Rome" else "Coliseo, Roma",
-                country = if (isEn) "Italy" else "Italia",
+                placeName = exp1Place,
+                country = exp1Country,
                 originName = "",
                 originLatitude = null,
                 originLongitude = null,
@@ -460,6 +538,27 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 createdAt = System.currentTimeMillis() - 86400000L
             )
 
+            val exp2Notes = when (lang) {
+                AppLanguage.ES -> "Taxi aeropuerto al hotel"
+                AppLanguage.EN -> "Taxi from airport to hotel"
+                AppLanguage.FR -> "Taxi de l'aéroport à l'hôtel"
+                AppLanguage.IT -> "Taxi dall'aeroporto all'hotel"
+                AppLanguage.ZH -> "机场到酒店的出租车"
+                AppLanguage.NL -> "Taxi van vliegveld naar hotel"
+                AppLanguage.DE -> "Taxi vom Flughafen zum Hotel"
+                AppLanguage.PL -> "Taksówka z lotniska do hotelu"
+            }
+            val exp2Origin = when (lang) {
+                AppLanguage.ES -> "Aeropuerto Fiumicino"
+                AppLanguage.EN -> "Fiumicino Airport"
+                AppLanguage.FR -> "Aéroport de Fiumicino"
+                AppLanguage.IT -> "Aeroporto di Fiumicino"
+                AppLanguage.ZH -> "菲乌米奇诺机场"
+                AppLanguage.NL -> "Luchthaven Fiumicino"
+                AppLanguage.DE -> "Flughafen Fiumicino"
+                AppLanguage.PL -> "Lotnisko Fiumicino"
+            }
+
             val exp2Id = "exp-${UUID.randomUUID().toString().take(8)}"
             val exp2 = ExpenseEntity(
                 id = exp2Id,
@@ -471,12 +570,12 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 category = "Transporte",
                 date = now.toString(),
                 paymentMethod = "Bizum",
-                notes = if (isEn) "Taxi from airport to hotel" else "Taxi aeropuerto al hotel",
+                notes = exp2Notes,
                 latitude = 41.9028,
                 longitude = 12.4964,
                 placeName = "Roma Termini",
-                country = if (isEn) "Italy" else "Italia",
-                originName = if (isEn) "Fiumicino Airport" else "Aeropuerto Fiumicino",
+                country = exp1Country,
+                originName = exp2Origin,
                 originLatitude = 41.8003,
                 originLongitude = 12.2389,
                 paidById = p2Id,
@@ -487,6 +586,27 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 ),
                 createdAt = System.currentTimeMillis() - 3600000L
             )
+
+            val exp3Notes = when (lang) {
+                AppLanguage.ES -> "Entradas museo y galería"
+                AppLanguage.EN -> "Museum and gallery tickets"
+                AppLanguage.FR -> "Billets musée et galerie"
+                AppLanguage.IT -> "Biglietti museo e galleria"
+                AppLanguage.ZH -> "博物馆与画廊门票"
+                AppLanguage.NL -> "Museum- en galerietickets"
+                AppLanguage.DE -> "Museums- und Galerietickets"
+                AppLanguage.PL -> "Bilety do muzeum i galerii"
+            }
+            val exp3Place = when (lang) {
+                AppLanguage.ES -> "Museos Vaticanos"
+                AppLanguage.EN -> "Vatican Museums"
+                AppLanguage.FR -> "Musées du Vatican"
+                AppLanguage.IT -> "Musei Vaticani"
+                AppLanguage.ZH -> "梵蒂冈博物馆"
+                AppLanguage.NL -> "Vaticaanse Musea"
+                AppLanguage.DE -> "Vatikanische Museen"
+                AppLanguage.PL -> "Muzea Watykańskie"
+            }
 
             val exp3Id = "exp-${UUID.randomUUID().toString().take(8)}"
             val exp3 = ExpenseEntity(
@@ -499,11 +619,11 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 category = "Entradas y Ocio",
                 date = now.toString(),
                 paymentMethod = "Bote Común",
-                notes = if (isEn) "Museum entrance tickets" else "Entradas museo y galería",
+                notes = exp3Notes,
                 latitude = 41.9038,
                 longitude = 12.4534,
-                placeName = if (isEn) "Vatican Museums" else "Museos Vaticanos",
-                country = if (isEn) "Italy" else "Italia",
+                placeName = exp3Place,
+                country = exp1Country,
                 originName = "",
                 originLatitude = null,
                 originLongitude = null,
@@ -516,13 +636,24 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 createdAt = System.currentTimeMillis()
             )
 
+            val incDesc = when (lang) {
+                AppLanguage.ES -> "Fondo inicial Bote Común"
+                AppLanguage.EN -> "Initial Common Pot fund"
+                AppLanguage.FR -> "Fonds initial cagnotte commune"
+                AppLanguage.IT -> "Fondo iniziale cassa comune"
+                AppLanguage.ZH -> "公账初始资金"
+                AppLanguage.NL -> "Startkapitaal gezamenlijke pot"
+                AppLanguage.DE -> "Anfangskapital Gemeinschaftskasse"
+                AppLanguage.PL -> "Początkowy fundusz wspólnej kasy"
+            }
+
             val incId = "inc-${UUID.randomUUID().toString().take(8)}"
             val sampleIncome = IncomeEntity(
                 id = incId,
                 tripId = tripId,
                 amount = 90.00,
                 date = now.minusDays(1).toString(),
-                description = if (isEn) "Initial Common Pot fund" else "Fondo inicial Bote Común",
+                description = incDesc,
                 basePerPerson = 30.0,
                 calculationMethod = "perPerson",
                 contributions = listOf(
@@ -538,18 +669,24 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             repository.insertIncome(sampleIncome)
 
             _activeTripId.value = tripId
-            showToast(
-                if (isEn) "Sample trip \"${sampleTrip.title}\" added successfully!"
-                else "¡Viaje de prueba \"${sampleTrip.title}\" añadido con éxito!"
-            )
+            val sampleMsg = when (lang) {
+                AppLanguage.ES -> "¡Viaje de prueba \"${sampleTrip.title}\" añadido con éxito!"
+                AppLanguage.EN -> "Sample trip \"${sampleTrip.title}\" added successfully!"
+                AppLanguage.FR -> "Voyage d'essai « ${sampleTrip.title} » ajouté avec succès !"
+                AppLanguage.IT -> "Viaggio di prova \"${sampleTrip.title}\" aggiunto con successo!"
+                AppLanguage.ZH -> "测试行程 \"${sampleTrip.title}\" 添加成功！"
+                AppLanguage.NL -> "Proefreis \"${sampleTrip.title}\" succesvol toegevoegd!"
+                AppLanguage.DE -> "Testreise „${sampleTrip.title}“ erfolgreich hinzugefügt!"
+                AppLanguage.PL -> "Podróż próbna „${sampleTrip.title}” dodana pomyślnie!"
+            }
+            showToast(sampleMsg)
         }
     }
 
     fun updateTrip(trip: TripEntity) {
-        val isEn = _language.value == AppLanguage.EN
         viewModelScope.launch {
             repository.updateTrip(trip)
-            showToast(if (isEn) "Trip updated" else "Viaje actualizado")
+            showToast(UiTexts.get(_language.value).toastTripUpdated)
         }
     }
 
@@ -603,20 +740,27 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
 
-            val isEn = _language.value == AppLanguage.EN
-            showToast(
-                if (isEn) "Trip \"${updatedTrip.title}\" updated" else "Viaje \"${updatedTrip.title}\" actualizado"
-            )
+            val lang = _language.value
+            val msg = when (lang) {
+                AppLanguage.ES -> "Viaje \"${updatedTrip.title}\" actualizado"
+                AppLanguage.EN -> "Trip \"${updatedTrip.title}\" updated"
+                AppLanguage.FR -> "Voyage « ${updatedTrip.title} » mis à jour"
+                AppLanguage.IT -> "Viaggio \"${updatedTrip.title}\" aggiornato"
+                AppLanguage.ZH -> "行程 \"${updatedTrip.title}\" 已更新"
+                AppLanguage.NL -> "Reis \"${updatedTrip.title}\" bijgewerkt"
+                AppLanguage.DE -> "Reise „${updatedTrip.title}“ aktualisiert"
+                AppLanguage.PL -> "Podróż „${updatedTrip.title}” zaktualizowana"
+            }
+            showToast(msg)
         }
     }
 
     fun deleteTrip(tripId: String) {
-        val isEn = _language.value == AppLanguage.EN
         viewModelScope.launch {
             repository.deleteCompleteTrip(tripId)
             val remaining = repository.getAllTripsOnce()
             _activeTripId.value = remaining.firstOrNull()?.id
-            showToast(if (isEn) "Trip deleted" else "Viaje eliminado")
+            showToast(UiTexts.get(_language.value).toastTripDeleted)
         }
     }
 
@@ -627,7 +771,6 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         val tripId = uiState.value.activeTripId ?: return
         val clean = name.trim()
         if (clean.isEmpty()) return
-        val isEn = _language.value == AppLanguage.EN
         viewModelScope.launch {
             val idx = uiState.value.activeParticipants.size
             val newPart = ParticipantEntity(
@@ -637,7 +780,18 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 avatarColor = AvatarColorPalette.colors[idx % AvatarColorPalette.colors.size]
             )
             repository.insertParticipant(newPart)
-            showToast(if (isEn) "Participant \"$clean\" added" else "Participante \"$clean\" añadido")
+            val lang = _language.value
+            val msg = when (lang) {
+                AppLanguage.ES -> "Participante \"$clean\" añadido"
+                AppLanguage.EN -> "Participant \"$clean\" added"
+                AppLanguage.FR -> "Participant « $clean » ajouté"
+                AppLanguage.IT -> "Partecipante \"$clean\" aggiunto"
+                AppLanguage.ZH -> "参与者 \"$clean\" 已添加"
+                AppLanguage.NL -> "Deelnemer \"$clean\" toegevoegd"
+                AppLanguage.DE -> "Teilnehmer „$clean“ hinzugefügt"
+                AppLanguage.PL -> "Uczestnik „$clean” dodany"
+            }
+            showToast(msg)
         }
     }
 
@@ -674,65 +828,130 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     fun setReminderNotificationsEnabled(enabled: Boolean) {
         _reminderNotificationsEnabled.value = enabled
         prefs.edit().putBoolean("reminder_notifications_enabled", enabled).apply()
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         val app = getApplication<Application>()
         val nm = app.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
         val channelId = "travel_cash_reminders"
+
+        val channelName = when (lang) {
+            AppLanguage.ES -> "Recordatorios de Gastos de Viaje"
+            AppLanguage.EN -> "Trip Expense Reminders"
+            AppLanguage.FR -> "Rappels de dépenses de voyage"
+            AppLanguage.IT -> "Promemoria spese di viaggio"
+            AppLanguage.ZH -> "旅行支出提醒"
+            AppLanguage.NL -> "Reiskostenherinneringen"
+            AppLanguage.DE -> "Reisekosten-Erinnerungen"
+            AppLanguage.PL -> "Przypomnienia o wydatkach w podróży"
+        }
+
+        val channelDesc = when (lang) {
+            AppLanguage.ES -> "Recordatorios para anotar los gastos diarios del viaje y el bote común"
+            AppLanguage.EN -> "Reminders to log daily trip expenses and common pot contributions"
+            AppLanguage.FR -> "Rappels pour enregistrer les dépenses quotidiennes du voyage et la cagnotte"
+            AppLanguage.IT -> "Promemoria per registrare le spese giornaliere del viaggio e la cassa comune"
+            AppLanguage.ZH -> "提醒记录每日旅行支出及公账存入"
+            AppLanguage.NL -> "Herinneringen om dagelijkse reiskosten en inleg in de pot vast te leggen"
+            AppLanguage.DE -> "Erinnerungen zur Erfassung täglicher Reiseausgaben und Kassenbeiträge"
+            AppLanguage.PL -> "Przypomnienia o zapisywaniu codziennych wydatków z podróży i wspólnej kasy"
+        }
+
+        val notifTitle = when (lang) {
+            AppLanguage.ES -> "Travel Cash · Recordatorio Activado"
+            AppLanguage.EN -> "Travel Cash · Expense Reminder Active"
+            AppLanguage.FR -> "Travel Cash · Rappel activé"
+            AppLanguage.IT -> "Travel Cash · Promemoria attivato"
+            AppLanguage.ZH -> "Travel Cash · 支出提醒已激活"
+            AppLanguage.NL -> "Travel Cash · Herinnering actief"
+            AppLanguage.DE -> "Travel Cash · Erinnerung aktiviert"
+            AppLanguage.PL -> "Travel Cash · Przypomnienie aktywne"
+        }
 
         if (enabled) {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 val channel = android.app.NotificationChannel(
                     channelId,
-                    if (isEn) "Trip Expense Reminders" else "Recordatorios de Gastos de Viaje",
+                    channelName,
                     android.app.NotificationManager.IMPORTANCE_DEFAULT
                 ).apply {
-                    description = if (isEn) {
-                        "Reminders to log daily trip expenses and common pot contributions"
-                    } else {
-                        "Recordatorios para anotar los gastos diarios del viaje y el bote común"
-                    }
+                    description = channelDesc
                 }
                 nm?.createNotificationChannel(channel)
             }
             try {
                 val activeTitle = uiState.value.activeTrip?.title ?: "Travel Cash"
+                val notifText = when (lang) {
+                    AppLanguage.ES -> "No olvides registrar los gastos de hoy en \"$activeTitle\"."
+                    AppLanguage.EN -> "Don't forget to log today's expenses for \"$activeTitle\"."
+                    AppLanguage.FR -> "N'oubliez pas d'enregistrer les dépenses du jour pour « $activeTitle »."
+                    AppLanguage.IT -> "Non dimenticare di registrare le spese di oggi in \"$activeTitle\"."
+                    AppLanguage.ZH -> "别忘了记录今天在 \"$activeTitle\" 中的支出。"
+                    AppLanguage.NL -> "Vergeet niet de uitgaven van vandaag voor \"$activeTitle\" te registreren."
+                    AppLanguage.DE -> "Vergessen Sie nicht, die heutigen Ausgaben für „$activeTitle“ zu erfassen."
+                    AppLanguage.PL -> "Nie zapomnij zarejestrować dzisiejszych wydatków w „$activeTitle”."
+                }
                 val notification = androidx.core.app.NotificationCompat.Builder(app, channelId)
                     .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                    .setContentTitle(
-                        if (isEn) "Travel Cash · Expense Reminder Active" else "Travel Cash · Recordatorio Activado"
-                    )
-                    .setContentText(
-                        if (isEn) {
-                            "Don't forget to log today's expenses for \"$activeTitle\"."
-                        } else {
-                            "No olvides registrar los gastos de hoy en \"$activeTitle\"."
-                        }
-                    )
+                    .setContentTitle(notifTitle)
+                    .setContentText(notifText)
                     .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
                     .setAutoCancel(true)
                     .build()
                 nm?.notify(1001, notification)
             } catch (_: SecurityException) {
             }
-            showToast(
-                if (isEn) "🔔 Reminder notifications enabled" else "🔔 Notificaciones de recordatorio activadas"
-            )
+            val enabledToast = when (lang) {
+                AppLanguage.ES -> "🔔 Notificaciones de recordatorio activadas"
+                AppLanguage.EN -> "🔔 Reminder notifications enabled"
+                AppLanguage.FR -> "🔔 Notifications de rappel activées"
+                AppLanguage.IT -> "🔔 Notifiche di promemoria attivate"
+                AppLanguage.ZH -> "🔔 提醒通知已开启"
+                AppLanguage.NL -> "🔔 Herinneringsmeldingen ingeschakeld"
+                AppLanguage.DE -> "🔔 Erinnerungsbenachrichtigungen aktiviert"
+                AppLanguage.PL -> "🔔 Powiadomienia z przypomnieniami włączone"
+            }
+            showToast(enabledToast)
         } else {
             nm?.cancel(1001)
-            showToast(
-                if (isEn) "🔕 Reminder notifications disabled" else "🔕 Notificaciones de recordatorio desactivadas"
-            )
+            val disabledToast = when (lang) {
+                AppLanguage.ES -> "🔕 Notificaciones de recordatorio desactivadas"
+                AppLanguage.EN -> "🔕 Reminder notifications disabled"
+                AppLanguage.FR -> "🔕 Notifications de rappel désactivées"
+                AppLanguage.IT -> "🔕 Notifiche di promemoria disattivate"
+                AppLanguage.ZH -> "🔕 提醒通知已关闭"
+                AppLanguage.NL -> "🔕 Herinneringsmeldingen uitgeschakeld"
+                AppLanguage.DE -> "🔕 Erinnerungsbenachrichtigungen deaktiviert"
+                AppLanguage.PL -> "🔕 Powiadomienia z przypomnieniami wyłączone"
+            }
+            showToast(disabledToast)
         }
     }
 
     fun updateParticipantPhoto(participant: ParticipantEntity, newPhotoUri: String?) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         viewModelScope.launch {
             repository.updateParticipant(participant.copy(photoUri = newPhotoUri))
             val msg = if (newPhotoUri != null) {
-                if (isEn) "Photo for ${participant.name} updated" else "Foto de ${participant.name} actualizada"
+                when (lang) {
+                    AppLanguage.ES -> "Foto de ${participant.name} actualizada"
+                    AppLanguage.EN -> "Photo for ${participant.name} updated"
+                    AppLanguage.FR -> "Photo de ${participant.name} mise à jour"
+                    AppLanguage.IT -> "Foto di ${participant.name} aggiornata"
+                    AppLanguage.ZH -> "${participant.name} 的照片已更新"
+                    AppLanguage.NL -> "Foto van ${participant.name} bijgewerkt"
+                    AppLanguage.DE -> "Foto von ${participant.name} aktualisiert"
+                    AppLanguage.PL -> "Zdjęcie użytkownika ${participant.name} zaktualizowane"
+                }
             } else {
-                if (isEn) "Default icon restored for ${participant.name}" else "Icono por defecto restaurado para ${participant.name}"
+                when (lang) {
+                    AppLanguage.ES -> "Icono por defecto restaurado para ${participant.name}"
+                    AppLanguage.EN -> "Default icon restored for ${participant.name}"
+                    AppLanguage.FR -> "Icône par défaut restaurée pour ${participant.name}"
+                    AppLanguage.IT -> "Icona predefinita ripristinata per ${participant.name}"
+                    AppLanguage.ZH -> "已为 ${participant.name} 恢复默认图标"
+                    AppLanguage.NL -> "Standaardpictogram hersteld voor ${participant.name}"
+                    AppLanguage.DE -> "Standard-Icon für ${participant.name} wiederhergestellt"
+                    AppLanguage.PL -> "Przywrócono domyślną ikonę dla ${participant.name}"
+                }
             }
             showToast(msg)
         }
@@ -741,18 +960,38 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     fun updateParticipantName(participant: ParticipantEntity, newName: String) {
         val clean = newName.trim()
         if (clean.isEmpty()) return
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         viewModelScope.launch {
             repository.updateParticipant(participant.copy(name = clean))
-            showToast(if (isEn) "Name updated to \"$clean\"" else "Nombre actualizado a \"$clean\"")
+            val msg = when (lang) {
+                AppLanguage.ES -> "Nombre actualizado a \"$clean\""
+                AppLanguage.EN -> "Name updated to \"$clean\""
+                AppLanguage.FR -> "Nom mis à jour en « $clean »"
+                AppLanguage.IT -> "Nome aggiornato a \"$clean\""
+                AppLanguage.ZH -> "名称已更新为 \"$clean\""
+                AppLanguage.NL -> "Naam bijgewerkt naar \"$clean\""
+                AppLanguage.DE -> "Name in „$clean“ geändert"
+                AppLanguage.PL -> "Nazwa zaktualizowana na „$clean”"
+            }
+            showToast(msg)
         }
     }
 
     fun deleteParticipant(participant: ParticipantEntity) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         viewModelScope.launch {
             repository.deleteParticipant(participant.id)
-            showToast(if (isEn) "Participant \"${participant.name}\" deleted" else "Participante \"${participant.name}\" eliminado")
+            val msg = when (lang) {
+                AppLanguage.ES -> "Participante \"${participant.name}\" eliminado"
+                AppLanguage.EN -> "Participant \"${participant.name}\" deleted"
+                AppLanguage.FR -> "Participant « ${participant.name} » supprimé"
+                AppLanguage.IT -> "Partecipante \"${participant.name}\" eliminato"
+                AppLanguage.ZH -> "参与者 \"${participant.name}\" 已删除"
+                AppLanguage.NL -> "Deelnemer \"${participant.name}\" verwijderd"
+                AppLanguage.DE -> "Teilnehmer „${participant.name}“ gelöscht"
+                AppLanguage.PL -> "Uczestnik „${participant.name}” usunięty"
+            }
+            showToast(msg)
         }
     }
 
@@ -760,23 +999,23 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     // CRUD DE GASTOS
     // =========================================================================
     fun saveExpense(expense: ExpenseEntity, isEdit: Boolean) {
-        val isEn = _language.value == AppLanguage.EN
+        val texts = UiTexts.get(_language.value)
         viewModelScope.launch {
             if (isEdit) {
                 repository.updateExpense(expense)
-                showToast(if (isEn) "Expense updated successfully" else "Gasto actualizado correctamente")
+                showToast(texts.toastExpenseUpdated)
             } else {
                 repository.insertExpense(expense)
-                showToast(if (isEn) "Expense saved successfully" else "Gasto guardado correctamente")
+                showToast(texts.toastExpenseSaved)
             }
         }
     }
 
     fun deleteExpense(expenseId: String) {
-        val isEn = _language.value == AppLanguage.EN
+        val texts = UiTexts.get(_language.value)
         viewModelScope.launch {
             repository.deleteExpense(expenseId)
-            showToast(if (isEn) "Expense deleted" else "Gasto eliminado")
+            showToast(texts.toastExpenseDeleted)
         }
     }
 
@@ -784,23 +1023,23 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     // CRUD DE INGRESOS (BOTE COMÚN)
     // =========================================================================
     fun saveIncome(income: IncomeEntity, isEdit: Boolean) {
-        val isEn = _language.value == AppLanguage.EN
+        val texts = UiTexts.get(_language.value)
         viewModelScope.launch {
             if (isEdit) {
                 repository.updateIncome(income)
-                showToast(if (isEn) "Common pot contribution updated" else "Aportación al bote actualizada")
+                showToast(texts.toastIncomeSaved)
             } else {
                 repository.insertIncome(income)
-                showToast(if (isEn) "Common pot contribution recorded" else "Aportación al bote registrada")
+                showToast(texts.toastIncomeSaved)
             }
         }
     }
 
     fun deleteIncome(incomeId: String) {
-        val isEn = _language.value == AppLanguage.EN
+        val texts = UiTexts.get(_language.value)
         viewModelScope.launch {
             repository.deleteIncome(incomeId)
-            showToast(if (isEn) "Common pot contribution deleted" else "Aportación al bote eliminada")
+            showToast(texts.toastIncomeDeleted)
         }
     }
 
@@ -812,13 +1051,20 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         createNewTrip: Boolean,
         suggestedFileName: String = "Viaje Importado CSV"
     ) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         val sheet = ExportImportManager.parseCsvContent(csvContent)
         if (sheet.rows.isEmpty()) {
-            showToast(
-                if (isEn) "CSV file is empty or has no valid rows" else "El archivo CSV está vacío o no tiene filas válidas",
-                isError = true
-            )
+            val emptyError = when (lang) {
+                AppLanguage.ES -> "El archivo CSV está vacío o no tiene filas válidas"
+                AppLanguage.EN -> "CSV file is empty or has no valid rows"
+                AppLanguage.FR -> "Le fichier CSV est vide ou ne contient aucune ligne valide"
+                AppLanguage.IT -> "Il file CSV è vuoto o non contiene righe valide"
+                AppLanguage.ZH -> "CSV 文件为空或没有有效数据行"
+                AppLanguage.NL -> "CSV-bestand is leeg of bevat geen geldige rijen"
+                AppLanguage.DE -> "Die CSV-Datei ist leer oder enthält keine gültigen Zeilen"
+                AppLanguage.PL -> "Plik CSV jest pusty lub nie zawiera prawidłowych wierszy"
+            }
+            showToast(emptyError, isError = true)
             return
         }
 
@@ -885,11 +1131,18 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             )
 
             if (newExpenses.isEmpty()) {
-                val isEn = _language.value == AppLanguage.EN
-                showToast(
-                    if (isEn) "No valid amounts found in selected rows" else "No se encontraron importes válidos en las filas seleccionadas",
-                    isError = true
-                )
+                val lang = _language.value
+                val noAmountsError = when (lang) {
+                    AppLanguage.ES -> "No se encontraron importes válidos en las filas seleccionadas"
+                    AppLanguage.EN -> "No valid amounts found in selected rows"
+                    AppLanguage.FR -> "Aucun montant valide trouvé dans les lignes sélectionnées"
+                    AppLanguage.IT -> "Nessun importo valido trovato nelle righe selezionate"
+                    AppLanguage.ZH -> "所选行中未找到有效金额"
+                    AppLanguage.NL -> "Geen geldige bedragen gevonden in geselecteerde rijen"
+                    AppLanguage.DE -> "Keine gültigen Beträge in den ausgewählten Zeilen gefunden"
+                    AppLanguage.PL -> "Nie znaleziono prawidłowych kwot w wybranych wierszach"
+                }
+                showToast(noAmountsError, isError = true)
                 return@launch
             }
 
@@ -914,11 +1167,18 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             }
             repository.insertExpenses(newExpenses)
             _activeTripId.value = targetTripId
-            val isEn = _language.value == AppLanguage.EN
-            showToast(
-                if (isEn) "CSV imported: ${newExpenses.size} expenses added"
-                else "CSV importado: ${newExpenses.size} gastos registrados"
-            )
+            val lang = _language.value
+            val successMsg = when (lang) {
+                AppLanguage.ES -> "CSV importado: ${newExpenses.size} gastos registrados"
+                AppLanguage.EN -> "CSV imported: ${newExpenses.size} expenses added"
+                AppLanguage.FR -> "CSV importé : ${newExpenses.size} dépenses enregistrées"
+                AppLanguage.IT -> "CSV importato: ${newExpenses.size} spese registrate"
+                AppLanguage.ZH -> "CSV 导入成功: 已添加 ${newExpenses.size} 笔支出"
+                AppLanguage.NL -> "CSV geïmporteerd: ${newExpenses.size} uitgaven geregistreerd"
+                AppLanguage.DE -> "CSV importiert: ${newExpenses.size} Ausgaben erfasst"
+                AppLanguage.PL -> "Zaimportowano CSV: dodano ${newExpenses.size} wydatków"
+            }
+            showToast(successMsg)
         }
     }
 
@@ -931,7 +1191,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun exportTripsToZipUri(uri: Uri, targetTripId: String?) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
+        val texts = UiTexts.get(lang)
         viewModelScope.launch {
             try {
                 val state = uiState.value
@@ -941,10 +1202,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     state.trips.filter { it.id == targetTripId }
                 }
                 if (tripsToExport.isEmpty()) {
-                    showToast(
-                        if (isEn) "No trips to export" else "No hay viajes para exportar",
-                        isError = true
-                    )
+                    showToast(texts.toastNoTripsToExport, isError = true)
                     return@launch
                 }
                 withContext(Dispatchers.IO) {
@@ -959,32 +1217,36 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     } ?: throw IllegalStateException("Cannot open output stream")
                 }
                 val msg = if (targetTripId == null) {
-                    if (isEn) "ZIP file with all trips exported" else "Archivo ZIP con todos los viajes exportado con éxito"
+                    texts.toastZipExported
                 } else {
                     val title = tripsToExport.first().title
-                    if (isEn) "Trip \"$title\" exported in ZIP" else "Viaje \"$title\" exportado en ZIP"
+                    when (lang) {
+                        AppLanguage.ES -> "Viaje \"$title\" exportado en ZIP"
+                        AppLanguage.EN -> "Trip \"$title\" exported in ZIP"
+                        AppLanguage.FR -> "Voyage « $title » exporté en ZIP"
+                        AppLanguage.IT -> "Viaggio \"$title\" esportato in ZIP"
+                        AppLanguage.ZH -> "行程 \"$title\" 已导出为 ZIP"
+                        AppLanguage.NL -> "Reis \"$title\" geëxporteerd in ZIP"
+                        AppLanguage.DE -> "Reise „$title“ als ZIP exportiert"
+                        AppLanguage.PL -> "Podróż „$title” wyeksportowana w ZIP"
+                    }
                 }
                 showToast(msg)
             } catch (e: Exception) {
-                showToast(
-                    if (isEn) "Error exporting ZIP file" else "Error al exportar el archivo ZIP",
-                    isError = true
-                )
+                showToast(texts.toastZipExportError, isError = true)
             }
         }
     }
 
     fun exportSingleTripJsonToUri(uri: Uri, targetTripId: String) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
+        val texts = UiTexts.get(lang)
         viewModelScope.launch {
             try {
                 val state = uiState.value
                 val targetTrip = state.trips.find { it.id == targetTripId } ?: state.activeTrip
                 if (targetTrip == null) {
-                    showToast(
-                        if (isEn) "Trip not found" else "No se encontró el viaje",
-                        isError = true
-                    )
+                    showToast(texts.toastTripNotFound, isError = true)
                     return@launch
                 }
                 val parts = state.allParticipants.filter { it.tripId == targetTrip.id }
@@ -1002,20 +1264,35 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                         out.flush()
                     } ?: throw IllegalStateException("Cannot open output stream")
                 }
-                showToast(
-                    if (isEn) "Trip \"${targetTrip.title}\" exported (.json)" else "Viaje \"${targetTrip.title}\" exportado (.json)"
-                )
+                val msg = when (lang) {
+                    AppLanguage.ES -> "Viaje \"${targetTrip.title}\" exportado (.json)"
+                    AppLanguage.EN -> "Trip \"${targetTrip.title}\" exported (.json)"
+                    AppLanguage.FR -> "Voyage « ${targetTrip.title} » exporté (.json)"
+                    AppLanguage.IT -> "Viaggio \"${targetTrip.title}\" esportato (.json)"
+                    AppLanguage.ZH -> "行程 \"${targetTrip.title}\" 已导出 (.json)"
+                    AppLanguage.NL -> "Reis \"${targetTrip.title}\" geëxporteerd (.json)"
+                    AppLanguage.DE -> "Reise „${targetTrip.title}“ exportiert (.json)"
+                    AppLanguage.PL -> "Podróż „${targetTrip.title}” wyeksportowana (.json)"
+                }
+                showToast(msg)
             } catch (e: Exception) {
-                showToast(
-                    if (isEn) "Error exporting trip JSON" else "Error al exportar el JSON del viaje",
-                    isError = true
-                )
+                val errMsg = when (lang) {
+                    AppLanguage.ES -> "Error al exportar el JSON del viaje"
+                    AppLanguage.EN -> "Error exporting trip JSON"
+                    AppLanguage.FR -> "Erreur lors de l'exportation du JSON du voyage"
+                    AppLanguage.IT -> "Errore durante l'esportazione del JSON del viaggio"
+                    AppLanguage.ZH -> "导出行程 JSON 时出错"
+                    AppLanguage.NL -> "Fout bij exporteren van reis-JSON"
+                    AppLanguage.DE -> "Fehler beim Exportieren der Reise-JSON"
+                    AppLanguage.PL -> "Błąd podczas eksportowania pliku JSON podróży"
+                }
+                showToast(errMsg, isError = true)
             }
         }
     }
 
     fun importTripsFromUri(uri: Uri) {
-        val isEn = _language.value == AppLanguage.EN
+        val lang = _language.value
         viewModelScope.launch {
             try {
                 val packages = withContext(Dispatchers.IO) {
@@ -1025,19 +1302,32 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     ExportImportManager.readTripsFromBytes(bytes)
                 }
                 if (packages.isEmpty()) {
-                    showToast(
-                        if (isEn) "No valid trips found in the selected file"
-                        else "No se encontraron viajes válidos en el archivo seleccionado",
-                        isError = true
-                    )
+                    val noTripsMsg = when (lang) {
+                        AppLanguage.ES -> "No se encontraron viajes válidos en el archivo seleccionado"
+                        AppLanguage.EN -> "No valid trips found in the selected file"
+                        AppLanguage.FR -> "Aucun voyage valide trouvé dans le fichier sélectionné"
+                        AppLanguage.IT -> "Nessun viaggio valido trovato nel file selezionato"
+                        AppLanguage.ZH -> "所选文件中未找到有效的行程数据"
+                        AppLanguage.NL -> "Geen geldige reizen gevonden in het geselecteerde bestand"
+                        AppLanguage.DE -> "Keine gültigen Reisen in der ausgewählten Datei gefunden"
+                        AppLanguage.PL -> "Nie znaleziono prawidłowych podróży w wybranym pliku"
+                    }
+                    showToast(noTripsMsg, isError = true)
                 } else {
                     processZipImport(packages)
                 }
             } catch (e: Exception) {
-                showToast(
-                    if (isEn) "Error reading import file" else "Error al leer el archivo a importar",
-                    isError = true
-                )
+                val readErrMsg = when (lang) {
+                    AppLanguage.ES -> "Error al leer el archivo a importar"
+                    AppLanguage.EN -> "Error reading import file"
+                    AppLanguage.FR -> "Erreur lors de la lecture du fichier d'importation"
+                    AppLanguage.IT -> "Errore durante la lettura del file da importare"
+                    AppLanguage.ZH -> "读取导入文件时出错"
+                    AppLanguage.NL -> "Fout bij lezen van te importeren bestand"
+                    AppLanguage.DE -> "Fehler beim Lesen der Importdatei"
+                    AppLanguage.PL -> "Błąd podczas odczytu importowanego pliku"
+                }
+                showToast(readErrMsg, isError = true)
             }
         }
     }
@@ -1120,21 +1410,33 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 }
             }
 
+            val lang = _language.value
             if (duplicates.isNotEmpty()) {
                 _pendingDuplicates.value = duplicates
             } else if (newlyImportedCount > 0) {
-                val isEn = _language.value == AppLanguage.EN
-                showToast(
-                    if (isEn) "Imported $newlyImportedCount trip(s) successfully"
-                    else "Se importaron $newlyImportedCount viaje(s) con éxito"
-                )
+                val importedMsg = when (lang) {
+                    AppLanguage.ES -> "Se importaron $newlyImportedCount viaje(s) con éxito"
+                    AppLanguage.EN -> "Imported $newlyImportedCount trip(s) successfully"
+                    AppLanguage.FR -> "$newlyImportedCount voyage(s) importé(s) avec succès"
+                    AppLanguage.IT -> "Importati $newlyImportedCount viaggio/i con successo"
+                    AppLanguage.ZH -> "成功导入 $newlyImportedCount 个行程"
+                    AppLanguage.NL -> "$newlyImportedCount reis/reizen succesvol geïmporteerd"
+                    AppLanguage.DE -> "$newlyImportedCount Reise(n) erfolgreich importiert"
+                    AppLanguage.PL -> "Zaimportowano $newlyImportedCount podróż(e) pomyślnie"
+                }
+                showToast(importedMsg)
             } else if (packages.isEmpty()) {
-                val isEn = _language.value == AppLanguage.EN
-                showToast(
-                    if (isEn) "No valid trips found in the selected file"
-                    else "No se encontraron viajes válidos en el archivo seleccionado",
-                    isError = true
-                )
+                val noTripsMsg = when (lang) {
+                    AppLanguage.ES -> "No se encontraron viajes válidos en el archivo seleccionado"
+                    AppLanguage.EN -> "No valid trips found in the selected file"
+                    AppLanguage.FR -> "Aucun voyage valide trouvé dans le fichier sélectionné"
+                    AppLanguage.IT -> "Nessun viaggio valido trovato nel file selezionato"
+                    AppLanguage.ZH -> "所选文件中未找到有效的行程数据"
+                    AppLanguage.NL -> "Geen geldige reizen gevonden in het geselecteerde bestand"
+                    AppLanguage.DE -> "Keine gültigen Reisen in der ausgewählten Datei gefunden"
+                    AppLanguage.PL -> "Nie znaleziono prawidłowych podróży w wybranym pliku"
+                }
+                showToast(noTripsMsg, isError = true)
             }
         }
     }
@@ -1151,20 +1453,24 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 repository.insertExpenses(remapped.expenses)
                 repository.insertIncomes(remapped.incomes)
 
-                val isEn = _language.value == AppLanguage.EN
-                showToast(
-                    if (isEn) "Trip \"${remapped.trip.title}\" overwritten"
-                    else "Viaje \"${remapped.trip.title}\" sobreescrito"
-                )
+                val lang = _language.value
+                val overwrittenMsg = when (lang) {
+                    AppLanguage.ES -> "Viaje \"${remapped.trip.title}\" sobreescrito"
+                    AppLanguage.EN -> "Trip \"${remapped.trip.title}\" overwritten"
+                    AppLanguage.FR -> "Voyage « ${remapped.trip.title} » écrasé"
+                    AppLanguage.IT -> "Viaggio \"${remapped.trip.title}\" sovrascritto"
+                    AppLanguage.ZH -> "行程 \"${remapped.trip.title}\" 已覆盖"
+                    AppLanguage.NL -> "Reis \"${remapped.trip.title}\" overschreven"
+                    AppLanguage.DE -> "Reise „${remapped.trip.title}“ überschrieben"
+                    AppLanguage.PL -> "Podróż „${remapped.trip.title}” nadpisana"
+                }
+                showToast(overwrittenMsg)
             }
 
             _pendingDuplicates.value = _pendingDuplicates.value.drop(1)
             if (_pendingDuplicates.value.isEmpty()) {
-                val isEn = _language.value == AppLanguage.EN
-                showToast(
-                    if (isEn) "Import completed successfully"
-                    else "Importación completada con éxito"
-                )
+                val texts = UiTexts.get(_language.value)
+                showToast(texts.toastImportSuccess)
             }
         }
     }

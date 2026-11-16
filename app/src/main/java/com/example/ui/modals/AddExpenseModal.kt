@@ -102,6 +102,7 @@ import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
 import com.example.util.CurrencyCatalog
 import com.example.util.FormatUtils
+import com.example.util.UiTexts
 import java.io.File
 import java.io.FileOutputStream
 import java.time.LocalDate
@@ -113,7 +114,42 @@ import kotlin.math.roundToLong
 enum class SplitMode(val labelEs: String, val labelEn: String) {
     EQUAL("Partes iguales", "Equal shares"),
     EXACT("Importes exactos", "Exact amounts"),
-    PERCENTAGE("Porcentajes (%)", "Percentages (%)")
+    PERCENTAGE("Porcentajes (%)", "Percentages (%)");
+
+    fun getLabel(lang: AppLanguage): String = when (lang) {
+        AppLanguage.ES -> labelEs
+        AppLanguage.EN -> labelEn
+        AppLanguage.FR -> when (this) {
+            EQUAL -> "Parts égales"
+            EXACT -> "Montants exacts"
+            PERCENTAGE -> "Pourcentages (%)"
+        }
+        AppLanguage.IT -> when (this) {
+            EQUAL -> "Parti uguali"
+            EXACT -> "Importi esatti"
+            PERCENTAGE -> "Percentuali (%)"
+        }
+        AppLanguage.ZH -> when (this) {
+            EQUAL -> "均摊"
+            EXACT -> "精确金额"
+            PERCENTAGE -> "百分比 (%)"
+        }
+        AppLanguage.NL -> when (this) {
+            EQUAL -> "Gelijke delen"
+            EXACT -> "Exacte bedragen"
+            PERCENTAGE -> "Percentages (%)"
+        }
+        AppLanguage.DE -> when (this) {
+            EQUAL -> "Gleiche Teile"
+            EXACT -> "Genaue Beträge"
+            PERCENTAGE -> "Prozentual (%)"
+        }
+        AppLanguage.PL -> when (this) {
+            EQUAL -> "Równe części"
+            EXACT -> "Dokładne kwoty"
+            PERCENTAGE -> "Procentowo (%)"
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -135,7 +171,7 @@ fun AddExpenseModal(
 ) {
     val context = LocalContext.current
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang == AppLanguage.EN
+    val texts = UiTexts.get(currentLang)
     val isEdit = existingExpense != null
 
     val navBottomFromSystem = remember(context, systemNavBarBottomPadding) {
@@ -434,11 +470,7 @@ fun AddExpenseModal(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = if (isEdit) {
-                            if (isEn) "Edit Expense" else "Editar Gasto"
-                        } else {
-                            if (isEn) "New Trip Expense" else "Nuevo Gasto del Viaje"
-                        },
+                        text = if (isEdit) texts.editExpenseTitle else texts.addExpenseTitle,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                         color = Color.White
                     )
@@ -450,7 +482,7 @@ fun AddExpenseModal(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = if (isEn) "Close" else "Cerrar",
+                            contentDescription = texts.closeBtn,
                             tint = Color.White
                         )
                     }
@@ -464,8 +496,18 @@ fun AddExpenseModal(
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // 1. IMPORTE Y MULTIDIVISA
+                    val step1Title = when (currentLang) {
+                        AppLanguage.ES -> "1. Importe y Moneda"
+                        AppLanguage.EN -> "1. Amount & Currency"
+                        AppLanguage.FR -> "1. Montant et Devise"
+                        AppLanguage.IT -> "1. Importo e Valuta"
+                        AppLanguage.ZH -> "1. 金额与货币"
+                        AppLanguage.NL -> "1. Bedrag en Valuta"
+                        AppLanguage.DE -> "1. Betrag & Währung"
+                        AppLanguage.PL -> "1. Kwota i Waluta"
+                    }
                     Text(
-                        text = if (isEn) "1. Amount & Currency" else "1. Importe y Moneda",
+                        text = step1Title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
@@ -478,13 +520,7 @@ fun AddExpenseModal(
                             value = amountText,
                             onValueChange = { amountText = it },
                             label = {
-                                Text(
-                                    if (isEn) {
-                                        "Amount (${CurrencyCatalog.getSymbol(selectedCurrency)})"
-                                    } else {
-                                        "Importe (${CurrencyCatalog.getSymbol(selectedCurrency)})"
-                                    }
-                                )
+                                Text("${texts.amountLabel} (${CurrencyCatalog.getSymbol(selectedCurrency)})")
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
@@ -514,7 +550,7 @@ fun AddExpenseModal(
                                 CurrencyCatalog.currencies.forEach { curr ->
                                     DropdownMenuItem(
                                         text = {
-                                            Text("${curr.code} - ${CurrencyCatalog.getDisplayName(curr, isEn)} (${curr.symbol})")
+                                            Text("${curr.code} - ${CurrencyCatalog.getDisplayName(curr, currentLang)} (${curr.symbol})")
                                         },
                                         onClick = {
                                             selectedCurrency = curr.code
@@ -546,18 +582,30 @@ fun AddExpenseModal(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
+                                val rateLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Tasa (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.EN -> "Rate (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.FR -> "Taux (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.IT -> "Tasso (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.ZH -> "汇率 (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.NL -> "Wisselkoers (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.DE -> "Wechselkurs (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                    AppLanguage.PL -> "Kurs (1 $selectedCurrency = X ${trip.baseCurrency})"
+                                }
+                                val inBaseLabel = when (currentLang) {
+                                    AppLanguage.ES -> "En moneda base:"
+                                    AppLanguage.EN -> "In base currency:"
+                                    AppLanguage.FR -> "En devise de base :"
+                                    AppLanguage.IT -> "In valuta base:"
+                                    AppLanguage.ZH -> "折合基础货币："
+                                    AppLanguage.NL -> "In basisvaluta:"
+                                    AppLanguage.DE -> "In Basiswährung:"
+                                    AppLanguage.PL -> "W walucie bazowej:"
+                                }
                                 OutlinedTextField(
                                     value = exchangeRateText,
                                     onValueChange = { exchangeRateText = it },
-                                    label = {
-                                        Text(
-                                            if (isEn) {
-                                                "Rate (1 $selectedCurrency = X ${trip.baseCurrency})"
-                                            } else {
-                                                "Tasa (1 $selectedCurrency = X ${trip.baseCurrency})"
-                                            }
-                                        )
-                                    },
+                                    label = { Text(rateLabel) },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     singleLine = true,
                                     modifier = Modifier.weight(1f)
@@ -565,7 +613,7 @@ fun AddExpenseModal(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        text = if (isEn) "In base currency:" else "En moneda base:",
+                                        text = inBaseLabel,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF475569)
                                     )
@@ -581,12 +629,31 @@ fun AddExpenseModal(
 
                     // 2. LUGAR / ESTABLECIMIENTO u ORIGEN Y DESTINO
                     val isRouteExpense = CategoryCatalog.isRouteCategory(selectedCategory)
+                    val step2Title = if (isRouteExpense) {
+                        when (currentLang) {
+                            AppLanguage.ES -> "2. Origen y Destino"
+                            AppLanguage.EN -> "2. Origin & Destination"
+                            AppLanguage.FR -> "2. Origine et Destination"
+                            AppLanguage.IT -> "2. Origine e Destinazione"
+                            AppLanguage.ZH -> "2. 出发地与目的地"
+                            AppLanguage.NL -> "2. Herkomst en Bestemming"
+                            AppLanguage.DE -> "2. Abfahrt & Ziel"
+                            AppLanguage.PL -> "2. Miejsce wyjazdu i docelowe"
+                        }
+                    } else {
+                        when (currentLang) {
+                            AppLanguage.ES -> "2. Lugar / Establecimiento"
+                            AppLanguage.EN -> "2. Place / Venue"
+                            AppLanguage.FR -> "2. Lieu / Établissement"
+                            AppLanguage.IT -> "2. Luogo / Esercizio"
+                            AppLanguage.ZH -> "2. 地点 / 场所"
+                            AppLanguage.NL -> "2. Locatie / Gelegenheid"
+                            AppLanguage.DE -> "2. Ort / Betrieb"
+                            AppLanguage.PL -> "2. Miejsce / Lokal"
+                        }
+                    }
                     Text(
-                        text = if (isRouteExpense) {
-                            if (isEn) "2. Origin & Destination" else "2. Origen y Destino"
-                        } else {
-                            if (isEn) "2. Place / Venue" else "2. Lugar / Establecimiento"
-                        },
+                        text = step2Title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
@@ -604,15 +671,7 @@ fun AddExpenseModal(
                                     activeRouteSearchField = null
                                     onPlaceQueryChanged(it)
                                 },
-                                label = {
-                                    Text(
-                                        if (isEn) {
-                                            "Place / Venue"
-                                        } else {
-                                            "Lugar / Establecimiento"
-                                        }
-                                    )
-                                },
+                                label = { Text(texts.placeOrMerchantLabel) },
                                 leadingIcon = {
                                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = TravelBlue)
                                 },
@@ -664,7 +723,7 @@ fun AddExpenseModal(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.MyLocation,
-                                        contentDescription = if (isEn) "Get GPS" else "Obtener GPS",
+                                        contentDescription = "GPS",
                                         tint = TravelBlue,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -679,12 +738,18 @@ fun AddExpenseModal(
                         }
 
                         if (userLocation != null) {
+                            val gpsActiveHint = when (currentLang) {
+                                AppLanguage.ES -> "📍 GPS activo — Ordenando lugares más cercanos primero"
+                                AppLanguage.EN -> "📍 GPS active — Sorting closest places first"
+                                AppLanguage.FR -> "📍 GPS actif — Lieux les plus proches en premier"
+                                AppLanguage.IT -> "📍 GPS attivo — Ordina prima i luoghi più vicini"
+                                AppLanguage.ZH -> "📍 GPS 已启用 — 优先排列最近的地点"
+                                AppLanguage.NL -> "📍 GPS actief — Dichtstbijzijnde locaties eerst"
+                                AppLanguage.DE -> "📍 GPS aktiv — Nächste Orte zuerst"
+                                AppLanguage.PL -> "📍 GPS aktywny — Najbliższe miejsca na początku"
+                            }
                             Text(
-                                text = if (isEn) {
-                                    "📍 GPS active — Sorting closest places first"
-                                } else {
-                                    "📍 GPS activo — Ordenando lugares más cercanos primero"
-                                },
+                                text = gpsActiveHint,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = EmeraldGreenDark
                             )
@@ -756,19 +821,31 @@ fun AddExpenseModal(
                         }
 
                         // Campo único de Dirección para el resto de categorías
+                        val addressLabel = when (currentLang) {
+                            AppLanguage.ES -> "Dirección"
+                            AppLanguage.EN -> "Address"
+                            AppLanguage.FR -> "Adresse"
+                            AppLanguage.IT -> "Indirizzo"
+                            AppLanguage.ZH -> "地址"
+                            AppLanguage.NL -> "Adres"
+                            AppLanguage.DE -> "Adresse"
+                            AppLanguage.PL -> "Adres"
+                        }
+                        val addressPlaceholder = when (currentLang) {
+                            AppLanguage.ES -> "Calle, ciudad o dirección del lugar..."
+                            AppLanguage.EN -> "Street, city or address of the place..."
+                            AppLanguage.FR -> "Rue, ville ou adresse du lieu..."
+                            AppLanguage.IT -> "Via, città o indirizzo del luogo..."
+                            AppLanguage.ZH -> "街道、城市或地点地址..."
+                            AppLanguage.NL -> "Straat, stad of adres van de locatie..."
+                            AppLanguage.DE -> "Straße, Stadt oder Adresse des Ortes..."
+                            AppLanguage.PL -> "Ulica, miasto lub adres miejsca..."
+                        }
                         OutlinedTextField(
                             value = addressText,
                             onValueChange = { addressText = it },
-                            label = { Text(if (isEn) "Address" else "Dirección") },
-                            placeholder = {
-                                Text(
-                                    if (isEn) {
-                                        "Street, city or address of the place..."
-                                    } else {
-                                        "Calle, ciudad o dirección del lugar..."
-                                    }
-                                )
-                            },
+                            label = { Text(addressLabel) },
+                            placeholder = { Text(addressPlaceholder) },
                             singleLine = true,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -776,6 +853,16 @@ fun AddExpenseModal(
                         )
                     } else {
                         // En Transporte, Taxi y Vuelos: mostrar Origen y Destino con buscador de calles, lugares, ciudades, etc.
+                        val routeSearchPlaceholder = when (currentLang) {
+                            AppLanguage.ES -> "Buscar calle, lugar, ciudad, estación o aeropuerto..."
+                            AppLanguage.EN -> "Search street, place, city, station or airport..."
+                            AppLanguage.FR -> "Rechercher rue, lieu, ville, gare ou aéroport..."
+                            AppLanguage.IT -> "Cerca via, luogo, città, stazione o aeroporto..."
+                            AppLanguage.ZH -> "搜索街道、地点、城市、车站或机场..."
+                            AppLanguage.NL -> "Zoek straat, plaats, stad, station of luchthaven..."
+                            AppLanguage.DE -> "Straße, Ort, Stadt, Bahnhof oder Flughafen suchen..."
+                            AppLanguage.PL -> "Szukaj ulicy, miejsca, miasta, stacji lub lotniska..."
+                        }
                         Surface(
                             shape = RoundedCornerShape(14.dp),
                             color = Color(0xFFF8FAFC),
@@ -794,18 +881,8 @@ fun AddExpenseModal(
                                         activeRouteSearchField = "origin"
                                         onClearPlaceSuggestions()
                                     },
-                                    label = {
-                                        Text(if (isEn) "Origin" else "Origen")
-                                    },
-                                    placeholder = {
-                                        Text(
-                                            if (isEn) {
-                                                "Search street, place, city, station or airport..."
-                                            } else {
-                                                "Buscar calle, lugar, ciudad, estación o aeropuerto..."
-                                            }
-                                        )
-                                    },
+                                    label = { Text(texts.originLabel) },
+                                    placeholder = { Text(routeSearchPlaceholder) },
                                     leadingIcon = {
                                         Icon(Icons.Default.MyLocation, contentDescription = null, tint = EmeraldGreenDark)
                                     },
@@ -829,7 +906,7 @@ fun AddExpenseModal(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("expense_origin_input")
-                                )
+                                 )
 
                                 if (originSuggestions.isNotEmpty() && activeRouteSearchField == "origin") {
                                     Surface(
@@ -885,18 +962,8 @@ fun AddExpenseModal(
                                         activeRouteSearchField = "destination"
                                         onClearPlaceSuggestions()
                                     },
-                                    label = {
-                                        Text(if (isEn) "Destination" else "Destino")
-                                    },
-                                    placeholder = {
-                                        Text(
-                                            if (isEn) {
-                                                "Search street, place, city, station or airport..."
-                                            } else {
-                                                "Buscar calle, lugar, ciudad, estación o aeropuerto..."
-                                            }
-                                        )
-                                    },
+                                    label = { Text(texts.destinationLabel) },
+                                    placeholder = { Text(routeSearchPlaceholder) },
                                     leadingIcon = {
                                         Icon(Icons.Default.LocationOn, contentDescription = null, tint = TravelBlue)
                                     },
@@ -970,8 +1037,18 @@ fun AddExpenseModal(
                     }
 
                     // 3. CATEGORÍA
+                    val step3Title = when (currentLang) {
+                        AppLanguage.ES -> "3. Categoría"
+                        AppLanguage.EN -> "3. Category"
+                        AppLanguage.FR -> "3. Catégorie"
+                        AppLanguage.IT -> "3. Categoria"
+                        AppLanguage.ZH -> "3. 类别"
+                        AppLanguage.NL -> "3. Categorie"
+                        AppLanguage.DE -> "3. Kategorie"
+                        AppLanguage.PL -> "3. Kategoria"
+                    }
                     Text(
-                        text = if (isEn) "3. Category" else "3. Categoría",
+                        text = step3Title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
@@ -984,12 +1061,12 @@ fun AddExpenseModal(
                             val isGeneralButton = cat.name.equals("General", ignoreCase = true)
                             val displayLabel = if (isGeneralButton) {
                                 if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
-                                    CategoryCatalog.displayName("General", isEn)
+                                    CategoryCatalog.displayName("General", currentLang)
                                 } else {
                                     customGeneralButtonLabel // Nombre personalizado puesto por el usuario: no se traduce
                                 }
                             } else {
-                                CategoryCatalog.displayName(cat.name, isEn)
+                                CategoryCatalog.displayName(cat.name, currentLang)
                             }
                             val isSelected = if (isGeneralButton) {
                                 selectedCategory.equals(customGeneralButtonLabel, ignoreCase = true) ||
@@ -1108,7 +1185,7 @@ fun AddExpenseModal(
                         OutlinedTextField(
                             value = prorationDaysText,
                             onValueChange = { prorationDaysText = it.filter { ch -> ch.isDigit() } },
-                            label = { Text(if (isEn) "Prorate (N days)" else "Prorratear (N días)") },
+                            label = { Text(texts.prorateDaysLabel) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             singleLine = true,
                             modifier = Modifier.weight(0.9f)
@@ -1123,12 +1200,18 @@ fun AddExpenseModal(
                             color = Color(0xFFEDE9FE),
                             modifier = Modifier.fillMaxWidth()
                         ) {
+                            val proratedText = when (currentLang) {
+                                AppLanguage.ES -> "🗓️ Gasto prorrateado en $pDays días → Supone ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} por día"
+                                AppLanguage.EN -> "🗓️ Expense prorated over $pDays days → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} per day"
+                                AppLanguage.FR -> "🗓️ Dépense étalée sur $pDays jours → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} par jour"
+                                AppLanguage.IT -> "🗓️ Spesa ripartita su $pDays giorni → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} al giorno"
+                                AppLanguage.ZH -> "🗓️ 费用按 $pDays 天分摊 → 每天 ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)}"
+                                AppLanguage.NL -> "🗓️ Uitgave gespreid over $pDays dagen → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} per dag"
+                                AppLanguage.DE -> "🗓️ Ausgabe auf $pDays Tage umgelegt → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} pro Tag"
+                                AppLanguage.PL -> "🗓️ Wydatek rozłożony na $pDays dni → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} dziennie"
+                            }
                             Text(
-                                text = if (isEn) {
-                                    "🗓️ Expense prorated over $pDays days → ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} per day"
-                                } else {
-                                    "🗓️ Gasto prorrateado en $pDays días → Supone ${FormatUtils.formatCurrency(dailyCost, trip.baseCurrency)} por día"
-                                },
+                                text = proratedText,
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Color(0xFF6D28D9),
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
@@ -1139,24 +1222,40 @@ fun AddExpenseModal(
                     OutlinedTextField(
                         value = notes,
                         onValueChange = { notes = it },
-                        label = { Text(if (isEn) "Notes / Additional description" else "Notas / Descripción adicional") },
+                        label = { Text(texts.notesLabel) },
                         singleLine = false,
                         maxLines = 2,
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     // 4. PARTICIPANTES
+                    val step4Title = when (currentLang) {
+                        AppLanguage.ES -> "4. Participantes"
+                        AppLanguage.EN -> "4. Participants"
+                        AppLanguage.FR -> "4. Participants"
+                        AppLanguage.IT -> "4. Partecipanti"
+                        AppLanguage.ZH -> "4. 参与者"
+                        AppLanguage.NL -> "4. Deelnemers"
+                        AppLanguage.DE -> "4. Teilnehmer"
+                        AppLanguage.PL -> "4. Uczestnicy"
+                    }
+                    val step4Subtitle = when (currentLang) {
+                        AppLanguage.ES -> "Selecciona quién paga este gasto (el Bote común o un participante):"
+                        AppLanguage.EN -> "Select who pays for this expense (Common Pot or a participant):"
+                        AppLanguage.FR -> "Sélectionnez qui paie cette dépense (la cagnotte commune ou un participant) :"
+                        AppLanguage.IT -> "Seleziona chi paga questa spesa (la cassa comune o un partecipante):"
+                        AppLanguage.ZH -> "选择由谁支付此费用（公账或某位参与者）："
+                        AppLanguage.NL -> "Selecteer wie deze uitgave betaalt (de gemeenschappelijke pot of een deelnemer):"
+                        AppLanguage.DE -> "Wählen Sie, wer diese Ausgabe bezahlt (Gemeinschaftskasse oder ein Teilnehmer):"
+                        AppLanguage.PL -> "Wybierz, kto płaci za ten wydatek (wspólny budżet lub uczestnik):"
+                    }
                     Text(
-                        text = if (isEn) "4. Participants" else "4. Participantes",
+                        text = step4Title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
                     Text(
-                        text = if (isEn) {
-                            "Select who pays for this expense (Common Pot or a participant):"
-                        } else {
-                            "Selecciona quién paga este gasto (el Bote común o un participante):"
-                        },
+                        text = step4Subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF64748B)
                     )
@@ -1178,7 +1277,7 @@ fun AddExpenseModal(
                             border = BorderStroke(1.dp, if (isBoteSelected) EmeraldGreen else Color(0xFFCBD5E1))
                         ) {
                             Text(
-                                text = if (isEn) "🐷 Common Pot" else "🐷 Bote Común",
+                                text = "🐷 ${texts.commonPotName}",
                                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 color = if (isBoteSelected) Color.White else OceanNavy,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
@@ -1224,7 +1323,7 @@ fun AddExpenseModal(
                                 border = BorderStroke(1.dp, if (isSelected) OceanNavy else Color(0xFFCBD5E1))
                             ) {
                                 Text(
-                                    text = "$methodPrefix${PaymentMethodCatalog.displayName(method, isEn)}",
+                                    text = "$methodPrefix${PaymentMethodCatalog.displayName(method, currentLang)}",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) Color.White else Color(0xFF475569),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -1234,8 +1333,18 @@ fun AddExpenseModal(
                     }
 
                     // 5. DIVISIÓN DEL GASTO
+                    val step5Title = when (currentLang) {
+                        AppLanguage.ES -> "5. División del Gasto"
+                        AppLanguage.EN -> "5. Expense Split"
+                        AppLanguage.FR -> "5. Répartition de la dépense"
+                        AppLanguage.IT -> "5. Divisione della spesa"
+                        AppLanguage.ZH -> "5. 费用分摊"
+                        AppLanguage.NL -> "5. Kostenverdeling"
+                        AppLanguage.DE -> "5. Ausgabenaufteilung"
+                        AppLanguage.PL -> "5. Podział wydatku"
+                    }
                     Text(
-                        text = if (isEn) "5. Expense Split" else "5. División del Gasto",
+                        text = step5Title,
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
@@ -1252,7 +1361,7 @@ fun AddExpenseModal(
                                 color = if (isSelected) TravelBlue else Color(0xFFF1F5F9)
                             ) {
                                 Text(
-                                    text = if (isEn) mode.labelEn else mode.labelEs,
+                                    text = mode.getLabel(currentLang),
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) Color.White else OceanNavy,
                                     modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp)
@@ -1306,12 +1415,18 @@ fun AddExpenseModal(
                                     val sumExact = participants.sumOf {
                                         exactSplitInputs[it.id]?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
                                     }
+                                    val exactStatusText = when (currentLang) {
+                                        AppLanguage.ES -> "Suma asignada: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.EN -> "Assigned sum: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.FR -> "Somme assignée : ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total : ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.IT -> "Somma assegnata: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Totale: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.ZH -> "分配总额：${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / 总计：${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.NL -> "Toegewezen som: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Totaal: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.DE -> "Zugewiesene Summe: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Gesamt: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                        AppLanguage.PL -> "Przydzielona suma: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Łącznie: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
+                                    }
                                     Text(
-                                        text = if (isEn) {
-                                            "Assigned sum: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
-                                        } else {
-                                            "Suma asignada: ${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)} / Total: ${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)}"
-                                        },
+                                        text = exactStatusText,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = if (abs(sumExact - amountInBase) <= 0.05) EmeraldGreenDark else CoralRed
                                     )
@@ -1342,12 +1457,18 @@ fun AddExpenseModal(
                                     val sumPct = participants.sumOf {
                                         pctSplitInputs[it.id]?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
                                     }
+                                    val pctStatusText = when (currentLang) {
+                                        AppLanguage.ES -> "Suma de porcentajes: ${String.format(Locale.US, "%.1f", sumPct)}% (debe sumar 100%)"
+                                        AppLanguage.EN -> "Percentage sum: ${String.format(Locale.US, "%.1f", sumPct)}% (must equal 100%)"
+                                        AppLanguage.FR -> "Somme des pourcentages : ${String.format(Locale.US, "%.1f", sumPct)}% (doit égaler 100%)"
+                                        AppLanguage.IT -> "Somma percentuali: ${String.format(Locale.US, "%.1f", sumPct)}% (deve essere 100%)"
+                                        AppLanguage.ZH -> "百分比总和：${String.format(Locale.US, "%.1f", sumPct)}%（必须为 100%）"
+                                        AppLanguage.NL -> "Som percentages: ${String.format(Locale.US, "%.1f", sumPct)}% (moet 100% zijn)"
+                                        AppLanguage.DE -> "Prozentsumme: ${String.format(Locale.US, "%.1f", sumPct)}% (muss 100% ergeben)"
+                                        AppLanguage.PL -> "Suma procentów: ${String.format(Locale.US, "%.1f", sumPct)}% (musi wynosić 100%)"
+                                    }
                                     Text(
-                                        text = if (isEn) {
-                                            "Percentage sum: ${String.format(Locale.US, "%.1f", sumPct)}% (must equal 100%)"
-                                        } else {
-                                            "Suma de porcentajes: ${String.format(Locale.US, "%.1f", sumPct)}% (debe sumar 100%)"
-                                        },
+                                        text = pctStatusText,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                         color = if (abs(sumPct - 100.0) <= 0.2) EmeraldGreenDark else CoralRed
                                     )
@@ -1386,13 +1507,23 @@ fun AddExpenseModal(
                     }
 
                     // 6. RECIBOS Y RECUERDOS
+                    val step6Title = when (currentLang) {
+                        AppLanguage.ES -> "6. Recibos y Recuerdos"
+                        AppLanguage.EN -> "6. Receipts & Memories"
+                        AppLanguage.FR -> "6. Reçus et Souvenirs"
+                        AppLanguage.IT -> "6. Ricevute e Ricordi"
+                        AppLanguage.ZH -> "6. 收据与回忆"
+                        AppLanguage.NL -> "6. Bonnen en Herinneringen"
+                        AppLanguage.DE -> "6. Belege & Erinnerungen"
+                        AppLanguage.PL -> "6. Rachunki i Wspomnienia"
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "6. Receipts & Memories" else "6. Recibos y Recuerdos",
+                            text = step6Title,
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
@@ -1402,8 +1533,31 @@ fun AddExpenseModal(
                                 color = Color(0xFFEFF6FF),
                                 border = BorderStroke(1.dp, TravelBlue.copy(alpha = 0.4f))
                             ) {
+                                val receiptWord = if (photos.size == 1) {
+                                    when (currentLang) {
+                                        AppLanguage.ES -> "recibo"
+                                        AppLanguage.EN -> "receipt"
+                                        AppLanguage.FR -> "reçu"
+                                        AppLanguage.IT -> "ricevuta"
+                                        AppLanguage.ZH -> "张收据"
+                                        AppLanguage.NL -> "bon"
+                                        AppLanguage.DE -> "Beleg"
+                                        AppLanguage.PL -> "rachunek"
+                                    }
+                                } else {
+                                    when (currentLang) {
+                                        AppLanguage.ES -> "recibos"
+                                        AppLanguage.EN -> "receipts"
+                                        AppLanguage.FR -> "reçus"
+                                        AppLanguage.IT -> "ricevute"
+                                        AppLanguage.ZH -> "张收据"
+                                        AppLanguage.NL -> "bonnen"
+                                        AppLanguage.DE -> "Belege"
+                                        AppLanguage.PL -> "rachunki"
+                                    }
+                                }
                                 Text(
-                                    text = "${photos.size} ${if (photos.size == 1) (if (isEn) "receipt" else "recibo") else (if (isEn) "receipts" else "recibos")}",
+                                    text = "${photos.size} $receiptWord",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     color = TravelBlue,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -1411,12 +1565,18 @@ fun AddExpenseModal(
                             }
                         }
                     }
+                    val receiptsInfoText = when (currentLang) {
+                        AppLanguage.ES -> "Añade todos los tickets, facturas, recibos o recuerdos que necesites sin límite."
+                        AppLanguage.EN -> "Add as many tickets, invoices, receipts or photos as you need without limits."
+                        AppLanguage.FR -> "Ajoutez autant de tickets, factures, reçus ou photos que vous le souhaitez sans limite."
+                        AppLanguage.IT -> "Aggiungi tutti gli scontrini, fatture, ricevute o foto di cui hai bisogno senza limiti."
+                        AppLanguage.ZH -> "无限制添加所需的所有票据、发票、收据或照片。"
+                        AppLanguage.NL -> "Voeg onbeperkt alle benodigde tickets, facturen, bonnen of foto's toe."
+                        AppLanguage.DE -> "Fügen Sie unbegrenzt Tickets, Rechnungen, Belege oder Fotos hinzu."
+                        AppLanguage.PL -> "Dodawaj wszystkie potrzebne bilety, faktury, rachunki lub zdjęcia bez ograniczeń."
+                    }
                     Text(
-                        text = if (isEn) {
-                            "Add as many tickets, invoices, receipts or photos as you need without limits."
-                        } else {
-                            "Añade todos los tickets, facturas, recibos o recuerdos que necesites sin límite."
-                        },
+                        text = receiptsInfoText,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF64748B)
                     )
@@ -1432,14 +1592,14 @@ fun AddExpenseModal(
                         ) {
                             Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Gallery" else "Galería")
+                            Text(texts.galleryOption)
                         }
                         OutlinedButton(
                             onClick = { cameraPreviewLauncher.launch(null) }
                         ) {
                             Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Camera" else "Cámara")
+                            Text(texts.cameraOption)
                         }
                     }
 
@@ -1458,9 +1618,19 @@ fun AddExpenseModal(
                                         .background(Color(0xFFE2E8F0))
                                         .clickable { previewReceiptUri = photoUri }
                                 ) {
+                                    val photoContentDesc = when (currentLang) {
+                                        AppLanguage.ES -> "Recibo o recuerdo ${idx + 1}"
+                                        AppLanguage.EN -> "Receipt or memory ${idx + 1}"
+                                        AppLanguage.FR -> "Reçu ou souvenir ${idx + 1}"
+                                        AppLanguage.IT -> "Ricevuta o ricordo ${idx + 1}"
+                                        AppLanguage.ZH -> "收据或回忆 ${idx + 1}"
+                                        AppLanguage.NL -> "Bon of herinnering ${idx + 1}"
+                                        AppLanguage.DE -> "Beleg oder Erinnerung ${idx + 1}"
+                                        AppLanguage.PL -> "Rachunek lub wspomnienie ${idx + 1}"
+                                    }
                                     AsyncImage(
                                         model = photoUri,
-                                        contentDescription = if (isEn) "Receipt or memory ${idx + 1}" else "Recibo o recuerdo ${idx + 1}",
+                                        contentDescription = photoContentDesc,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()
                                     )
@@ -1477,7 +1647,7 @@ fun AddExpenseModal(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = if (isEn) "Remove" else "Eliminar",
+                                            contentDescription = texts.deleteBtn,
                                             tint = Color.White,
                                             modifier = Modifier.padding(3.dp)
                                         )
@@ -1529,7 +1699,7 @@ fun AddExpenseModal(
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (isEn) "Delete" else "Borrar", maxLines = 1)
+                            Text(texts.deleteBtn, maxLines = 1)
                         }
                     }
 
@@ -1541,13 +1711,22 @@ fun AddExpenseModal(
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                     ) {
-                        Text(if (isEn) "Cancel" else "Cancelar", maxLines = 1)
+                        Text(texts.cancel, maxLines = 1)
                     }
 
                     Button(
                         onClick = {
                             if (numericAmount <= 0.0) {
-                                validationError = if (isEn) "Enter an amount greater than 0." else "Introduce un importe mayor que 0."
+                                validationError = when (currentLang) {
+                                    AppLanguage.ES -> "Introduce un importe mayor que 0."
+                                    AppLanguage.EN -> "Enter an amount greater than 0."
+                                    AppLanguage.FR -> "Saisissez un montant supérieur à 0."
+                                    AppLanguage.IT -> "Inserisci un importo maggiore di 0."
+                                    AppLanguage.ZH -> "请输入大于 0 的金额。"
+                                    AppLanguage.NL -> "Voer een bedrag in groter dan 0."
+                                    AppLanguage.DE -> "Geben Sie einen Betrag größer als 0 ein."
+                                    AppLanguage.PL -> "Wprowadź kwotę większą niż 0."
+                                }
                                 return@Button
                             }
                             val expId = existingExpense?.id ?: "exp-${UUID.randomUUID().toString().take(8)}"
@@ -1556,10 +1735,15 @@ fun AddExpenseModal(
                                 SplitMode.EQUAL -> {
                                     val selectedParts = participants.filter { includedParticipantIds[it.id] == true }
                                     if (selectedParts.isEmpty()) {
-                                        validationError = if (isEn) {
-                                            "Select at least one participant to split the expense."
-                                        } else {
-                                            "Selecciona al menos un participante para dividir el gasto."
+                                        validationError = when (currentLang) {
+                                            AppLanguage.ES -> "Selecciona al menos un participante para dividir el gasto."
+                                            AppLanguage.EN -> "Select at least one participant to split the expense."
+                                            AppLanguage.FR -> "Sélectionnez au moins un participant pour diviser la dépense."
+                                            AppLanguage.IT -> "Seleziona almeno un partecipante per dividere la spesa."
+                                            AppLanguage.ZH -> "请至少选择一位参与者以分摊费用。"
+                                            AppLanguage.NL -> "Selecteer ten minste één deelnemer om de uitgave te verdelen."
+                                            AppLanguage.DE -> "Wählen Sie mindestens einen Teilnehmer zur Ausgabenaufteilung aus."
+                                            AppLanguage.PL -> "Wybierz przynajmniej jednego uczestnika, aby podzielić wydatek."
                                         }
                                         return@Button
                                     }
@@ -1585,10 +1769,15 @@ fun AddExpenseModal(
                                         exactSplitInputs[it.id]?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
                                     }
                                     if (abs(sumExact - amountInBase) > 0.08) {
-                                        validationError = if (isEn) {
-                                            "The sum of exact amounts (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) must match the total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
-                                        } else {
-                                            "La suma de importes exactos (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) debe coincidir con el total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                        validationError = when (currentLang) {
+                                            AppLanguage.ES -> "La suma de importes exactos (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) debe coincidir con el total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.EN -> "The sum of exact amounts (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) must match the total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.FR -> "La somme des montants exacts (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) doit correspondre au total (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.IT -> "La somma degli importi esatti (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) deve coincidere con il totale (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.ZH -> "精确金额总和 (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) 必须等于总计 (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})。"
+                                            AppLanguage.NL -> "De som van exacte bedragen (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) moet overeenkomen met het totaal (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.DE -> "Die Summe der genauen Beträge (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) muss mit dem Gesamtbetrag übereinstimmen (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
+                                            AppLanguage.PL -> "Suma dokładnych kwot (${FormatUtils.formatCurrency(sumExact, trip.baseCurrency)}) musi zgadzać się z sumą całkowitą (${FormatUtils.formatCurrency(amountInBase, trip.baseCurrency)})."
                                         }
                                         return@Button
                                     }
@@ -1612,10 +1801,15 @@ fun AddExpenseModal(
                                         pctSplitInputs[it.id]?.replace(",", ".")?.toDoubleOrNull() ?: 0.0
                                     }
                                     if (abs(sumPct - 100.0) > 0.5) {
-                                        validationError = if (isEn) {
-                                            "Percentages must add up to 100% (currently ${String.format(Locale.US, "%.1f", sumPct)}%)."
-                                        } else {
-                                            "Los porcentajes deben sumar 100% (actualmente suman ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                        validationError = when (currentLang) {
+                                            AppLanguage.ES -> "Los porcentajes deben sumar 100% (actualmente suman ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.EN -> "Percentages must add up to 100% (currently ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.FR -> "Les pourcentages doivent totaliser 100% (actuellement ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.IT -> "Le percentuali devono sommare a 100% (attualmente ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.ZH -> "百分比总和必须为 100%（当前为 ${String.format(Locale.US, "%.1f", sumPct)}%）。"
+                                            AppLanguage.NL -> "Percentages moeten optellen tot 100% (momenteel ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.DE -> "Die Prozentsätze müssen 100% ergeben (derzeit ${String.format(Locale.US, "%.1f", sumPct)}%)."
+                                            AppLanguage.PL -> "Procenty muszą sumować się do 100% (obecnie ${String.format(Locale.US, "%.1f", sumPct)}%)."
                                         }
                                         return@Button
                                     }
@@ -1691,7 +1885,7 @@ fun AddExpenseModal(
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isEn) "Save" else "Guardar",
+                            text = texts.saveExpenseBtn,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             softWrap = false
@@ -1705,33 +1899,75 @@ fun AddExpenseModal(
 
     // Diálogo para ponerle un nombre personalizado al botón "General" solo para este gasto (volviendo a "General" en otros gastos)
     if (showRenameGeneralDialog) {
+        val renameDialogTitle = when (currentLang) {
+            AppLanguage.ES -> "Personalizar botón General"
+            AppLanguage.EN -> "Customize General Button"
+            AppLanguage.FR -> "Personnaliser le bouton Général"
+            AppLanguage.IT -> "Personalizza pulsante Generale"
+            AppLanguage.ZH -> "自定义常规按钮"
+            AppLanguage.NL -> "Knop Algemeen aanpassen"
+            AppLanguage.DE -> "Allgemein-Schaltfläche anpassen"
+            AppLanguage.PL -> "Dostosuj przycisk Ogólne"
+        }
+        val renameDialogDesc = when (currentLang) {
+            AppLanguage.ES -> "Escribe un nombre para este botón en este gasto (para futuros gastos volverá a mostrarse como \"General\"):"
+            AppLanguage.EN -> "Enter a custom name for this button on this expense only (it will reset to \"General\" for future expenses):"
+            AppLanguage.FR -> "Entrez un nom personnalisé pour ce bouton uniquement pour cette dépense (il sera réinitialisé à « Général » pour les prochaines dépenses) :"
+            AppLanguage.IT -> "Inserisci un nome personalizzato per questo pulsante solo per questa spesa (tornerà a \"Generale\" per le spese future):"
+            AppLanguage.ZH -> "仅为此项支出输入此按钮的自定义名称（后续支出将重置为“常规”）："
+            AppLanguage.NL -> "Voer alleen voor deze uitgave een aangepaste naam in voor deze knop (wordt bij volgende uitgaven weer 'Algemeen'):"
+            AppLanguage.DE -> "Geben Sie nur für diese Ausgabe einen benutzerdefinierten Namen ein (wird bei künftigen Ausgaben wieder auf „Allgemein“ zurückgesetzt):"
+            AppLanguage.PL -> "Wpisz własną nazwę tego przycisku tylko dla tego wydatku (dla kolejnych wydatków powróci do „Ogólne”):"
+        }
+        val renameFieldLabel = when (currentLang) {
+            AppLanguage.ES -> "Nombre (ej. Souvenirs, Visado, Propina...)"
+            AppLanguage.EN -> "Name (e.g. Souvenirs, Visa, Tip...)"
+            AppLanguage.FR -> "Nom (ex. Souvenirs, Visa, Pourboire...)"
+            AppLanguage.IT -> "Nome (es. Souvenir, Visto, Mancia...)"
+            AppLanguage.ZH -> "名称（如：纪念品、签证、小费...）"
+            AppLanguage.NL -> "Naam (bijv. Souvenirs, Visum, Fooi...)"
+            AppLanguage.DE -> "Name (z.B. Souvenirs, Visum, Trinkgeld...)"
+            AppLanguage.PL -> "Nazwa (np. Pamiątki, Wiza, Napiwek...)"
+        }
+        val applyBtnLabel = when (currentLang) {
+            AppLanguage.ES -> "Aplicar a este gasto"
+            AppLanguage.EN -> "Apply to this expense"
+            AppLanguage.FR -> "Appliquer à cette dépense"
+            AppLanguage.IT -> "Applica a questa spesa"
+            AppLanguage.ZH -> "应用到此费用"
+            AppLanguage.NL -> "Toepassen op deze uitgave"
+            AppLanguage.DE -> "Auf diese Ausgabe anwenden"
+            AppLanguage.PL -> "Zastosuj do tego wydatku"
+        }
+        val keepGeneralLabel = when (currentLang) {
+            AppLanguage.ES -> "Dejar en General"
+            AppLanguage.EN -> "Keep as General"
+            AppLanguage.FR -> "Garder Général"
+            AppLanguage.IT -> "Mantieni Generale"
+            AppLanguage.ZH -> "保留为常规"
+            AppLanguage.NL -> "Als Algemeen behouden"
+            AppLanguage.DE -> "Als Allgemein belassen"
+            AppLanguage.PL -> "Pozostaw jako Ogólne"
+        }
         AlertDialog(
             onDismissRequest = { showRenameGeneralDialog = false },
             title = {
                 Text(
-                    text = if (isEn) "Customize General Button" else "Personalizar botón General",
+                    text = renameDialogTitle,
                     fontWeight = FontWeight.ExtraBold
                 )
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = if (isEn) {
-                            "Enter a custom name for this button on this expense only (it will reset to \"General\" for future expenses):"
-                        } else {
-                            "Escribe un nombre para este botón en este gasto (para futuros gastos volverá a mostrarse como \"General\"):"
-                        },
+                        text = renameDialogDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF475569)
                     )
                     OutlinedTextField(
                         value = tempGeneralNameInput,
                         onValueChange = { tempGeneralNameInput = it },
-                        label = {
-                            Text(
-                                if (isEn) "Name (e.g. Souvenirs, Visa, Tip...)" else "Nombre (ej. Souvenirs, Visado, Propina...)"
-                            )
-                        },
+                        label = { Text(renameFieldLabel) },
                         placeholder = { Text("General") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -1748,7 +1984,7 @@ fun AddExpenseModal(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TravelBlue)
                 ) {
-                    Text(if (isEn) "Apply to this expense" else "Aplicar a este gasto", fontWeight = FontWeight.Bold)
+                    Text(applyBtnLabel, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -1759,7 +1995,7 @@ fun AddExpenseModal(
                         showRenameGeneralDialog = false
                     }
                 ) {
-                    Text(if (isEn) "Keep as General" else "Dejar en General")
+                    Text(keepGeneralLabel)
                 }
             }
         )
@@ -1767,6 +2003,16 @@ fun AddExpenseModal(
 
     // Modal de previsualización a gran tamaño para el recibo o foto seleccionado
     if (previewReceiptUri != null) {
+        val previewTitle = when (currentLang) {
+            AppLanguage.ES -> "Recibo / Recuerdo"
+            AppLanguage.EN -> "Receipt / Memory"
+            AppLanguage.FR -> "Reçu / Souvenir"
+            AppLanguage.IT -> "Ricevuta / Ricordo"
+            AppLanguage.ZH -> "收据 / 回忆"
+            AppLanguage.NL -> "Bon / Herinnering"
+            AppLanguage.DE -> "Beleg / Erinnerung"
+            AppLanguage.PL -> "Rachunek / Wspomnienie"
+        }
         Dialog(onDismissRequest = { previewReceiptUri = null }) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
@@ -1786,14 +2032,14 @@ fun AddExpenseModal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (isEn) "Receipt / Memory" else "Recibo / Recuerdo",
+                            text = previewTitle,
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         IconButton(onClick = { previewReceiptUri = null }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = if (isEn) "Close" else "Cerrar",
+                                contentDescription = texts.closeBtn,
                                 tint = Color.White
                             )
                         }

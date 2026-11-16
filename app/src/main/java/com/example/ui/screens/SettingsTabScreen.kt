@@ -70,6 +70,7 @@ import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.EmeraldGreenLight
 import com.example.ui.theme.TravelBlue
+import com.example.util.UiTexts
 
 @Composable
 fun SettingsTabScreen(
@@ -84,7 +85,7 @@ fun SettingsTabScreen(
     onImportZipClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val isEn = language == AppLanguage.EN
+    val texts = UiTexts.get(language)
 
     var appearanceExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
@@ -127,8 +128,18 @@ fun SettingsTabScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
+                    val exportImportSectionTitle = when (language) {
+                        AppLanguage.ES -> "Exportar e Importar"
+                        AppLanguage.EN -> "Export and Import"
+                        AppLanguage.FR -> "Exporter et importer"
+                        AppLanguage.IT -> "Esporta e importa"
+                        AppLanguage.ZH -> "导出与导入"
+                        AppLanguage.NL -> "Exporteren en importeren"
+                        AppLanguage.DE -> "Exportieren und Importieren"
+                        AppLanguage.PL -> "Eksport i import"
+                    }
                     Text(
-                        text = if (isEn) "Export and Import" else "Exportar e Importar",
+                        text = exportImportSectionTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -153,7 +164,7 @@ fun SettingsTabScreen(
                                 Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = if (isEn) "Export" else "Exportar",
+                                    text = texts.exportBtn,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
@@ -167,7 +178,7 @@ fun SettingsTabScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = if (isEn) "📁 All trips" else "📁 Todos los viajes",
+                                            text = texts.allTripsOption,
                                             fontWeight = FontWeight.Bold,
                                             color = TravelBlue
                                         )
@@ -209,7 +220,7 @@ fun SettingsTabScreen(
                             Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isEn) "Import" else "Importar",
+                                text = texts.importBtn,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -265,16 +276,35 @@ fun SettingsTabScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = if (isEn) "Daily Expense Reminders" else "Recordatorio Diario de Gastos",
+                                    text = texts.dailyReminderTitle,
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                val reminderSubtitle = if (reminderNotificationsEnabled) {
+                                    when (language) {
+                                        AppLanguage.ES -> "Aviso diario a las 21:00 h"
+                                        AppLanguage.EN -> "Notification at 9:00 PM"
+                                        AppLanguage.FR -> "Notification quotidienne à 21h00"
+                                        AppLanguage.IT -> "Notifica giornaliera alle 21:00"
+                                        AppLanguage.ZH -> "每天 21:00 发送提醒通知"
+                                        AppLanguage.NL -> "Dagelijkse melding om 21:00 uur"
+                                        AppLanguage.DE -> "Tägliche Benachrichtigung um 21:00 Uhr"
+                                        AppLanguage.PL -> "Codzienne powiadomienie o 21:00"
+                                    }
+                                } else {
+                                    when (language) {
+                                        AppLanguage.ES -> "Desactivado"
+                                        AppLanguage.EN -> "Disabled"
+                                        AppLanguage.FR -> "Désactivé"
+                                        AppLanguage.IT -> "Disattivato"
+                                        AppLanguage.ZH -> "已停用"
+                                        AppLanguage.NL -> "Uitgeschakeld"
+                                        AppLanguage.DE -> "Deaktiviert"
+                                        AppLanguage.PL -> "Wyłączone"
+                                    }
+                                }
                                 Text(
-                                    text = if (reminderNotificationsEnabled) {
-                                        if (isEn) "Notification at 9:00 PM" else "Aviso diario a las 21:00 h"
-                                    } else {
-                                        if (isEn) "Disabled" else "Desactivado"
-                                    },
+                                    text = reminderSubtitle,
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = if (reminderNotificationsEnabled) EmeraldGreenDark else MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -295,10 +325,7 @@ fun SettingsTabScreen(
                     }
 
                     Text(
-                        text = if (isEn)
-                            "Sends a daily reminder at 9:00 PM to record the day's expenses and keep accounts squared."
-                        else
-                            "Envía un aviso diario a las 21:00 h para registrar los gastos del día y mantener las cuentas al día.",
+                        text = texts.dailyReminderDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp
@@ -311,11 +338,40 @@ fun SettingsTabScreen(
         // 3. MODO DE TEMA: CLARO (PREDETERMINADO), OSCURO O SISTEMA - CERRADO POR DEFECTO
         // =========================================================================
         item {
-            val currentThemeLabel = when (themeMode) {
-                AppThemeMode.LIGHT -> if (isEn) "Light Mode (Default)" else "Modo Claro (Predeterminado)"
-                AppThemeMode.DARK -> if (isEn) "Dark Mode" else "Modo Oscuro"
-                AppThemeMode.SYSTEM -> if (isEn) "System Default" else "Modo Sistema"
+            fun getThemeLabel(mode: AppThemeMode): String = when (mode) {
+                AppThemeMode.LIGHT -> when (language) {
+                    AppLanguage.ES -> "Modo Claro (Predeterminado)"
+                    AppLanguage.EN -> "Light Mode (Default)"
+                    AppLanguage.FR -> "Mode clair (par défaut)"
+                    AppLanguage.IT -> "Modalità chiara (predefinita)"
+                    AppLanguage.ZH -> "浅色模式（默认）"
+                    AppLanguage.NL -> "Lichte modus (standaard)"
+                    AppLanguage.DE -> "Heller Modus (Standard)"
+                    AppLanguage.PL -> "Tryb jasny (domyślny)"
+                }
+                AppThemeMode.DARK -> when (language) {
+                    AppLanguage.ES -> "Modo Oscuro"
+                    AppLanguage.EN -> "Dark Mode"
+                    AppLanguage.FR -> "Mode sombre"
+                    AppLanguage.IT -> "Modalità scura"
+                    AppLanguage.ZH -> "深色模式"
+                    AppLanguage.NL -> "Donkere modus"
+                    AppLanguage.DE -> "Dunkler Modus"
+                    AppLanguage.PL -> "Tryb ciemny"
+                }
+                AppThemeMode.SYSTEM -> when (language) {
+                    AppLanguage.ES -> "Modo Sistema"
+                    AppLanguage.EN -> "System Default"
+                    AppLanguage.FR -> "Système par défaut"
+                    AppLanguage.IT -> "Predefinito di sistema"
+                    AppLanguage.ZH -> "跟随系统"
+                    AppLanguage.NL -> "Systeemstandaard"
+                    AppLanguage.DE -> "Systemstandard"
+                    AppLanguage.PL -> "Domyślny systemowy"
+                }
             }
+
+            val currentThemeLabel = getThemeLabel(themeMode)
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -344,8 +400,18 @@ fun SettingsTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
+                                val appearanceHeader = when (language) {
+                                    AppLanguage.ES -> "Apariencia (Modo de Pantalla)"
+                                    AppLanguage.EN -> "Appearance (Theme Mode)"
+                                    AppLanguage.FR -> "Apparence (mode de thème)"
+                                    AppLanguage.IT -> "Aspetto (modalità tema)"
+                                    AppLanguage.ZH -> "外观（主题模式）"
+                                    AppLanguage.NL -> "Uiterlijk (themamodus)"
+                                    AppLanguage.DE -> "Erscheinungsbild (Designmodus)"
+                                    AppLanguage.PL -> "Wygląd (tryb motywu)"
+                                }
                                 Text(
-                                    text = if (isEn) "Appearance (Theme Mode)" else "Apariencia (Modo de Pantalla)",
+                                    text = appearanceHeader,
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -369,17 +435,17 @@ fun SettingsTabScreen(
                             val themeOptions = listOf(
                                 Triple(
                                     AppThemeMode.LIGHT,
-                                    if (isEn) "Light Mode (Default)" else "Modo Claro (Predeterminado)",
+                                    getThemeLabel(AppThemeMode.LIGHT),
                                     Icons.Default.LightMode
                                 ),
                                 Triple(
                                     AppThemeMode.DARK,
-                                    if (isEn) "Dark Mode" else "Modo Oscuro",
+                                    getThemeLabel(AppThemeMode.DARK),
                                     Icons.Default.DarkMode
                                 ),
                                 Triple(
                                     AppThemeMode.SYSTEM,
-                                    if (isEn) "System Default" else "Modo Sistema",
+                                    getThemeLabel(AppThemeMode.SYSTEM),
                                     Icons.Default.SettingsSuggest
                                 )
                             )
@@ -426,11 +492,9 @@ fun SettingsTabScreen(
         }
 
         // =========================================================================
-        // 4. IDIOMA: ESPAÑOL (PREDETERMINADO) E INGLÉS - CERRADO POR DEFECTO
+        // 4. IDIOMA: DISPONIBLES EN LA APP - CERRADO POR DEFECTO
         // =========================================================================
         item {
-            val currentLangLabel = if (isEn) language.displayNameEn else language.displayNameEs
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -458,8 +522,18 @@ fun SettingsTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
+                                val languageSectionTitle = when (language) {
+                                    AppLanguage.ES -> "Idioma de la Aplicación"
+                                    AppLanguage.EN -> "App Language"
+                                    AppLanguage.FR -> "Langue de l'application"
+                                    AppLanguage.IT -> "Lingua dell'applicazione"
+                                    AppLanguage.ZH -> "应用语言"
+                                    AppLanguage.NL -> "Taal van de app"
+                                    AppLanguage.DE -> "App-Sprache"
+                                    AppLanguage.PL -> "Język aplikacji"
+                                }
                                 Text(
-                                    text = if (isEn) "App Language" else "Idioma de la Aplicación",
+                                    text = languageSectionTitle,
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -482,7 +556,7 @@ fun SettingsTabScreen(
                         Column(modifier = Modifier.padding(top = 8.dp)) {
                             AppLanguage.entries.forEach { lang ->
                                 val selected = language == lang
-                                val langDescription = if (isEn) lang.displayNameEn else lang.displayNameEs
+                                val langDescription = lang.getDisplayName(language)
                                 val label = "${lang.nativeName} ($langDescription)"
                                 val flag = "${lang.flag} "
                                 Surface(

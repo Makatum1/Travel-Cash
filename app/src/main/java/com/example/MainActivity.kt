@@ -76,6 +76,7 @@ import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
 import com.example.util.FormatUtils
+import com.example.util.UiTexts
 import com.example.ui.components.ActiveTripHeaderAndBudgetCard
 import com.example.ui.components.EditableParticipantAvatar
 import com.example.ui.components.EditableTripRouteIcon
@@ -154,7 +155,7 @@ fun TravelCashApp(
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val reminderNotificationsEnabled by viewModel.reminderNotificationsEnabled.collectAsStateWithLifecycle()
-    val isEn = language.isEnglish()
+    val texts = UiTexts.get(language)
 
     fun sanitizeTripFileName(title: String, extension: String): String {
         val clean = title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
@@ -202,10 +203,17 @@ fun TravelCashApp(
                 viewModel.updateTrip(targetTrip.copy(headerPhotoUri = Uri.fromFile(destFile).toString()))
                 tripForIconPhotoDialog = null
             } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error saving route photo" else "Error al guardar la foto de la ruta",
-                    isError = true
-                )
+                val saveRoutePhotoError = when (language) {
+                    AppLanguage.ES -> "Error al guardar la foto de la ruta"
+                    AppLanguage.EN -> "Error saving route photo"
+                    AppLanguage.FR -> "Erreur lors de l'enregistrement de la photo de l'itinéraire"
+                    AppLanguage.IT -> "Errore durante il salvataggio della foto dell'itinerario"
+                    AppLanguage.ZH -> "保存路线照片时出错"
+                    AppLanguage.NL -> "Fout bij opslaan van routefoto"
+                    AppLanguage.DE -> "Fehler beim Speichern des Routenfotos"
+                    AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia trasy"
+                }
+                viewModel.showToast(saveRoutePhotoError, isError = true)
             }
         }
     }
@@ -223,10 +231,17 @@ fun TravelCashApp(
                 viewModel.updateTrip(targetTrip.copy(headerPhotoUri = Uri.fromFile(destFile).toString()))
                 tripForIconPhotoDialog = null
             } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error saving camera photo" else "Error al guardar la foto de la cámara",
-                    isError = true
-                )
+                val saveCameraPhotoError = when (language) {
+                    AppLanguage.ES -> "Error al guardar la foto de la cámara"
+                    AppLanguage.EN -> "Error saving camera photo"
+                    AppLanguage.FR -> "Erreur lors de l'enregistrement de la photo"
+                    AppLanguage.IT -> "Errore durante il salvataggio della foto"
+                    AppLanguage.ZH -> "保存相机照片时出错"
+                    AppLanguage.NL -> "Fout bij opslaan van camerafoto"
+                    AppLanguage.DE -> "Fehler beim Speichern des Kamerafotos"
+                    AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia z aparatu"
+                }
+                viewModel.showToast(saveCameraPhotoError, isError = true)
             }
         }
     }
@@ -249,10 +264,17 @@ fun TravelCashApp(
                 viewModel.updateParticipantPhoto(targetParticipant, Uri.fromFile(destFile).toString())
                 participantForPhotoDialog = null
             } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error saving participant photo" else "Error al guardar la foto del participante",
-                    isError = true
-                )
+                val savePartPhotoError = when (language) {
+                    AppLanguage.ES -> "Error al guardar la foto del participante"
+                    AppLanguage.EN -> "Error saving participant photo"
+                    AppLanguage.FR -> "Erreur lors de l'enregistrement de la photo du participant"
+                    AppLanguage.IT -> "Errore durante il salvataggio della foto del partecipante"
+                    AppLanguage.ZH -> "保存参与者照片时出错"
+                    AppLanguage.NL -> "Fout bij opslaan van foto van deelnemer"
+                    AppLanguage.DE -> "Fehler beim Speichern des Teilnehmerfotos"
+                    AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia uczestnika"
+                }
+                viewModel.showToast(savePartPhotoError, isError = true)
             }
         }
     }
@@ -270,10 +292,17 @@ fun TravelCashApp(
                 viewModel.updateParticipantPhoto(targetParticipant, Uri.fromFile(destFile).toString())
                 participantForPhotoDialog = null
             } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Error saving camera photo" else "Error al guardar la foto de la cámara",
-                    isError = true
-                )
+                val saveCameraPhotoError = when (language) {
+                    AppLanguage.ES -> "Error al guardar la foto de la cámara"
+                    AppLanguage.EN -> "Error saving camera photo"
+                    AppLanguage.FR -> "Erreur lors de l'enregistrement de la photo"
+                    AppLanguage.IT -> "Errore durante il salvataggio della foto"
+                    AppLanguage.ZH -> "保存相机照片时出错"
+                    AppLanguage.NL -> "Fout bij opslaan van camerafoto"
+                    AppLanguage.DE -> "Fehler beim Speichern des Kamerafotos"
+                    AppLanguage.PL -> "Błąd podczas zapisywania zdjęcia z aparatu"
+                }
+                viewModel.showToast(saveCameraPhotoError, isError = true)
             }
         }
     }
@@ -290,16 +319,33 @@ fun TravelCashApp(
                 val content = context.contentResolver.openInputStream(uri)?.use { input ->
                     BufferedReader(InputStreamReader(input, Charsets.UTF_8)).readText()
                 } ?: ""
+                val csvSuggestedName = when (language) {
+                    AppLanguage.ES -> "Viaje Importado CSV"
+                    AppLanguage.EN -> "Imported CSV Trip"
+                    AppLanguage.FR -> "Voyage importé CSV"
+                    AppLanguage.IT -> "Viaggio importato CSV"
+                    AppLanguage.ZH -> "导入的 CSV 行程"
+                    AppLanguage.NL -> "Geïmporteerde CSV-reis"
+                    AppLanguage.DE -> "Importierte CSV-Reise"
+                    AppLanguage.PL -> "Zaimportowana podróż CSV"
+                }
                 viewModel.processCsvImportContent(
                     csvContent = content,
                     createNewTrip = csvImportCreatesNewTrip,
-                    suggestedFileName = if (isEn) "Imported CSV Trip" else "Viaje Importado CSV"
+                    suggestedFileName = csvSuggestedName
                 )
             } catch (e: Exception) {
-                viewModel.showToast(
-                    if (isEn) "Could not read selected CSV file" else "No se pudo leer el archivo CSV seleccionado",
-                    isError = true
-                )
+                val csvReadError = when (language) {
+                    AppLanguage.ES -> "No se pudo leer el archivo CSV seleccionado"
+                    AppLanguage.EN -> "Could not read selected CSV file"
+                    AppLanguage.FR -> "Impossible de lire le fichier CSV sélectionné"
+                    AppLanguage.IT -> "Impossibile leggere il file CSV selezionato"
+                    AppLanguage.ZH -> "无法读取所选的 CSV 文件"
+                    AppLanguage.NL -> "Kan het geselecteerde CSV-bestand niet lezen"
+                    AppLanguage.DE -> "Ausgewählte CSV-Datei konnte nicht gelesen werden"
+                    AppLanguage.PL -> "Nie można odczytać wybranego pliku CSV"
+                }
+                viewModel.showToast(csvReadError, isError = true)
             }
         }
     }
@@ -335,10 +381,17 @@ fun TravelCashApp(
             }
             context.startActivity(chooserIntent)
         } catch (e: Exception) {
-            viewModel.showToast(
-                if (isEn) "Error sharing file: ${e.message}" else "Error al compartir archivo: ${e.message}",
-                isError = true
-            )
+            val shareError = when (language) {
+                AppLanguage.ES -> "Error al compartir archivo: ${e.message}"
+                AppLanguage.EN -> "Error sharing file: ${e.message}"
+                AppLanguage.FR -> "Erreur lors du partage du fichier : ${e.message}"
+                AppLanguage.IT -> "Errore durante la condivisione del file: ${e.message}"
+                AppLanguage.ZH -> "分享文件时出错: ${e.message}"
+                AppLanguage.NL -> "Fout bij delen van bestand: ${e.message}"
+                AppLanguage.DE -> "Fehler beim Teilen der Datei: ${e.message}"
+                AppLanguage.PL -> "Błąd podczas udostępniania pliku: ${e.message}"
+            }
+            viewModel.showToast(shareError, isError = true)
         }
     }
 
@@ -715,10 +768,7 @@ fun TravelCashApp(
                         onReminderNotificationsChange = viewModel::setReminderNotificationsEnabled,
                         onExportZipClick = { trip ->
                             if (trip == null && uiState.trips.isEmpty()) {
-                                viewModel.showToast(
-                                    if (isEn) "No trips to export" else "No hay viajes para exportar",
-                                    isError = true
-                                )
+                                viewModel.showToast(texts.toastNoTripsToExport, isError = true)
                             } else {
                                 exportAndShareZip(trip)
                             }
@@ -777,14 +827,42 @@ fun TravelCashApp(
                                 onDeleteIncomeClick = viewModel::deleteIncome,
                                 onSettleDebt = { tx, settledAmount, paymentMethod ->
                                     val expenseId = "settle-${java.util.UUID.randomUUID().toString().take(8)}"
-                                    val fromName = if (tx.isFromBote) (if (isEn) "Common Pot" else "Bote Común") else tx.fromName
+                                    val fromName = if (tx.isFromBote) texts.commonPotName else tx.fromName
                                     val place = if (tx.isFromBote) {
-                                        if (isEn) "Settlement from Common Pot to ${tx.toName}" else "Liquidación desde Bote Común a ${tx.toName}"
+                                        when (language) {
+                                            AppLanguage.ES -> "Liquidación desde Bote Común a ${tx.toName}"
+                                            AppLanguage.EN -> "Settlement from Common Pot to ${tx.toName}"
+                                            AppLanguage.FR -> "Règlement depuis la cagnotte vers ${tx.toName}"
+                                            AppLanguage.IT -> "Saldo da Cassa Comune a ${tx.toName}"
+                                            AppLanguage.ZH -> "公账向 ${tx.toName} 结算"
+                                            AppLanguage.NL -> "Vereffening vanuit de pot naar ${tx.toName}"
+                                            AppLanguage.DE -> "Ausgleich aus Gemeinschaftskasse an ${tx.toName}"
+                                            AppLanguage.PL -> "Rozliczenie ze wspólnej kasy dla ${tx.toName}"
+                                        }
                                     } else {
-                                        if (isEn) "Debt settlement: ${tx.fromName} → ${tx.toName}" else "Liquidación de deuda: ${tx.fromName} → ${tx.toName}"
+                                        when (language) {
+                                            AppLanguage.ES -> "Liquidación de deuda: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.EN -> "Debt settlement: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.FR -> "Règlement de dette : ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.IT -> "Saldo debito: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.ZH -> "债务结算: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.NL -> "Schuldaflossing: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.DE -> "Schuldenausgleich: ${tx.fromName} → ${tx.toName}"
+                                            AppLanguage.PL -> "Rozliczenie długu: ${tx.fromName} → ${tx.toName}"
+                                        }
                                     }
                                     val payerId = if (tx.isFromBote) DebtCalculator.BOTE_COMUN_ID else tx.fromParticipantId
                                     val method = if (tx.isFromBote) "Bote Común" else paymentMethod
+                                    val notes = when (language) {
+                                        AppLanguage.ES -> "Saldado de cuenta ($fromName paga a ${tx.toName})"
+                                        AppLanguage.EN -> "Settlement: $fromName pays ${tx.toName}"
+                                        AppLanguage.FR -> "Règlement : $fromName paie à ${tx.toName}"
+                                        AppLanguage.IT -> "Saldo: $fromName paga a ${tx.toName}"
+                                        AppLanguage.ZH -> "结算: $fromName 支付给 ${tx.toName}"
+                                        AppLanguage.NL -> "Vereffening: $fromName betaalt aan ${tx.toName}"
+                                        AppLanguage.DE -> "Ausgleich: $fromName zahlt an ${tx.toName}"
+                                        AppLanguage.PL -> "Rozliczenie: $fromName płaci dla ${tx.toName}"
+                                    }
                                     val expense = ExpenseEntity(
                                         id = expenseId,
                                         tripId = activeTrip.id,
@@ -795,7 +873,7 @@ fun TravelCashApp(
                                         category = "General",
                                         date = java.time.LocalDate.now().toString(),
                                         paymentMethod = method,
-                                        notes = if (isEn) "Settlement: $fromName pays ${tx.toName}" else "Saldado de cuenta ($fromName paga a ${tx.toName})",
+                                        notes = notes,
                                         latitude = null,
                                         longitude = null,
                                         placeName = place,
@@ -816,10 +894,17 @@ fun TravelCashApp(
                                         createdAt = System.currentTimeMillis()
                                     )
                                     viewModel.saveExpense(expense, isEdit = false)
-                                    viewModel.showToast(
-                                        if (isEn) "Debt settled: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
-                                        else "Deuda saldada: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
-                                    )
+                                    val debtSettledToast = when (language) {
+                                        AppLanguage.ES -> "Deuda saldada: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.EN -> "Debt settled: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.FR -> "Dette réglée : ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.IT -> "Debito saldato: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.ZH -> "债务已结清: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.NL -> "Schuld voldaan: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.DE -> "Schuld beglichen: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                        AppLanguage.PL -> "Dług uregulowany: ${FormatUtils.formatCurrency(settledAmount, activeTrip.baseCurrency)}"
+                                    }
+                                    viewModel.showToast(debtSettledToast)
                                 },
                                 topHeader = activeTripHeaderContent
                             )
@@ -939,11 +1024,41 @@ fun TravelCashApp(
     // Diálogo para elegir foto personalizada al pinchar el icono de una ruta (o dejar el de carretera por defecto)
     if (tripForIconPhotoDialog != null) {
         val targetTrip = tripForIconPhotoDialog!!
+        val routeIconTitle = when (language) {
+            AppLanguage.ES -> "Icono de la ruta \"${targetTrip.title}\""
+            AppLanguage.EN -> "Route icon for \"${targetTrip.title}\""
+            AppLanguage.FR -> "Icône de l'itinéraire pour « ${targetTrip.title} »"
+            AppLanguage.IT -> "Icona dell'itinerario per \"${targetTrip.title}\""
+            AppLanguage.ZH -> "路线图标: \"${targetTrip.title}\""
+            AppLanguage.NL -> "Routepictogram voor \"${targetTrip.title}\""
+            AppLanguage.DE -> "Routen-Icon für „${targetTrip.title}“"
+            AppLanguage.PL -> "Ikona trasy dla „${targetTrip.title}”"
+        }
+        val routeIconSubtitle = when (language) {
+            AppLanguage.ES -> "Puedes poner una foto personalizada para esta ruta o dejar el icono de la carretera por defecto:"
+            AppLanguage.EN -> "You can set a custom photo for this route or keep the default road icon:"
+            AppLanguage.FR -> "Vous pouvez définir une photo personnalisée ou conserver l'icône par défaut :"
+            AppLanguage.IT -> "Puoi impostare una foto personalizzata o mantenere l'icona predefinita:"
+            AppLanguage.ZH -> "您可以为此路线设置自定义照片或保留默认公路图标:"
+            AppLanguage.NL -> "Je kunt een eigen foto instellen of het standaard wegpictogram behouden:"
+            AppLanguage.DE -> "Sie können ein eigenes Foto festlegen oder das Standard-Straßen-Icon behalten:"
+            AppLanguage.PL -> "Możesz ustawić własne zdjęcie dla tej trasy lub zachować domyślną ikonę drogi:"
+        }
+        val defaultRoadIcon = when (language) {
+            AppLanguage.ES -> "Dejar icono de carretera por defecto"
+            AppLanguage.EN -> "Keep default road icon"
+            AppLanguage.FR -> "Garder l'icône de route par défaut"
+            AppLanguage.IT -> "Mantieni icona strada predefinita"
+            AppLanguage.ZH -> "保留默认公路图标"
+            AppLanguage.NL -> "Standaard wegpictogram behouden"
+            AppLanguage.DE -> "Standard-Straßen-Icon behalten"
+            AppLanguage.PL -> "Zachowaj domyślną ikonę drogi"
+        }
         AlertDialog(
             onDismissRequest = { tripForIconPhotoDialog = null },
             title = {
                 Text(
-                    text = if (isEn) "Route icon for \"${targetTrip.title}\"" else "Icono de la ruta \"${targetTrip.title}\"",
+                    text = routeIconTitle,
                     fontWeight = FontWeight.ExtraBold
                 )
             },
@@ -959,11 +1074,7 @@ fun TravelCashApp(
                         size = 72.dp
                     )
                     Text(
-                        text = if (isEn) {
-                            "You can set a custom photo for this route or keep the default road icon:"
-                        } else {
-                            "Puedes poner una foto personalizada para esta ruta o dejar el icono de la carretera por defecto:"
-                        },
+                        text = routeIconSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF475569)
                     )
@@ -982,7 +1093,7 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Gallery" else "Galería")
+                            Text(texts.galleryOption)
                         }
                         OutlinedButton(
                             onClick = {
@@ -992,7 +1103,7 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Camera" else "Cámara")
+                            Text(texts.cameraOption)
                         }
                     }
                     if (!targetTrip.headerPhotoUri.isNullOrBlank()) {
@@ -1006,14 +1117,14 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Keep default road icon" else "Dejar icono de carretera por defecto")
+                            Text(defaultRoadIcon)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { tripForIconPhotoDialog = null }) {
-                    Text(if (isEn) "Close" else "Cerrar", fontWeight = FontWeight.Bold)
+                    Text(texts.closeBtn, fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -1022,11 +1133,41 @@ fun TravelCashApp(
     // Diálogo para añadir foto al icono de un participante (o dejar inicial + color aleatorio por defecto)
     if (participantForPhotoDialog != null) {
         val targetPart = participantForPhotoDialog!!
+        val partIconTitle = when (language) {
+            AppLanguage.ES -> "Icono de ${targetPart.name}"
+            AppLanguage.EN -> "Icon for ${targetPart.name}"
+            AppLanguage.FR -> "Icône de ${targetPart.name}"
+            AppLanguage.IT -> "Icona di ${targetPart.name}"
+            AppLanguage.ZH -> "${targetPart.name} 的图标"
+            AppLanguage.NL -> "Pictogram voor ${targetPart.name}"
+            AppLanguage.DE -> "Icon für ${targetPart.name}"
+            AppLanguage.PL -> "Ikona użytkownika ${targetPart.name}"
+        }
+        val partIconSubtitle = when (language) {
+            AppLanguage.ES -> "Elige una foto para ${targetPart.name}. Si no pones ninguna, se mostrará por defecto su inicial con su color:"
+            AppLanguage.EN -> "Choose a photo for ${targetPart.name}. If none is set, their initial and color are shown by default:"
+            AppLanguage.FR -> "Choisissez une photo pour ${targetPart.name}. Par défaut, son initiale et sa couleur sont affichées :"
+            AppLanguage.IT -> "Scegli una foto per ${targetPart.name}. Per impostazione predefinita vengono mostrati iniziale e colore:"
+            AppLanguage.ZH -> "为 ${targetPart.name} 选择一张照片。若未设置，则默认显示首字母与颜色:"
+            AppLanguage.NL -> "Kies een foto voor ${targetPart.name}. Zonder foto worden initialen en kleur standaard getoond:"
+            AppLanguage.DE -> "Wählen Sie ein Foto für ${targetPart.name}. Ohne Foto werden standardmäßig Initiale und Farbe angezeigt:"
+            AppLanguage.PL -> "Wybierz zdjęcie dla ${targetPart.name}. Jeśli brak, domyślnie wyświetlany jest inicjał i kolor:"
+        }
+        val defaultPartIcon = when (language) {
+            AppLanguage.ES -> "Dejar por defecto (Inicial + Color)"
+            AppLanguage.EN -> "Keep default (Initial + Color)"
+            AppLanguage.FR -> "Garder par défaut (Initiale + Couleur)"
+            AppLanguage.IT -> "Mantieni predefinito (Iniziale + Colore)"
+            AppLanguage.ZH -> "保留默认 (首字母 + 颜色)"
+            AppLanguage.NL -> "Standaard behouden (Initiaal + Kleur)"
+            AppLanguage.DE -> "Standard beibehalten (Initiale + Farbe)"
+            AppLanguage.PL -> "Zachowaj domyślne (Inicjał + Kolor)"
+        }
         AlertDialog(
             onDismissRequest = { participantForPhotoDialog = null },
             title = {
                 Text(
-                    text = if (isEn) "Icon for ${targetPart.name}" else "Icono de ${targetPart.name}",
+                    text = partIconTitle,
                     fontWeight = FontWeight.ExtraBold
                 )
             },
@@ -1044,11 +1185,7 @@ fun TravelCashApp(
                         size = 72.dp
                     )
                     Text(
-                        text = if (isEn) {
-                            "Choose a photo for ${targetPart.name}. If none is set, their initial and color are shown by default:"
-                        } else {
-                            "Elige una foto para ${targetPart.name}. Si no pones ninguna, se mostrará por defecto su inicial con su color:"
-                        },
+                        text = partIconSubtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF475569)
                     )
@@ -1067,7 +1204,7 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Gallery" else "Galería")
+                            Text(texts.galleryOption)
                         }
                         OutlinedButton(
                             onClick = {
@@ -1077,7 +1214,7 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.AddAPhoto, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Camera" else "Cámara")
+                            Text(texts.cameraOption)
                         }
                     }
                     if (!targetPart.photoUri.isNullOrBlank()) {
@@ -1091,14 +1228,14 @@ fun TravelCashApp(
                         ) {
                             Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text(if (isEn) "Keep default (Initial + Color)" else "Dejar por defecto (Inicial + Color)")
+                            Text(defaultPartIcon)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { participantForPhotoDialog = null }) {
-                    Text(if (isEn) "Close" else "Cerrar", fontWeight = FontWeight.Bold)
+                    Text(texts.closeBtn, fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -1201,24 +1338,28 @@ fun TravelCashApp(
     val pendingDuplicateCandidate by viewModel.pendingDuplicate.collectAsStateWithLifecycle()
     if (pendingDuplicateCandidate != null) {
         val candidate = pendingDuplicateCandidate!!
+        val dupMsg = when (language) {
+            AppLanguage.ES -> "El viaje \"${candidate.existing.title}\" ya existe. ¿Quieres sobreescribirlo?"
+            AppLanguage.EN -> "The trip \"${candidate.existing.title}\" already exists. Do you want to overwrite it?"
+            AppLanguage.FR -> "Le voyage « ${candidate.existing.title} » existe déjà. Voulez-vous l'écraser ?"
+            AppLanguage.IT -> "Il viaggio \"${candidate.existing.title}\" esiste già. Vuoi sovrascriverlo?"
+            AppLanguage.ZH -> "行程 \"${candidate.existing.title}\" 已存在。是否要覆盖？"
+            AppLanguage.NL -> "De reis \"${candidate.existing.title}\" bestaat al. Wil je deze overschrijven?"
+            AppLanguage.DE -> "Die Reise „${candidate.existing.title}“ existiert bereits. Möchten Sie sie überschreiben?"
+            AppLanguage.PL -> "Podróż „${candidate.existing.title}” już istnieje. Czy chcesz ją nadpisać?"
+        }
         AlertDialog(
             onDismissRequest = {
                 viewModel.resolveDuplicateTrip(candidate, overwrite = false)
             },
             title = {
                 Text(
-                    text = if (isEn) "Trip Already Exists" else "Viaje ya existente",
+                    text = texts.duplicateTripTitle,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                Text(
-                    text = if (isEn) {
-                        "The trip \"${candidate.existing.title}\" already exists. Do you want to overwrite it?"
-                    } else {
-                        "El viaje \"${candidate.existing.title}\" ya existe. ¿Quieres sobreescribirlo?"
-                    }
-                )
+                Text(text = dupMsg)
             },
             confirmButton = {
                 Button(
@@ -1227,7 +1368,7 @@ fun TravelCashApp(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = TravelBlue)
                 ) {
-                    Text(if (isEn) "Overwrite" else "Sobreescribir")
+                    Text(texts.overwriteBtn)
                 }
             },
             dismissButton = {
@@ -1236,7 +1377,7 @@ fun TravelCashApp(
                         viewModel.resolveDuplicateTrip(candidate, overwrite = false)
                     }
                 ) {
-                    Text(if (isEn) "Skip" else "Saltar")
+                    Text(texts.skipBtn)
                 }
             }
         )

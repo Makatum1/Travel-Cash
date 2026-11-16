@@ -73,7 +73,7 @@ import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.EmeraldGreenLight
 import com.example.ui.theme.LocalAppLanguage
-import com.example.ui.theme.isEnglish
+import com.example.util.UiTexts
 import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
 import com.example.util.FormatUtils
@@ -98,7 +98,7 @@ fun TripsTabScreen(
     topHeader: @Composable () -> Unit = {}
 ) {
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
+    val texts = UiTexts.get(currentLang)
     val today = remember { LocalDate.now() }
     var tripPendingDeletion by remember { mutableStateOf<TripEntity?>(null) }
     var expandedTripIds by remember { mutableStateOf(setOf<String>()) }
@@ -125,8 +125,18 @@ fun TripsTabScreen(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    val tripManagementTitle = when (currentLang) {
+                        AppLanguage.ES -> "Gestión de Viajes"
+                        AppLanguage.EN -> "Trip Management"
+                        AppLanguage.FR -> "Gestion des voyages"
+                        AppLanguage.IT -> "Gestione dei viaggi"
+                        AppLanguage.ZH -> "行程管理"
+                        AppLanguage.NL -> "Reisbeheer"
+                        AppLanguage.DE -> "Reiseverwaltung"
+                        AppLanguage.PL -> "Zarządzanie podróżami"
+                    }
                     Text(
-                        text = if (isEn) "Trip Management" else "Gestión de Viajes",
+                        text = tripManagementTitle,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
@@ -148,7 +158,7 @@ fun TripsTabScreen(
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isEn) "New Trip" else "Nuevo Viaje",
+                            text = texts.newTripBtn,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
                         )
                     }
@@ -177,7 +187,7 @@ fun TripsTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isEn) "Add Test Trip" else "Añadir viaje de prueba",
+                                text = texts.addSampleTripBtn,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = EmeraldGreenDark
                             )
@@ -206,7 +216,7 @@ fun TripsTabScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isEn) "Import Trip" else "Importar Viaje",
+                                text = texts.importZipBtn,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = TravelBlue
                             )
@@ -251,16 +261,23 @@ fun TripsTabScreen(
                         }
 
                         Text(
-                            text = if (isEn) "No trips yet" else "No tienes ningún viaje todavía",
+                            text = texts.emptyTripsTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
                             color = OceanNavy
                         )
 
+                        val emptyTripsSubtitle = when (currentLang) {
+                            AppLanguage.ES -> "Crea tu primer viaje para empezar a registrar y organizar todos tus gastos."
+                            AppLanguage.EN -> "Create your first trip to start managing expenses, participants and routes."
+                            AppLanguage.FR -> "Créez votre premier voyage pour commencer à gérer vos dépenses et vos participants."
+                            AppLanguage.IT -> "Crea il tuo primo viaggio per iniziare a gestire spese e partecipanti."
+                            AppLanguage.ZH -> "创建您的第一次旅行，开始管理支出、参与者和路线。"
+                            AppLanguage.NL -> "Maak je eerste reis aan om uitgaven en deelnemers te beheren."
+                            AppLanguage.DE -> "Erstellen Sie Ihre erste Reise, um Ausgaben und Teilnehmer zu verwalten."
+                            AppLanguage.PL -> "Utwórz swoją pierwszą podróż, aby zarządzać wydatkami i uczestnikami."
+                        }
                         Text(
-                            text = if (isEn)
-                                "Create your first trip to start managing expenses, participants and routes."
-                            else
-                                "Crea tu primer viaje para empezar a registrar y organizar todos tus gastos.",
+                            text = emptyTripsSubtitle,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF64748B),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -284,17 +301,17 @@ fun TripsTabScreen(
             val endLocal = runCatching { LocalDate.parse(trip.endDate.take(10)) }.getOrNull()
             val (dateStatusLabel, dateStatusBg, dateStatusColor) = when {
                 startLocal != null && today.isBefore(startLocal) -> Triple(
-                    if (isEn) "⏳ Upcoming" else "⏳ Por iniciar",
+                    "⏳ ${texts.statusUpcoming}",
                     Color(0xFFFEF3C7),
                     Color(0xFFB45309)
                 )
                 endLocal != null && today.isAfter(endLocal) -> Triple(
-                    if (isEn) "🏁 Completed" else "🏁 Finalizado",
+                    "🏁 ${texts.statusCompleted}",
                     Color(0xFFF1F5F9),
                     Color(0xFF475569)
                 )
                 else -> Triple(
-                    if (isEn) "🟢 Ongoing" else "🟢 En curso",
+                    "🟢 ${texts.statusOngoing}",
                     EmeraldGreenLight,
                     EmeraldGreenDark
                 )
@@ -354,7 +371,7 @@ fun TripsTabScreen(
                                         color = TravelBlue
                                     ) {
                                         Text(
-                                            text = if (isEn) "ACTIVE" else "ACTIVO",
+                                            text = texts.activeTripBadge,
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Black),
                                             color = Color.White,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -381,13 +398,29 @@ fun TripsTabScreen(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
+                                val collapseLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Contraer"
+                                    AppLanguage.EN -> "Collapse"
+                                    AppLanguage.FR -> "Réduire"
+                                    AppLanguage.IT -> "Comprimi"
+                                    AppLanguage.ZH -> "折叠"
+                                    AppLanguage.NL -> "Inklappen"
+                                    AppLanguage.DE -> "Einklappen"
+                                    AppLanguage.PL -> "Zwiń"
+                                }
+                                val expandAllLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Desplegar todas las opciones"
+                                    AppLanguage.EN -> "Expand all options"
+                                    AppLanguage.FR -> "Déployer toutes les options"
+                                    AppLanguage.IT -> "Mostra tutte le opzioni"
+                                    AppLanguage.ZH -> "展开所有选项"
+                                    AppLanguage.NL -> "Alle opties uitvouwen"
+                                    AppLanguage.DE -> "Alle Optionen erweitern"
+                                    AppLanguage.PL -> "Rozwiń wszystkie opcje"
+                                }
                                 Icon(
                                     imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                    contentDescription = if (isExpanded) {
-                                        if (isEn) "Collapse" else "Contraer"
-                                    } else {
-                                        if (isEn) "Expand all options" else "Desplegar todas las opciones"
-                                    },
+                                    contentDescription = if (isExpanded) collapseLabel else expandAllLabel,
                                     tint = if (isExpanded) TravelBlue else Color(0xFF64748B),
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -426,6 +459,16 @@ fun TripsTabScreen(
 
                             // Estado / Acción de selección como activo
                             if (!isActive) {
+                                val setAsActiveLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Establecer como viaje activo"
+                                    AppLanguage.EN -> "Set as Active Trip"
+                                    AppLanguage.FR -> "Définir comme voyage actif"
+                                    AppLanguage.IT -> "Imposta come viaggio attivo"
+                                    AppLanguage.ZH -> "设为当前活动行程"
+                                    AppLanguage.NL -> "Instellen als actieve reis"
+                                    AppLanguage.DE -> "Als aktive Reise festlegen"
+                                    AppLanguage.PL -> "Ustaw jako aktywną podróż"
+                                }
                                 Button(
                                     onClick = { onSelectTrip(trip.id) },
                                     colors = ButtonDefaults.buttonColors(
@@ -441,11 +484,21 @@ fun TripsTabScreen(
                                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = if (isEn) "Set as Active Trip" else "Establecer como viaje activo",
+                                        text = setAsActiveLabel,
                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
                             } else {
+                                val currentlyActiveLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Viaje actualmente activo en la app"
+                                    AppLanguage.EN -> "Currently active trip in the app"
+                                    AppLanguage.FR -> "Voyage actuellement actif dans l'application"
+                                    AppLanguage.IT -> "Viaggio attualmente attivo nell'app"
+                                    AppLanguage.ZH -> "当前应用中的活动行程"
+                                    AppLanguage.NL -> "Momenteel actieve reis in de app"
+                                    AppLanguage.DE -> "Derzeit aktive Reise in der App"
+                                    AppLanguage.PL -> "Aktualnie aktywna podróż w aplikacji"
+                                }
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     color = TravelBlue.copy(alpha = 0.08f),
@@ -465,7 +518,7 @@ fun TripsTabScreen(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = if (isEn) "Currently active trip in the app" else "Viaje actualmente activo en la app",
+                                            text = currentlyActiveLabel,
                                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
                                             color = TravelBlue
                                         )
@@ -491,7 +544,7 @@ fun TripsTabScreen(
                                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (isEn) "Edit Trip" else "Editar Viaje",
+                                        text = texts.editTripOption,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
@@ -509,7 +562,7 @@ fun TripsTabScreen(
                                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (isEn) "Delete" else "Eliminar",
+                                        text = texts.deleteBtn,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
@@ -527,12 +580,12 @@ fun TripsTabScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = if (isEn) "Spent" else "Gastado",
+                                            text = texts.headerSpent,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = Color(0xFF64748B)
                                         )
                                         Text(
-                                            text = FormatUtils.formatCurrency(spent, trip.baseCurrency),
+                                            text = FormatUtils.formatCurrency(spent, trip.baseCurrency, currentLang.locale),
                                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                                             color = OceanNavy
                                         )
@@ -546,12 +599,12 @@ fun TripsTabScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = if (isEn) "Common Pot" else "Bote Común",
+                                            text = texts.commonPotName,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = EmeraldGreenDark
                                         )
                                         Text(
-                                            text = "+${FormatUtils.formatCurrency(inc, trip.baseCurrency)}",
+                                            text = "+${FormatUtils.formatCurrency(inc, trip.baseCurrency, currentLang.locale)}",
                                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                                             color = EmeraldGreenDark
                                         )
@@ -565,13 +618,13 @@ fun TripsTabScreen(
                                 ) {
                                     Column(modifier = Modifier.padding(8.dp)) {
                                         Text(
-                                            text = if (isEn) "Budget" else "Presupuesto",
+                                            text = texts.headerBudget,
                                             style = MaterialTheme.typography.labelSmall,
                                             color = TravelBlue
                                         )
                                         Text(
-                                            text = trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency) }
-                                                ?: if (isEn) "Flexible" else "Flexible",
+                                            text = trip.budget?.let { FormatUtils.formatCurrency(it, trip.baseCurrency, currentLang.locale) }
+                                                ?: texts.statusFlexible,
                                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
                                             color = TravelBlue
                                         )
@@ -597,6 +650,16 @@ fun TripsTabScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
+                                val exportCsvLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Exportar CSV"
+                                    AppLanguage.EN -> "Export CSV"
+                                    AppLanguage.FR -> "Exporter CSV"
+                                    AppLanguage.IT -> "Esporta CSV"
+                                    AppLanguage.ZH -> "导出 CSV"
+                                    AppLanguage.NL -> "Exporteer CSV"
+                                    AppLanguage.DE -> "CSV exportieren"
+                                    AppLanguage.PL -> "Eksportuj CSV"
+                                }
                                 OutlinedButton(
                                     onClick = { onExportSingleTripJsonClick(trip) },
                                     modifier = Modifier.weight(1f),
@@ -608,11 +671,21 @@ fun TripsTabScreen(
                                     Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (isEn) "Export" else "Exportar",
+                                        text = exportCsvLabel,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
 
+                                val exportPdfLabel = when (currentLang) {
+                                    AppLanguage.ES -> "Exportar a PDF"
+                                    AppLanguage.EN -> "Export to PDF"
+                                    AppLanguage.FR -> "Exporter en PDF"
+                                    AppLanguage.IT -> "Esporta in PDF"
+                                    AppLanguage.ZH -> "导出为 PDF"
+                                    AppLanguage.NL -> "Exporteer naar PDF"
+                                    AppLanguage.DE -> "Als PDF exportieren"
+                                    AppLanguage.PL -> "Eksportuj do PDF"
+                                }
                                 OutlinedButton(
                                     onClick = { onExportSingleTripPdfClick(trip) },
                                     modifier = Modifier.weight(1f),
@@ -624,13 +697,23 @@ fun TripsTabScreen(
                                     Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (isEn) "Export to PDF" else "Exportar a PDF",
+                                        text = exportPdfLabel,
                                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
                                     )
                                 }
                             }
 
                             // Botón para contraer opciones
+                            val collapseOptionsLabel = when (currentLang) {
+                                AppLanguage.ES -> "Cerrar opciones"
+                                AppLanguage.EN -> "Collapse options"
+                                AppLanguage.FR -> "Fermer les options"
+                                AppLanguage.IT -> "Chiudi opzioni"
+                                AppLanguage.ZH -> "关闭选项"
+                                AppLanguage.NL -> "Opties sluiten"
+                                AppLanguage.DE -> "Optionen schließen"
+                                AppLanguage.PL -> "Zamknij opcje"
+                            }
                             TextButton(
                                 onClick = { expandedTripIds = expandedTripIds - trip.id },
                                 modifier = Modifier
@@ -645,7 +728,7 @@ fun TripsTabScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (isEn) "Collapse options" else "Cerrar opciones",
+                                    text = collapseOptionsLabel,
                                     color = Color(0xFF64748B),
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
                                 )
@@ -664,21 +747,47 @@ fun TripsTabScreen(
     // Diálogo de confirmación seguro para eliminar viaje
     if (tripPendingDeletion != null) {
         val target = tripPendingDeletion!!
+        val deleteDialogTitle = when (currentLang) {
+            AppLanguage.ES -> "Eliminar viaje \"${target.title}\""
+            AppLanguage.EN -> "Delete trip \"${target.title}\""
+            AppLanguage.FR -> "Supprimer le voyage « ${target.title} »"
+            AppLanguage.IT -> "Elimina il viaggio \"${target.title}\""
+            AppLanguage.ZH -> "删除行程 \"${target.title}\""
+            AppLanguage.NL -> "Reis \"${target.title}\" verwijderen"
+            AppLanguage.DE -> "Reise „${target.title}“ löschen"
+            AppLanguage.PL -> "Usuń podróż „${target.title}”"
+        }
+        val deleteDialogMessage = when (currentLang) {
+            AppLanguage.ES -> "¿Estás seguro de que deseas eliminar este viaje y todos sus gastos, participantes y aportaciones al bote? Esta acción no se puede deshacer."
+            AppLanguage.EN -> "Are you sure you want to delete this trip and all its expenses, participants and pot contributions? This action cannot be undone."
+            AppLanguage.FR -> "Êtes-vous sûr de vouloir supprimer ce voyage ainsi que toutes ses dépenses, participants et contributions ? Cette action est irréversible."
+            AppLanguage.IT -> "Sei sicuro di voler eliminare questo viaggio e tutte le relative spese, partecipanti e versamenti? Questa azione non può essere annullata."
+            AppLanguage.ZH -> "您确定要删除此行程及其所有支出、参与者和共同基金出资吗？此操作无法撤消。"
+            AppLanguage.NL -> "Weet u zeker dat u deze reis en alle bijbehorende uitgaven, deelnemers en potbijdragen wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+            AppLanguage.DE -> "Sind Sie sicher, dass Sie diese Reise mit allen Ausgaben, Teilnehmern und Beiträgen löschen möchten? Dies kann nicht rückgängig gemacht werden."
+            AppLanguage.PL -> "Czy na pewno chcesz usunąć tę podróż oraz wszystkie powiązane wydatki, uczestników i wpłaty? Tej operacji nie można cofnąć."
+        }
+        val confirmDeleteLabel = when (currentLang) {
+            AppLanguage.ES -> "Sí, eliminar viaje"
+            AppLanguage.EN -> "Yes, delete trip"
+            AppLanguage.FR -> "Oui, supprimer le voyage"
+            AppLanguage.IT -> "Sì, elimina viaggio"
+            AppLanguage.ZH -> "是的，删除行程"
+            AppLanguage.NL -> "Ja, verwijder reis"
+            AppLanguage.DE -> "Ja, Reise löschen"
+            AppLanguage.PL -> "Tak, usuń podróż"
+        }
         AlertDialog(
             onDismissRequest = { tripPendingDeletion = null },
             title = {
                 Text(
-                    text = if (isEn) "Delete trip \"${target.title}\"" else "Eliminar viaje \"${target.title}\"",
+                    text = deleteDialogTitle,
                     fontWeight = FontWeight.ExtraBold
                 )
             },
             text = {
                 Text(
-                    text = if (isEn) {
-                        "Are you sure you want to delete this trip and all its expenses, participants and pot contributions? This action cannot be undone."
-                    } else {
-                        "¿Estás seguro de que deseas eliminar este viaje y todos sus gastos, participantes y aportaciones al bote? Esta acción no se puede deshacer."
-                    }
+                    text = deleteDialogMessage
                 )
             },
             confirmButton = {
@@ -689,12 +798,12 @@ fun TripsTabScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = CoralRed)
                 ) {
-                    Text(if (isEn) "Yes, delete trip" else "Sí, eliminar viaje", fontWeight = FontWeight.Bold)
+                    Text(confirmDeleteLabel, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { tripPendingDeletion = null }) {
-                    Text(if (isEn) "Cancel" else "Cancelar")
+                    Text(texts.cancel)
                 }
             }
         )

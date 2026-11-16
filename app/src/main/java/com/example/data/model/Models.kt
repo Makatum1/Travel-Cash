@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.ui.theme.AppLanguage
 
 @Entity(tableName = "trips")
 data class TripEntity(
@@ -140,27 +141,109 @@ object CategoryCatalog {
      * Traduce únicamente los nombres base predefinidos de la aplicación al idioma seleccionado.
      * Cualquier nombre personalizado introducido por el usuario en el botón General se mantiene intacto.
      */
-    fun displayName(rawCategoryName: String, isEn: Boolean): String {
-        if (!isEn) {
-            return when (rawCategoryName.trim().lowercase()) {
+    fun displayName(rawCategoryName: String, lang: AppLanguage): String {
+        val norm = rawCategoryName.trim().lowercase()
+        return when (lang) {
+            AppLanguage.ES -> when (norm) {
                 "transporte y gasolina" -> "Transporte"
                 else -> rawCategoryName
             }
-        }
-        return when (rawCategoryName.trim().lowercase()) {
-            "restaurantes y comida" -> "Restaurants & Food"
-            "alojamiento" -> "Accommodation"
-            "transporte", "transporte y gasolina" -> "Transport"
-            "entradas y ocio", "entradas" -> "Tickets & Leisure"
-            "taxi" -> "Taxi"
-            "compras y supermercado" -> "Shopping & Grocery"
-            "cafés y snacks", "cafes y snacks" -> "Cafes & Snacks"
-            "vuelos", "vuelo" -> "Flights"
-            "salud y farmacia" -> "Health & Pharmacy"
-            "general" -> "General"
-            else -> rawCategoryName // Dato introducido por el usuario: no se traduce
+            AppLanguage.EN -> when (norm) {
+                "restaurantes y comida" -> "Restaurants & Food"
+                "alojamiento" -> "Accommodation"
+                "transporte", "transporte y gasolina" -> "Transport"
+                "entradas y ocio", "entradas" -> "Tickets & Leisure"
+                "taxi" -> "Taxi"
+                "compras y supermercado" -> "Shopping & Grocery"
+                "cafés y snacks", "cafes y snacks" -> "Cafes & Snacks"
+                "vuelos", "vuelo" -> "Flights"
+                "salud y farmacia" -> "Health & Pharmacy"
+                "general" -> "General"
+                else -> rawCategoryName
+            }
+            AppLanguage.FR -> when (norm) {
+                "restaurantes y comida" -> "Restaurants et Alimentation"
+                "alojamiento" -> "Hébergement"
+                "transporte", "transporte y gasolina" -> "Transport"
+                "entradas y ocio", "entradas" -> "Billets et Loisirs"
+                "taxi" -> "Taxi"
+                "compras y supermercado" -> "Achats et Supermarché"
+                "cafés y snacks", "cafes y snacks" -> "Cafés et Snacks"
+                "vuelos", "vuelo" -> "Vols"
+                "salud y farmacia" -> "Santé et Pharmacie"
+                "general" -> "Général"
+                else -> rawCategoryName
+            }
+            AppLanguage.IT -> when (norm) {
+                "restaurantes y comida" -> "Ristoranti e Cibo"
+                "alojamiento" -> "Alloggio"
+                "transporte", "transporte y gasolina" -> "Trasporti"
+                "entradas y ocio", "entradas" -> "Biglietti e Tempo Libero"
+                "taxi" -> "Taxi"
+                "compras y supermercado" -> "Spesa e Supermercato"
+                "cafés y snacks", "cafes y snacks" -> "Caffè e Snack"
+                "vuelos", "vuelo" -> "Voli"
+                "salud y farmacia" -> "Salute e Farmacia"
+                "general" -> "Generale"
+                else -> rawCategoryName
+            }
+            AppLanguage.ZH -> when (norm) {
+                "restaurantes y comida" -> "餐厅与餐饮"
+                "alojamiento" -> "住宿"
+                "transporte", "transporte y gasolina" -> "交通"
+                "entradas y ocio", "entradas" -> "门票与休闲"
+                "taxi" -> "出租车"
+                "compras y supermercado" -> "购物与超市"
+                "cafés y snacks", "cafes y snacks" -> "咖啡与小吃"
+                "vuelos", "vuelo" -> "航班"
+                "salud y farmacia" -> "健康与药房"
+                "general" -> "通用"
+                else -> rawCategoryName
+            }
+            AppLanguage.NL -> when (norm) {
+                "restaurantes y comida" -> "Restaurants & Eten"
+                "alojamiento" -> "Accommodatie"
+                "transporte", "transporte y gasolina" -> "Vervoer"
+                "entradas y ocio", "entradas" -> "Tickets & Vrije Tijd"
+                "taxi" -> "Taxi"
+                "compras y supermercado" -> "Winkelen & Supermarkt"
+                "cafés y snacks", "cafes y snacks" -> "Cafés & Snacks"
+                "vuelos", "vuelo" -> "Vluchten"
+                "salud y farmacia" -> "Gezondheid & Apotheek"
+                "general" -> "Algemeen"
+                else -> rawCategoryName
+            }
+            AppLanguage.DE -> when (norm) {
+                "restaurantes y comida" -> "Restaurants & Verpflegung"
+                "alojamiento" -> "Unterkunft"
+                "transporte", "transporte y gasolina" -> "Transport"
+                "entradas y ocio", "entradas" -> "Tickets & Freizeit"
+                "taxi" -> "Taxi"
+                "compras y supermercado" -> "Einkaufen & Supermarkt"
+                "cafés y snacks", "cafes y snacks" -> "Cafés & Snacks"
+                "vuelos", "vuelo" -> "Flüge"
+                "salud y farmacia" -> "Gesundheit & Apotheke"
+                "general" -> "Allgemein"
+                else -> rawCategoryName
+            }
+            AppLanguage.PL -> when (norm) {
+                "restaurantes y comida" -> "Restauracje i Jedzenie"
+                "alojamiento" -> "Zakwaterowanie"
+                "transporte", "transporte y gasolina" -> "Transport"
+                "entradas y ocio", "entradas" -> "Bilety i Rozrywka"
+                "taxi" -> "Taksówka"
+                "compras y supermercado" -> "Zakupy i Supermarket"
+                "cafés y snacks", "cafes y snacks" -> "Kawiarnie i Przekąski"
+                "vuelos", "vuelo" -> "Loty"
+                "salud y farmacia" -> "Zdrowie i Apteka"
+                "general" -> "Ogólne"
+                else -> rawCategoryName
+            }
         }
     }
+
+    fun displayName(rawCategoryName: String, isEn: Boolean): String =
+        displayName(rawCategoryName, if (isEn) AppLanguage.EN else AppLanguage.ES)
 }
 
 object PaymentMethodCatalog {
@@ -172,17 +255,71 @@ object PaymentMethodCatalog {
         "Bote Común"
     )
 
-    fun displayName(rawMethod: String, isEn: Boolean): String {
-        if (!isEn) return rawMethod
-        return when (rawMethod.trim().lowercase()) {
-            "efectivo" -> "Cash"
-            "tarjeta" -> "Card"
-            "bizum" -> "Bizum"
-            "transferencia" -> "Transfer"
-            "bote común", "bote comun" -> "Common Pot"
-            else -> rawMethod
+    fun displayName(rawMethod: String, lang: AppLanguage): String {
+        val norm = rawMethod.trim().lowercase()
+        return when (lang) {
+            AppLanguage.ES -> rawMethod
+            AppLanguage.EN -> when (norm) {
+                "efectivo" -> "Cash"
+                "tarjeta" -> "Card"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Transfer"
+                "bote común", "bote comun" -> "Common Pot"
+                else -> rawMethod
+            }
+            AppLanguage.FR -> when (norm) {
+                "efectivo" -> "Espèces"
+                "tarjeta" -> "Carte bancaire"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Virement"
+                "bote común", "bote comun" -> "Cagnotte commune"
+                else -> rawMethod
+            }
+            AppLanguage.IT -> when (norm) {
+                "efectivo" -> "Contanti"
+                "tarjeta" -> "Carta"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Bonifico"
+                "bote común", "bote comun" -> "Cassa comune"
+                else -> rawMethod
+            }
+            AppLanguage.ZH -> when (norm) {
+                "efectivo" -> "现金"
+                "tarjeta" -> "银行卡"
+                "bizum" -> "Bizum"
+                "transferencia" -> "转账"
+                "bote común", "bote comun" -> "公账"
+                else -> rawMethod
+            }
+            AppLanguage.NL -> when (norm) {
+                "efectivo" -> "Contant"
+                "tarjeta" -> "Pinpas/Creditcard"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Overschrijving"
+                "bote común", "bote comun" -> "Gemeenschappelijke pot"
+                else -> rawMethod
+            }
+            AppLanguage.DE -> when (norm) {
+                "efectivo" -> "Bargeld"
+                "tarjeta" -> "Karte"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Überweisung"
+                "bote común", "bote comun" -> "Gemeinschaftskasse"
+                else -> rawMethod
+            }
+            AppLanguage.PL -> when (norm) {
+                "efectivo" -> "Gotówka"
+                "tarjeta" -> "Karta"
+                "bizum" -> "Bizum"
+                "transferencia" -> "Przelew"
+                "bote común", "bote comun" -> "Wspólna kasa"
+                else -> rawMethod
+            }
         }
     }
+
+    fun displayName(rawMethod: String, isEn: Boolean): String =
+        displayName(rawMethod, if (isEn) AppLanguage.EN else AppLanguage.ES)
 }
 
 object AvatarColorPalette {

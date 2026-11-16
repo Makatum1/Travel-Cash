@@ -54,6 +54,71 @@ enum class AppLanguage(
             PL -> "Polish"
         }
 
+    fun getDisplayName(targetLang: AppLanguage): String = when (targetLang) {
+        ES -> displayNameEs
+        EN -> displayNameEn
+        FR -> when (this) {
+            ES -> "Espagnol"
+            EN -> "Anglais"
+            FR -> "Français"
+            IT -> "Italien"
+            ZH -> "Chinois"
+            NL -> "Néerlandais"
+            DE -> "Allemand"
+            PL -> "Polonais"
+        }
+        IT -> when (this) {
+            ES -> "Spagnolo"
+            EN -> "Inglese"
+            FR -> "Francese"
+            IT -> "Italiano"
+            ZH -> "Cinese"
+            NL -> "Olandese"
+            DE -> "Tedesco"
+            PL -> "Polacco"
+        }
+        ZH -> when (this) {
+            ES -> "西班牙语"
+            EN -> "英语"
+            FR -> "法语"
+            IT -> "意大利语"
+            ZH -> "中文"
+            NL -> "荷兰语"
+            DE -> "德语"
+            PL -> "波兰语"
+        }
+        NL -> when (this) {
+            ES -> "Spaans"
+            EN -> "Engels"
+            FR -> "Frans"
+            IT -> "Italiaans"
+            ZH -> "Chinees"
+            NL -> "Nederlands"
+            DE -> "Duits"
+            PL -> "Pools"
+        }
+        DE -> when (this) {
+            ES -> "Spanisch"
+            EN -> "Englisch"
+            FR -> "Französisch"
+            IT -> "Italienisch"
+            ZH -> "Chinesisch"
+            NL -> "Niederländisch"
+            DE -> "Deutsch"
+            PL -> "Polnisch"
+        }
+        PL -> when (this) {
+            ES -> "Hiszpański"
+            EN -> "Angielski"
+            FR -> "Francuski"
+            IT -> "Włoski"
+            ZH -> "Chiński"
+            NL -> "Holenderski"
+            DE -> "Niemiecki"
+            PL -> "Polski"
+        }
+    }
+
     companion object {
         fun fromCode(code: String?): AppLanguage? {
             if (code.isNullOrBlank()) return null

@@ -38,7 +38,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Public
 import androidx.core.content.ContextCompat
-import com.example.ui.theme.isEnglish
+import com.example.util.UiTexts
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -113,7 +113,7 @@ fun MapTabScreen(
 ) {
     val context = LocalContext.current
     val currentLang = LocalAppLanguage.current
-    val isEn = currentLang.isEnglish()
+    val texts = UiTexts.get(currentLang)
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
     var shouldCenterOnUserLocation by remember { mutableStateOf(false) }
@@ -446,9 +446,20 @@ fun MapTabScreen(
                     val catInfo = CategoryCatalog.getCategory(exp.category)
                     val isPinSelected = selectedExpense?.id == exp.id
                     val payerName = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) {
-                        if (isEn) "Common Pot" else "Bote Común"
+                        texts.commonPotName
                     } else {
-                        participantMap[exp.paidById]?.name ?: if (isEn) "Traveler" else "Viajero"
+                        participantMap[exp.paidById]?.name ?: texts.defaultTravelerName
+                    }
+
+                    val paidByLabel = when (currentLang) {
+                        AppLanguage.ES -> "Pagó"
+                        AppLanguage.EN -> "Paid by"
+                        AppLanguage.FR -> "Payé par"
+                        AppLanguage.IT -> "Pagato da"
+                        AppLanguage.ZH -> "付款人"
+                        AppLanguage.NL -> "Betaald door"
+                        AppLanguage.DE -> "Bezahlt von"
+                        AppLanguage.PL -> "Zapłacone przez"
                     }
 
                     // Marcador de origen
@@ -465,8 +476,8 @@ fun MapTabScreen(
                                 pinColor = catInfo.color,
                                 isSelected = isPinSelected
                             )
-                            title = "${if (isEn) "Origin" else "Origen"}: ${exp.originName.ifBlank { exp.placeName }}"
-                            snippet = "${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency)} · ${if (isEn) "Paid by" else "Pagó"}: $payerName"
+                            title = "${texts.originLabel}: ${exp.originName.ifBlank { exp.placeName }}"
+                            snippet = "${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale)} · $paidByLabel: $payerName"
                             setOnMarkerClickListener { _, _ ->
                                 if (selectedExpense?.id == exp.id) {
                                     selectedExpense = null
@@ -491,8 +502,8 @@ fun MapTabScreen(
                             pinColor = catInfo.color,
                             isSelected = isPinSelected
                         )
-                        title = exp.placeName.ifBlank { CategoryCatalog.displayName(exp.category, isEn) }
-                        snippet = "${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency)} · ${if (isEn) "Paid by" else "Pagó"}: $payerName"
+                        title = exp.placeName.ifBlank { CategoryCatalog.displayName(exp.category, currentLang) }
+                        snippet = "${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale)} · $paidByLabel: $payerName"
                         setOnMarkerClickListener { _, _ ->
                             if (selectedExpense?.id == exp.id) {
                                 selectedExpense = null
@@ -528,7 +539,17 @@ fun MapTabScreen(
                         canvas.drawCircle(radius, radius, radius, paintOuter)
                         canvas.drawCircle(radius, radius, radius - 2.5f * context.resources.displayMetrics.density, paintInner)
                         icon = android.graphics.drawable.BitmapDrawable(context.resources, bmp)
-                        title = if (isEn) "My Location" else "Mi ubicación"
+                        val myLocationTitle = when (currentLang) {
+                            AppLanguage.ES -> "Mi ubicación"
+                            AppLanguage.EN -> "My Location"
+                            AppLanguage.FR -> "Ma position"
+                            AppLanguage.IT -> "La mia posizione"
+                            AppLanguage.ZH -> "我的位置"
+                            AppLanguage.NL -> "Mijn locatie"
+                            AppLanguage.DE -> "Mein Standort"
+                            AppLanguage.PL -> "Moja lokalizacja"
+                        }
+                        title = myLocationTitle
                     }
                     map.overlays.add(userMarker)
                 }
@@ -574,8 +595,18 @@ fun MapTabScreen(
                         size = 18.dp
                     )
                     Spacer(modifier = Modifier.width(6.dp))
+                    val placesCountLabel = when (currentLang) {
+                        AppLanguage.ES -> "${geoExpenses.size} lugares"
+                        AppLanguage.EN -> "${geoExpenses.size} places"
+                        AppLanguage.FR -> "${geoExpenses.size} lieux"
+                        AppLanguage.IT -> "${geoExpenses.size} luoghi"
+                        AppLanguage.ZH -> "${geoExpenses.size} 处地点"
+                        AppLanguage.NL -> "${geoExpenses.size} plaatsen"
+                        AppLanguage.DE -> "${geoExpenses.size} Orte"
+                        AppLanguage.PL -> "${geoExpenses.size} miejsc"
+                    }
                     Text(
-                        text = if (isEn) "${geoExpenses.size} places" else "${geoExpenses.size} lugares",
+                        text = placesCountLabel,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         color = Color.White
                     )
@@ -588,6 +619,16 @@ fun MapTabScreen(
             ) {
                 // Selector de capas (Google Maps, Satélite, Relieve, Carto, OSM)
                 Box {
+                    val mapLayersLabel = when (currentLang) {
+                        AppLanguage.ES -> "Capas de mapa"
+                        AppLanguage.EN -> "Map layers"
+                        AppLanguage.FR -> "Couches de carte"
+                        AppLanguage.IT -> "Livelli della mappa"
+                        AppLanguage.ZH -> "地图图层"
+                        AppLanguage.NL -> "Kaartlagen"
+                        AppLanguage.DE -> "Kartenebenen"
+                        AppLanguage.PL -> "Warstwy mapy"
+                    }
                     SmallFloatingActionButton(
                         onClick = { showLayerMenu = !showLayerMenu },
                         containerColor = Color.White,
@@ -595,7 +636,7 @@ fun MapTabScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Layers,
-                            contentDescription = if (isEn) "Map layers" else "Capas de mapa"
+                            contentDescription = mapLayersLabel
                         )
                     }
 
@@ -604,8 +645,18 @@ fun MapTabScreen(
                         onDismissRequest = { showLayerMenu = false },
                         modifier = Modifier.background(Color.White)
                     ) {
+                        val layerStandard = when (currentLang) {
+                            AppLanguage.ES -> "Google Maps (Estándar)"
+                            AppLanguage.EN -> "Google Maps (Roadmap)"
+                            AppLanguage.FR -> "Google Maps (Standard)"
+                            AppLanguage.IT -> "Google Maps (Standard)"
+                            AppLanguage.ZH -> "Google 地图（标准）"
+                            AppLanguage.NL -> "Google Maps (Standaard)"
+                            AppLanguage.DE -> "Google Maps (Standard)"
+                            AppLanguage.PL -> "Google Maps (Standardowa)"
+                        }
                         DropdownMenuItem(
-                            text = { Text(if (isEn) "Google Maps (Roadmap)" else "Google Maps (Estándar)") },
+                            text = { Text(layerStandard) },
                             onClick = {
                                 currentLayerType = OsmMapLayerType.GOOGLE_ROADMAP
                                 showLayerMenu = false
@@ -616,8 +667,18 @@ fun MapTabScreen(
                                 }
                             }
                         )
+                        val layerSatellite = when (currentLang) {
+                            AppLanguage.ES -> "Satélite (Híbrido)"
+                            AppLanguage.EN -> "Satellite (Hybrid)"
+                            AppLanguage.FR -> "Satellite (Hybride)"
+                            AppLanguage.IT -> "Satellite (Ibrido)"
+                            AppLanguage.ZH -> "卫星图（混合）"
+                            AppLanguage.NL -> "Satelliet (Hybride)"
+                            AppLanguage.DE -> "Satellit (Hybrid)"
+                            AppLanguage.PL -> "Satelita (Hybryda)"
+                        }
                         DropdownMenuItem(
-                            text = { Text(if (isEn) "Satellite (Hybrid)" else "Satélite (Híbrido)") },
+                            text = { Text(layerSatellite) },
                             onClick = {
                                 currentLayerType = OsmMapLayerType.GOOGLE_SATELLITE
                                 showLayerMenu = false
@@ -628,8 +689,18 @@ fun MapTabScreen(
                                 }
                             }
                         )
+                        val layerTerrain = when (currentLang) {
+                            AppLanguage.ES -> "Relieve (Terreno)"
+                            AppLanguage.EN -> "Terrain (Relief)"
+                            AppLanguage.FR -> "Relief (Terrain)"
+                            AppLanguage.IT -> "Rilievo (Terreno)"
+                            AppLanguage.ZH -> "地形图"
+                            AppLanguage.NL -> "Terrein (Reliëf)"
+                            AppLanguage.DE -> "Gelände (Relief)"
+                            AppLanguage.PL -> "Teren (Ukształtowanie)"
+                        }
                         DropdownMenuItem(
-                            text = { Text(if (isEn) "Terrain (Relief)" else "Relieve (Terreno)") },
+                            text = { Text(layerTerrain) },
                             onClick = {
                                 currentLayerType = OsmMapLayerType.GOOGLE_TERRAIN
                                 showLayerMenu = false
@@ -640,8 +711,18 @@ fun MapTabScreen(
                                 }
                             }
                         )
+                        val layerCarto = when (currentLang) {
+                            AppLanguage.ES -> "Carto Voyager (Limpio)"
+                            AppLanguage.EN -> "Carto Voyager"
+                            AppLanguage.FR -> "Carto Voyager (Épuré)"
+                            AppLanguage.IT -> "Carto Voyager (Pulito)"
+                            AppLanguage.ZH -> "Carto Voyager（简洁）"
+                            AppLanguage.NL -> "Carto Voyager (Schoon)"
+                            AppLanguage.DE -> "Carto Voyager (Schlicht)"
+                            AppLanguage.PL -> "Carto Voyager (Czysty)"
+                        }
                         DropdownMenuItem(
-                            text = { Text(if (isEn) "Carto Voyager" else "Carto Voyager (Limpio)") },
+                            text = { Text(layerCarto) },
                             onClick = {
                                 currentLayerType = OsmMapLayerType.CARTO_VOYAGER
                                 showLayerMenu = false
@@ -652,8 +733,18 @@ fun MapTabScreen(
                                 }
                             }
                         )
+                        val layerOsm = when (currentLang) {
+                            AppLanguage.ES -> "OpenStreetMap Oficial"
+                            AppLanguage.EN -> "OpenStreetMap"
+                            AppLanguage.FR -> "OpenStreetMap officiel"
+                            AppLanguage.IT -> "OpenStreetMap ufficiale"
+                            AppLanguage.ZH -> "OpenStreetMap 官方"
+                            AppLanguage.NL -> "OpenStreetMap officieel"
+                            AppLanguage.DE -> "OpenStreetMap offiziell"
+                            AppLanguage.PL -> "Oficjalna OpenStreetMap"
+                        }
                         DropdownMenuItem(
-                            text = { Text(if (isEn) "OpenStreetMap" else "OpenStreetMap Oficial") },
+                            text = { Text(layerOsm) },
                             onClick = {
                                 currentLayerType = OsmMapLayerType.OPEN_STREET_MAP
                                 showLayerMenu = false
@@ -669,6 +760,16 @@ fun MapTabScreen(
 
 
                 // Mi ubicación GPS
+                val centerGpsLabel = when (currentLang) {
+                    AppLanguage.ES -> "Centrar en mi ubicación GPS"
+                    AppLanguage.EN -> "Center on my GPS location"
+                    AppLanguage.FR -> "Centrer sur ma position GPS"
+                    AppLanguage.IT -> "Centra sulla mia posizione GPS"
+                    AppLanguage.ZH -> "定位至我的 GPS 位置"
+                    AppLanguage.NL -> "Centreren op mijn GPS-locatie"
+                    AppLanguage.DE -> "Auf meinen GPS-Standort zentrieren"
+                    AppLanguage.PL -> "Wyśrodkuj na mojej lokalizacji GPS"
+                }
                 SmallFloatingActionButton(
                     onClick = {
                         val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -694,7 +795,7 @@ fun MapTabScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.MyLocation,
-                        contentDescription = if (isEn) "Center on my GPS location" else "Centrar en mi ubicación GPS"
+                        contentDescription = centerGpsLabel
                     )
                 }
             }
@@ -712,12 +813,12 @@ fun MapTabScreen(
             AnimatedVisibility(visible = selectedExpense != null) {
                 selectedExpense?.let { exp ->
                     val catInfo = CategoryCatalog.getCategory(exp.category)
-                    val translatedCat = CategoryCatalog.displayName(exp.category, isEn)
-                    val translatedMethod = PaymentMethodCatalog.displayName(exp.paymentMethod, isEn)
+                    val translatedCat = CategoryCatalog.displayName(exp.category, currentLang)
+                    val translatedMethod = PaymentMethodCatalog.displayName(exp.paymentMethod, currentLang)
                     val payerName = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) {
-                        if (isEn) "Common Pot" else "Bote Común"
+                        texts.commonPotName
                     } else {
-                        participantMap[exp.paidById]?.name ?: if (isEn) "Traveler" else "Viajero"
+                        participantMap[exp.paidById]?.name ?: texts.defaultTravelerName
                     }
 
                     Card(
@@ -772,15 +873,25 @@ fun MapTabScreen(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF475569)
                                 )
+                                val paidByPrefix = when (currentLang) {
+                                    AppLanguage.ES -> "Pagó"
+                                    AppLanguage.EN -> "Paid by"
+                                    AppLanguage.FR -> "Payé par"
+                                    AppLanguage.IT -> "Pagato da"
+                                    AppLanguage.ZH -> "付款人"
+                                    AppLanguage.NL -> "Betaald door"
+                                    AppLanguage.DE -> "Bezahlt von"
+                                    AppLanguage.PL -> "Zapłacone przez"
+                                }
                                 Text(
-                                    text = "${if (isEn) "Paid by" else "Pagó"}: $payerName ($translatedMethod)",
+                                    text = "$paidByPrefix: $payerName ($translatedMethod)",
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                     color = TravelBlue
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
                                 Text(
-                                    text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency),
+                                    text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale),
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Black,
                                         fontSize = 16.sp
@@ -788,6 +899,36 @@ fun MapTabScreen(
                                     color = OceanNavy
                                 )
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    val openInMapsLabel = when (currentLang) {
+                                        AppLanguage.ES -> "Abrir en Google Maps"
+                                        AppLanguage.EN -> "Open in Google Maps"
+                                        AppLanguage.FR -> "Ouvrir dans Google Maps"
+                                        AppLanguage.IT -> "Apri in Google Maps"
+                                        AppLanguage.ZH -> "在 Google 地图中打开"
+                                        AppLanguage.NL -> "Openen in Google Maps"
+                                        AppLanguage.DE -> "In Google Maps öffnen"
+                                        AppLanguage.PL -> "Otwórz w Google Maps"
+                                    }
+                                    val editExpenseLabel = when (currentLang) {
+                                        AppLanguage.ES -> "Editar gasto"
+                                        AppLanguage.EN -> "Edit expense"
+                                        AppLanguage.FR -> "Modifier la dépense"
+                                        AppLanguage.IT -> "Modifica spesa"
+                                        AppLanguage.ZH -> "编辑支出"
+                                        AppLanguage.NL -> "Uitgave bewerken"
+                                        AppLanguage.DE -> "Ausgabe bearbeiten"
+                                        AppLanguage.PL -> "Edytuj wydatek"
+                                    }
+                                    val deselectShowAllLabel = when (currentLang) {
+                                        AppLanguage.ES -> "Deseleccionar y ver todos"
+                                        AppLanguage.EN -> "Deselect and show all"
+                                        AppLanguage.FR -> "Désélectionner et tout afficher"
+                                        AppLanguage.IT -> "Deseleziona e mostra tutti"
+                                        AppLanguage.ZH -> "取消选择并显示全部"
+                                        AppLanguage.NL -> "Deselecteren en alles tonen"
+                                        AppLanguage.DE -> "Abwählen und alle anzeigen"
+                                        AppLanguage.PL -> "Odznacz i pokaż wszystko"
+                                    }
                                     // Abrir en la app de Google Maps
                                     IconButton(
                                         onClick = {
@@ -812,7 +953,7 @@ fun MapTabScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Public,
-                                            contentDescription = if (isEn) "Open in Google Maps" else "Abrir en Google Maps",
+                                            contentDescription = openInMapsLabel,
                                             tint = TravelBlue,
                                             modifier = Modifier.size(17.dp)
                                         )
@@ -823,7 +964,7 @@ fun MapTabScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = if (isEn) "Edit expense" else "Editar gasto",
+                                            contentDescription = editExpenseLabel,
                                             tint = TravelBlue,
                                             modifier = Modifier.size(17.dp)
                                         )
@@ -834,7 +975,7 @@ fun MapTabScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = if (isEn) "Deselect and show all" else "Deseleccionar y ver todos",
+                                            contentDescription = deselectShowAllLabel,
                                             tint = Color(0xFF64748B),
                                             modifier = Modifier.size(17.dp)
                                         )
@@ -856,7 +997,7 @@ fun MapTabScreen(
 
                     items(categoriesWithExpenses, key = { it.first }) { (canonicalCatName, catExpenses) ->
                         val catInfo = CategoryCatalog.getCategory(canonicalCatName)
-                        val translatedCatName = CategoryCatalog.displayName(canonicalCatName, isEn)
+                        val translatedCatName = CategoryCatalog.displayName(canonicalCatName, currentLang)
                         val isDropdownOpen = expandedCategoryKey == canonicalCatName
                         val hasSelectedInCat = selectedExpense != null &&
                                 CategoryCatalog.getCategory(selectedExpense!!.category).name == canonicalCatName
@@ -939,7 +1080,7 @@ fun MapTabScreen(
                                     catExpenses.forEach { exp ->
                                         val isExpSelected = selectedExpense?.id == exp.id
                                         val itemTitle = exp.placeName.ifBlank {
-                                            CategoryCatalog.displayName(exp.category, isEn)
+                                            CategoryCatalog.displayName(exp.category, currentLang)
                                         }
                                         DropdownMenuItem(
                                             text = {
