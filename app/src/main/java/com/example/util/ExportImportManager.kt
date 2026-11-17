@@ -947,8 +947,23 @@ object ExportImportManager {
                 canvas.drawCircle(margin + 16f, y + 8.5f, 4f, fillPaint)
 
                 val displayCatName = CategoryCatalog.displayName(cat, language)
+                val countLabel = if (CategoryCatalog.isDebtSettlementCategory(cat)) {
+                    when (language) {
+                        AppLanguage.ES -> if (count == 1) "1 pago" else "$count pagos"
+                        AppLanguage.EN -> if (count == 1) "1 payment" else "$count payments"
+                        AppLanguage.FR -> if (count == 1) "1 paiement" else "$count paiements"
+                        AppLanguage.IT -> if (count == 1) "1 pagamento" else "$count pagamenti"
+                        AppLanguage.ZH -> "$count 笔付款"
+                        AppLanguage.NL -> if (count == 1) "1 betaling" else "$count betalingen"
+                        AppLanguage.DE -> if (count == 1) "1 Zahlung" else "$count Zahlungen"
+                        AppLanguage.PL -> if (count == 1) "1 płatność" else "$count płatności"
+                        AppLanguage.PT -> if (count == 1) "1 pagamento" else "$count pagamentos"
+                    }
+                } else {
+                    "$count ${texts.expensesUnit}"
+                }
                 canvas.drawText(displayCatName.take(24), margin + 26f, y + 12f, bodyBoldPaint)
-                canvas.drawText("$count ${texts.expensesUnit}", margin + 180f, y + 12f, bodyPaint)
+                canvas.drawText(countLabel, margin + 180f, y + 12f, bodyPaint)
                 canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency, locale), margin + 270f, y + 12f, bodyBoldPaint)
                 canvas.drawText(String.format(locale, "%.1f%%", pct), margin + 380f, y + 12f, bodyBoldPaint)
 

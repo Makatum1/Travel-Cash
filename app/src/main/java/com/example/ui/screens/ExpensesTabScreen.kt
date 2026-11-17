@@ -99,13 +99,13 @@ fun ExpensesTabScreen(
         CategoryCatalog.categories.dropLast(1).map { it.name.lowercase(Locale.ROOT) }.toSet()
     }
 
-    // Contadores por categoría sobre los gastos del viaje
+    // Contadores por categoría sobre los gastos del viaje (separando Liquidación de deudas de General)
     val categoryCounts = remember(expenses) {
         expenses.groupingBy { exp ->
-            if (standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))) {
-                exp.category
-            } else {
-                "General"
+            when {
+                CategoryCatalog.isDebtSettlementExpense(exp) -> CategoryCatalog.DEBT_SETTLEMENT_CATEGORY
+                standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT)) -> exp.category
+                else -> "General"
             }
         }.eachCount()
     }
@@ -114,11 +114,13 @@ fun ExpensesTabScreen(
     val filteredExpenses = remember(expenses, searchQuery, selectedDateFilter, selectedCategoryFilter) {
         val q = searchQuery.trim().lowercase(Locale.ROOT)
         expenses.filter { exp ->
+            val isSettlement = CategoryCatalog.isDebtSettlementExpense(exp)
             val matchesCategory = when {
                 selectedCategoryFilter == null -> true
+                CategoryCatalog.isDebtSettlementCategory(selectedCategoryFilter) -> isSettlement
                 selectedCategoryFilter.equals("General", ignoreCase = true) ->
-                    !standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))
-                else -> exp.category.equals(selectedCategoryFilter, ignoreCase = true)
+                    !isSettlement && !standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))
+                else -> !isSettlement && exp.category.equals(selectedCategoryFilter, ignoreCase = true)
             }
 
             val matchesDate = selectedDateFilter == null || exp.date == selectedDateFilter
@@ -383,6 +385,43 @@ fun ExpensesTabScreen(
                             }
                         }
                     }
+
+                    // Chip dedicado para Liquidación de deudas cuando existan pagos de liquidación registrados
+                    val debtSettlementCount = categoryCounts[CategoryCatalog.DEBT_SETTLEMENT_CATEGORY] ?: 0
+                    if (debtSettlementCount > 0) {
+                        val debtCat = CategoryCatalog.getCategory(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY)
+                        val isSelected = selectedCategoryFilter != null &&
+                                CategoryCatalog.isDebtSettlementCategory(selectedCategoryFilter)
+                        val displayDebtCatName = CategoryCatalog.displayName(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY, currentLang)
+                        Surface(
+                            onClick = { onCategoryFilterChange(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY) },
+                            shape = RoundedCornerShape(7.dp),
+                            color = if (isSelected) debtCat.color else Color(0xFFF8FAFC),
+                            border = BorderStroke(
+                                0.8.dp,
+                                if (isSelected) debtCat.color else Color(0xFFCBD5E1)
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = debtCat.icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) Color.White else debtCat.color,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = "$displayDebtCatName ($debtSettlementCount)",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else Color(0xFF334155)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -434,7 +473,9 @@ fun ExpensesTabScreen(
                 }
             } else {
                 groupedByDate.forEach { (dateIso, dayExpenses) ->
-                    val dayTotal = dayExpenses.sumOf { it.amountInBaseCurrency }
+                    val dayTotal = dayExpenses
+                        .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+                        .sumOf { it.amountInBaseCurrency }
                     item(key = "header-$dateIso") {
                         DayStickyHeader(
                             dateIso = dateIso,
