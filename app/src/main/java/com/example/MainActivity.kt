@@ -937,6 +937,7 @@ fun TravelCashApp(
                                 trip = activeTrip,
                                 participants = uiState.activeParticipants,
                                 expenses = uiState.activeExpenses,
+                                incomes = uiState.activeIncomes,
                                 onParticipantAvatarClick = { participant ->
                                     participantForPhotoDialog = participant
                                 },

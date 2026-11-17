@@ -296,7 +296,9 @@ fun TripsTabScreen(
             val tParts = allParticipants.filter { it.tripId == trip.id }
             val tExps = allExpenses.filter { it.tripId == trip.id }
             val tIncs = allIncomes.filter { it.tripId == trip.id }
-            val spent = tExps.sumOf { it.amountInBaseCurrency }
+            val spent = tExps
+                .filter { !com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
+                .sumOf { it.amountInBaseCurrency }
             val inc = tIncs.sumOf { it.amount }
 
             val startLocal = runCatching { LocalDate.parse(trip.startDate.take(10)) }.getOrNull()

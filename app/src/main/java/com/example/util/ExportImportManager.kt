@@ -610,7 +610,9 @@ object ExportImportManager {
         val locale = language.locale
 
         val debtResult = DebtCalculator.calculateDebtBalances(participants, expenses, incomes)
-        val totalSpent = expenses.sumOf { it.amountInBaseCurrency }
+        val totalSpent = expenses
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+            .sumOf { it.amountInBaseCurrency }
         val totalIncome = incomes.sumOf { it.amount }
         val boteExpenses = expenses.filter { it.paidById == DebtCalculator.BOTE_COMUN_ID }.sumOf { it.amountInBaseCurrency }
         val commonPotBalance = totalIncome - boteExpenses

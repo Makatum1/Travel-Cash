@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.TravelCashDatabase
 import com.example.data.model.AvatarColorPalette
+import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.ExpenseSplit
 import com.example.data.model.IncomeContribution
@@ -224,7 +225,9 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         } else emptyList()
 
         val debtResult = DebtCalculator.calculateDebtBalances(activeParts, activeExps, activeIncs)
-        val spent = activeExps.sumOf { it.amountInBaseCurrency }
+        val spent = activeExps
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+            .sumOf { it.amountInBaseCurrency }
         val inc = activeIncs.sumOf { it.amount }
         // Saldo Extra: Calculado como Ingresos Totales - Gastado Total (o Presupuesto - Gastado + Ingresos si hay presupuesto fijo)
         val extra = if (resolvedActiveTrip?.budget != null && resolvedActiveTrip.budget > 0.0) {

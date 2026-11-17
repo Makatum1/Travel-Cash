@@ -20,8 +20,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -47,11 +49,15 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.AvatarColorPalette
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
+import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.PaymentMethodCatalog
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
+import com.example.domain.ParticipantLedgerEntryType
+import com.example.domain.ParticipantNetSpendCalculator
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.CoralRed
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
@@ -59,12 +65,14 @@ import com.example.ui.theme.TravelBlue
 import com.example.util.FormatUtils
 import com.example.util.UiTexts
 import java.util.Locale
+import kotlin.math.abs
 
 @Composable
 fun StatsTabScreen(
     trip: TripEntity,
     participants: List<ParticipantEntity>,
     expenses: List<ExpenseEntity>,
+    incomes: List<IncomeEntity> = emptyList(),
     onParticipantAvatarClick: (ParticipantEntity) -> Unit = {},
     onExpenseClick: (ExpenseEntity) -> Unit,
     topHeader: @Composable () -> Unit = {}
@@ -72,15 +80,27 @@ fun StatsTabScreen(
     val currentLang = LocalAppLanguage.current
     val texts = UiTexts.get(currentLang)
     val participantMap = remember(participants) { participants.associateBy { it.id } }
-    val totalSpent = remember(expenses) { expenses.sumOf { it.amountInBaseCurrency } }
+
+    // Informe completo de gasto neto por participante (excluye liquidaciones y movimientos de bote del gasto real)
+    val netSpendReport = remember(participants, expenses, incomes) {
+        ParticipantNetSpendCalculator.calculate(
+            participants = participants,
+            expenses = expenses,
+            incomes = incomes
+        )
+    }
+    val realExpenses = remember(expenses) {
+        expenses.filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+    }
+    val totalSpent = netSpendReport.realTotalSpent
     val tripDays = remember(trip.startDate, trip.endDate) {
         FormatUtils.calculateTripDays(trip.startDate, trip.endDate)
     }
     val avgPerDay = if (tripDays > 0) totalSpent / tripDays else 0.0
-    val avgPerPerson = if (participants.isNotEmpty()) totalSpent / participants.size else 0.0
+    val avgPerPerson = netSpendReport.equalShareAverage
 
-    val highestSpendingDay = remember(expenses) {
-        expenses.groupBy { it.date }
+    val highestSpendingDay = remember(realExpenses) {
+        realExpenses.groupBy { it.date }
             .mapValues { (_, list) -> list.sumOf { it.amountInBaseCurrency } }
             .maxByOrNull { it.value }
     }
@@ -97,22 +117,15 @@ fun StatsTabScreen(
             .sortedByDescending { it.third }
     }
 
-    val byPerson = remember(participants, expenses) {
-        participants.map { p ->
-            val list = expenses.filter { it.paidById == p.id }
-            Triple(p, list, list.sumOf { it.amountInBaseCurrency })
-        }.sortedByDescending { it.third }
-    }
-
-    val byPaymentMethod = remember(expenses) {
-        expenses.groupBy { it.paymentMethod }
+    val byPaymentMethod = remember(realExpenses) {
+        realExpenses.groupBy { it.paymentMethod }
             .map { (method, list) -> method to list.sumOf { it.amountInBaseCurrency } }
             .sortedByDescending { it.second }
     }
 
     val unspecifiedLabel = texts.unspecifiedLabel
-    val byAddressOrZone = remember(expenses, unspecifiedLabel) {
-        expenses.groupBy { it.country.trim().ifEmpty { unspecifiedLabel } }
+    val byAddressOrZone = remember(realExpenses, unspecifiedLabel) {
+        realExpenses.groupBy { it.country.trim().ifEmpty { unspecifiedLabel } }
             .map { (zone, list) -> zone to list.sumOf { it.amountInBaseCurrency } }
             .sortedByDescending { it.second }
     }
@@ -133,16 +146,17 @@ fun StatsTabScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    val realExpCount = netSpendReport.realExpenseCount
                     val expCountSubtitle = when (currentLang) {
-                        AppLanguage.ES -> "${expenses.size} gastos registrados"
-                        AppLanguage.EN -> "${expenses.size} expenses recorded"
-                        AppLanguage.FR -> "${expenses.size} dépenses enregistrées"
-                        AppLanguage.IT -> "${expenses.size} spese registrate"
-                        AppLanguage.ZH -> "已记录 ${expenses.size} 笔支出"
-                        AppLanguage.NL -> "${expenses.size} geregistreerde uitgaven"
-                        AppLanguage.DE -> "${expenses.size} erfasste Ausgaben"
-                        AppLanguage.PL -> "${expenses.size} zarejestrowanych wydatków"
-                        AppLanguage.PT -> "${expenses.size} despesas registadas"
+                        AppLanguage.ES -> "$realExpCount gastos registrados"
+                        AppLanguage.EN -> "$realExpCount expenses recorded"
+                        AppLanguage.FR -> "$realExpCount dépenses enregistrées"
+                        AppLanguage.IT -> "$realExpCount spese registrate"
+                        AppLanguage.ZH -> "已记录 $realExpCount 笔支出"
+                        AppLanguage.NL -> "$realExpCount geregistreerde uitgaven"
+                        AppLanguage.DE -> "$realExpCount erfasste Ausgaben"
+                        AppLanguage.PL -> "$realExpCount zarejestrowanych wydatków"
+                        AppLanguage.PT -> "$realExpCount despesas registadas"
                     }
                     SummaryStatCard(
                         modifier = Modifier.weight(1f),
@@ -445,7 +459,7 @@ fun StatsTabScreen(
             }
         }
 
-        // SECCIÓN 2: GASTOS POR PERSONA (INTERACTIVO / DESPLEGABLE)
+        // SECCIÓN 2: GASTOS POR PARTICIPANTE (GASTO NETO REAL, AJUSTES Y DESGLOSE INTERACTIVO)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -465,29 +479,366 @@ fun StatsTabScreen(
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                             color = OceanNavy
                         )
-                        val tapToViewPayments = when (currentLang) {
-                            AppLanguage.ES -> "Pulsa para ver pagos"
-                            AppLanguage.EN -> "Tap to view payments"
-                            AppLanguage.FR -> "Appuyer pour voir les paiements"
-                            AppLanguage.IT -> "Tocca per vedere i pagamenti"
-                            AppLanguage.ZH -> "点击查看付款"
-                            AppLanguage.NL -> "Tik om betalingen te bekijken"
-                            AppLanguage.DE -> "Tippen für Zahlungen"
-                            AppLanguage.PL -> "Dotknij, aby zobaczyć płatności"
-                            AppLanguage.PT -> "Tocar para ver pagamentos"
+                        val tapToViewBreakdown = when (currentLang) {
+                            AppLanguage.ES -> "Pulsa para ver desglose"
+                            AppLanguage.EN -> "Tap for breakdown"
+                            AppLanguage.FR -> "Appuyer pour le détail"
+                            AppLanguage.IT -> "Tocca per il dettaglio"
+                            AppLanguage.ZH -> "点击查看明细"
+                            AppLanguage.NL -> "Tik voor overzicht"
+                            AppLanguage.DE -> "Tippen für Details"
+                            AppLanguage.PL -> "Dotknij po szczegóły"
+                            AppLanguage.PT -> "Tocar para detalhes"
                         }
                         Text(
-                            text = tapToViewPayments,
+                            text = tapToViewBreakdown,
                             style = MaterialTheme.typography.labelSmall,
                             color = TravelBlue
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    byPerson.forEachIndexed { idx, (person, personExpenses, personSum) ->
+                    // Resumen general: Gasto real, Participantes, Media igualitaria, Saldo Bote y Estado de igualdad
+                    val realTripLabel = when (currentLang) {
+                        AppLanguage.ES -> "Gasto real del viaje"
+                        AppLanguage.EN -> "Real trip spend"
+                        AppLanguage.FR -> "Dépense réelle"
+                        AppLanguage.IT -> "Spesa reale viaggio"
+                        AppLanguage.ZH -> "行程实际总支出"
+                        AppLanguage.NL -> "Werkelijke reiskosten"
+                        AppLanguage.DE -> "Reale Reisekosten"
+                        AppLanguage.PL -> "Rzeczywisty koszt"
+                        AppLanguage.PT -> "Gasto real da viagem"
+                    }
+                    val equalAvgLabel = when (currentLang) {
+                        AppLanguage.ES -> "Media igualitaria"
+                        AppLanguage.EN -> "Equal share avg."
+                        AppLanguage.FR -> "Moyenne égale"
+                        AppLanguage.IT -> "Media equa"
+                        AppLanguage.ZH -> "人均平摊"
+                        AppLanguage.NL -> "Gelijk gemiddelde"
+                        AppLanguage.DE -> "Gleichanteil Ø"
+                        AppLanguage.PL -> "Średnia równa"
+                        AppLanguage.PT -> "Média igualitária"
+                    }
+                    val participantsShortLabel = when (currentLang) {
+                        AppLanguage.ES -> "Participantes"
+                        AppLanguage.EN -> "Participants"
+                        AppLanguage.FR -> "Participants"
+                        AppLanguage.IT -> "Partecipanti"
+                        AppLanguage.ZH -> "参与人数"
+                        AppLanguage.NL -> "Deelnemers"
+                        AppLanguage.DE -> "Teilnehmer"
+                        AppLanguage.PL -> "Uczestnicy"
+                        AppLanguage.PT -> "Participantes"
+                    }
+                    val potBalanceLabel = when (currentLang) {
+                        AppLanguage.ES -> "Saldo bote común"
+                        AppLanguage.EN -> "Common pot balance"
+                        AppLanguage.FR -> "Solde cagnotte"
+                        AppLanguage.IT -> "Saldo cassa comune"
+                        AppLanguage.ZH -> "公账余额"
+                        AppLanguage.NL -> "Saldo gezamenlijke pot"
+                        AppLanguage.DE -> "Kassensaldo"
+                        AppLanguage.PL -> "Saldo wspólnej kasy"
+                        AppLanguage.PT -> "Saldo fundo comum"
+                    }
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = realTripLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = FormatUtils.formatCurrency(netSpendReport.realTotalSpent, trip.baseCurrency, currentLang.locale),
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                        color = OceanNavy
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(0.75f),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = participantsShortLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = "${netSpendReport.participantCount}",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                        color = OceanNavy
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    Text(
+                                        text = equalAvgLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = FormatUtils.formatCurrency(netSpendReport.equalShareAverage, trip.baseCurrency, currentLang.locale),
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                        color = TravelBlue
+                                    )
+                                }
+                            }
+
+                            if (netSpendReport.totalPotCollected > 0.004 || abs(netSpendReport.commonPotBalance) > 0.004) {
+                                HorizontalDivider(color = Color(0xFFE2E8F0))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = potBalanceLabel,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = Color(0xFF475569)
+                                    )
+                                    Text(
+                                        text = FormatUtils.formatCurrency(netSpendReport.commonPotBalance, trip.baseCurrency, currentLang.locale),
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = if (netSpendReport.commonPotBalance >= -0.01) EmeraldGreenDark else CoralRed
+                                    )
+                                }
+                            }
+
+                            // Indicador de igualdad o advertencia de participantes con diferencia respecto a la media
+                            if (netSpendReport.participantCount > 0) {
+                                if (netSpendReport.allEqual) {
+                                    val allEqualMsg = when (currentLang) {
+                                        AppLanguage.ES -> "Todos los participantes tienen el mismo gasto neto."
+                                        AppLanguage.EN -> "All participants have the same net spend."
+                                        AppLanguage.FR -> "Tous les participants ont la même dépense nette."
+                                        AppLanguage.IT -> "Tutti i partecipanti hanno la stessa spesa netta."
+                                        AppLanguage.ZH -> "所有参与者的净支出已完全均衡。"
+                                        AppLanguage.NL -> "Alle deelnemers hebben dezelfde netto uitgaven."
+                                        AppLanguage.DE -> "Alle Teilnehmer haben die gleichen Nettoausgaben."
+                                        AppLanguage.PL -> "Wszyscy uczestnicy mają takie same wydatki netto."
+                                        AppLanguage.PT -> "Todos os participantes têm o mesmo gasto líquido."
+                                    }
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFECFDF5),
+                                        border = BorderStroke(1.dp, Color(0xFFA7F3D0))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CheckCircle,
+                                                contentDescription = null,
+                                                tint = EmeraldGreenDark,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = allEqualMsg,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = EmeraldGreenDark
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    val diffWarningTitle = when (currentLang) {
+                                        AppLanguage.ES -> "Diferencias respecto a la media igualitaria:"
+                                        AppLanguage.EN -> "Differences vs equal-share average:"
+                                        AppLanguage.FR -> "Écarts par rapport à la moyenne :"
+                                        AppLanguage.IT -> "Differenze rispetto alla media:"
+                                        AppLanguage.ZH -> "与人均平摊存在差额："
+                                        AppLanguage.NL -> "Verschillen t.o.v. het gemiddelde:"
+                                        AppLanguage.DE -> "Abweichungen vom Durchschnitt:"
+                                        AppLanguage.PL -> "Różnice względem średniej:"
+                                        AppLanguage.PT -> "Diferenças face à média igualitária:"
+                                    }
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFFFFBEB),
+                                        border = BorderStroke(1.dp, Color(0xFFFDE68A))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                            verticalArrangement = Arrangement.spacedBy(3.dp)
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Warning,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFB45309),
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                                Text(
+                                                    text = diffWarningTitle,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = Color(0xFF92400E)
+                                                )
+                                            }
+                                            netSpendReport.participantsWithDifference.forEach { diffItem ->
+                                                val sign = if (diffItem.differenceFromAverage > 0) "+" else "-"
+                                                val diffStr = "$sign${FormatUtils.formatCurrency(abs(diffItem.differenceFromAverage), trip.baseCurrency, currentLang.locale)}"
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Text(
+                                                        text = "• ${diffItem.participant.name}",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                                        color = Color(0xFF78350F)
+                                                    )
+                                                    Text(
+                                                        text = diffStr,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                        color = if (diffItem.differenceFromAverage > 0) TravelBlue else CoralRed
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val netSpendLabel = when (currentLang) {
+                        AppLanguage.ES -> "Gasto neto"
+                        AppLanguage.EN -> "Net spend"
+                        AppLanguage.FR -> "Dépense nette"
+                        AppLanguage.IT -> "Spesa netta"
+                        AppLanguage.ZH -> "净支出"
+                        AppLanguage.NL -> "Netto uitgaven"
+                        AppLanguage.DE -> "Nettoausgaben"
+                        AppLanguage.PL -> "Wydatek netto"
+                        AppLanguage.PT -> "Gasto líquido"
+                    }
+                    val paidDirectlyLabel = when (currentLang) {
+                        AppLanguage.ES -> "Gastos pagados directamente"
+                        AppLanguage.EN -> "Direct expenses paid"
+                        AppLanguage.FR -> "Dépenses payées directement"
+                        AppLanguage.IT -> "Spese pagate direttamente"
+                        AppLanguage.ZH -> "直接支付的费用"
+                        AppLanguage.NL -> "Direct betaalde uitgaven"
+                        AppLanguage.DE -> "Direkt bezahlte Ausgaben"
+                        AppLanguage.PL -> "Bezpośrednie wydatki"
+                        AppLanguage.PT -> "Despesas pagas diretamente"
+                    }
+                    val transfersSentLabel = when (currentLang) {
+                        AppLanguage.ES -> "Pagos enviados a participantes"
+                        AppLanguage.EN -> "Payments sent to participants"
+                        AppLanguage.FR -> "Paiements envoyés"
+                        AppLanguage.IT -> "Pagamenti inviati"
+                        AppLanguage.ZH -> "转给其他参与者"
+                        AppLanguage.NL -> "Betalingen verzonden"
+                        AppLanguage.DE -> "Gesendete Zahlungen"
+                        AppLanguage.PL -> "Wysłane płatności"
+                        AppLanguage.PT -> "Pagamentos enviados"
+                    }
+                    val transfersReceivedLabel = when (currentLang) {
+                        AppLanguage.ES -> "Pagos recibidos de participantes"
+                        AppLanguage.EN -> "Payments received"
+                        AppLanguage.FR -> "Paiements reçus"
+                        AppLanguage.IT -> "Pagamenti ricevuti"
+                        AppLanguage.ZH -> "收到其他参与者付款"
+                        AppLanguage.NL -> "Ontvangen betalingen"
+                        AppLanguage.DE -> "Erhaltene Zahlungen"
+                        AppLanguage.PL -> "Otrzymane płatności"
+                        AppLanguage.PT -> "Pagamentos recebidos"
+                    }
+                    val potContribSummaryLabel = when (currentLang) {
+                        AppLanguage.ES -> "Aportado al bote"
+                        AppLanguage.EN -> "Contributed to pot"
+                        AppLanguage.FR -> "Versé à la cagnotte"
+                        AppLanguage.IT -> "Versato nella cassa"
+                        AppLanguage.ZH -> "存入公账"
+                        AppLanguage.NL -> "Bijgedragen aan pot"
+                        AppLanguage.DE -> "In Kasse eingezahlt"
+                        AppLanguage.PL -> "Wpłacono do kasy"
+                        AppLanguage.PT -> "Contribuído para o fundo"
+                    }
+                    val potRecvSummaryLabel = when (currentLang) {
+                        AppLanguage.ES -> "Recibido del bote"
+                        AppLanguage.EN -> "Received from pot"
+                        AppLanguage.FR -> "Reçu de la cagnotte"
+                        AppLanguage.IT -> "Ricevuto dalla cassa"
+                        AppLanguage.ZH -> "从公账收到"
+                        AppLanguage.NL -> "Ontvangen uit pot"
+                        AppLanguage.DE -> "Aus Kasse erhalten"
+                        AppLanguage.PL -> "Otrzymano z kasy"
+                        AppLanguage.PT -> "Recebido do fundo"
+                    }
+                    val diffVsAvgLabel = when (currentLang) {
+                        AppLanguage.ES -> "Diferencia vs media"
+                        AppLanguage.EN -> "Diff. vs average"
+                        AppLanguage.FR -> "Écart vs moyenne"
+                        AppLanguage.IT -> "Diff. vs media"
+                        AppLanguage.ZH -> "与人均差额"
+                        AppLanguage.NL -> "Verschil t.o.v. gem."
+                        AppLanguage.DE -> "Diff. zum Ø"
+                        AppLanguage.PL -> "Różnica vs śr."
+                        AppLanguage.PT -> "Diferença vs média"
+                    }
+                    val equalBadgeLabel = when (currentLang) {
+                        AppLanguage.ES -> "= Media"
+                        AppLanguage.EN -> "= Avg"
+                        AppLanguage.FR -> "= Moy."
+                        AppLanguage.IT -> "= Media"
+                        AppLanguage.ZH -> "= 均值"
+                        AppLanguage.NL -> "= Gem."
+                        AppLanguage.DE -> "= Ø"
+                        AppLanguage.PL -> "= Śr."
+                        AppLanguage.PT -> "= Média"
+                    }
+
+                    val summaries = netSpendReport.participantSummaries
+                    summaries.forEachIndexed { idx, summary ->
+                        val person = summary.participant
                         val avatarColor = AvatarColorPalette.parseHexColor(person.avatarColor)
-                        val pct = if (totalSpent > 0) (personSum / totalSpent) * 100.0 else 0.0
+                        val pct = if (totalSpent > 0) (summary.netSpend / totalSpent) * 100.0 else 0.0
                         val isExpanded = expandedPersonId == person.id
+
+                        val diff = summary.differenceFromAverage
+                        val diffChipText = if (summary.isBalancedWithAverage) {
+                            equalBadgeLabel
+                        } else {
+                            val sign = if (diff > 0) "+" else "-"
+                            "$sign${FormatUtils.formatCurrency(abs(diff), trip.baseCurrency, currentLang.locale)}"
+                        }
+                        val diffChipBg = when {
+                            summary.isBalancedWithAverage -> Color(0xFFECFDF5)
+                            diff > 0 -> Color(0xFFEFF6FF)
+                            else -> Color(0xFFFEF2F2)
+                        }
+                        val diffChipColor = when {
+                            summary.isBalancedWithAverage -> EmeraldGreenDark
+                            diff > 0 -> TravelBlue
+                            else -> CoralRed
+                        }
 
                         Column(
                             modifier = Modifier
@@ -520,11 +871,14 @@ fun StatsTabScreen(
                                         Text(
                                             text = person.name,
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = OceanNavy
+                                            color = OceanNavy,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
                                         )
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = FormatUtils.formatCurrency(personSum, trip.baseCurrency, currentLang.locale),
+                                                text = FormatUtils.formatCurrency(summary.netSpend, trip.baseCurrency, currentLang.locale),
                                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
                                                 color = OceanNavy
                                             )
@@ -557,27 +911,50 @@ fun StatsTabScreen(
                                         color = avatarColor,
                                         trackColor = Color(0xFFE2E8F0)
                                     )
-                                    Spacer(modifier = Modifier.height(3.dp))
-                                    val paymentsMadeText = when (currentLang) {
-                                        AppLanguage.ES -> "${personExpenses.size} pagos realizados · ${String.format(Locale.US, "%.1f", pct)}% del total"
-                                        AppLanguage.EN -> "${personExpenses.size} payments made · ${String.format(Locale.US, "%.1f", pct)}% of total"
-                                        AppLanguage.FR -> "${personExpenses.size} paiements effectués · ${String.format(Locale.US, "%.1f", pct)}% du total"
-                                        AppLanguage.IT -> "${personExpenses.size} pagamenti effettuati · ${String.format(Locale.US, "%.1f", pct)}% del totale"
-                                        AppLanguage.ZH -> "${personExpenses.size} 次付款 · 占总额 ${String.format(Locale.US, "%.1f", pct)}%"
-                                        AppLanguage.NL -> "${personExpenses.size} betalingen gedaan · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
-                                        AppLanguage.DE -> "${personExpenses.size} Zahlungen getätigt · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
-                                        AppLanguage.PL -> "${personExpenses.size} dokonanych płatności · ${String.format(Locale.US, "%.1f", pct)}% całości"
-                                        AppLanguage.PT -> "${personExpenses.size} pagamentos efetuados · ${String.format(Locale.US, "%.1f", pct)}% do total"
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val movementCount = summary.entries.size
+                                        val pctFmt = String.format(Locale.US, "%.1f", pct)
+                                        val movementsText = when (currentLang) {
+                                            AppLanguage.ES -> "${if (movementCount == 1) "1 movimiento" else "$movementCount movimientos"} · $pctFmt% del total"
+                                            AppLanguage.EN -> "${if (movementCount == 1) "1 movement" else "$movementCount movements"} · $pctFmt% of total"
+                                            AppLanguage.FR -> "${if (movementCount == 1) "1 mouvement" else "$movementCount mouvements"} · $pctFmt% du total"
+                                            AppLanguage.IT -> "${if (movementCount == 1) "1 movimento" else "$movementCount movimenti"} · $pctFmt% del totale"
+                                            AppLanguage.ZH -> "$movementCount 条记录 · 占总额 $pctFmt%"
+                                            AppLanguage.NL -> "${if (movementCount == 1) "1 transactie" else "$movementCount transacties"} · $pctFmt% van totaal"
+                                            AppLanguage.DE -> "${if (movementCount == 1) "1 Buchung" else "$movementCount Buchungen"} · $pctFmt% gesamt"
+                                            AppLanguage.PL -> "$movementCount operacji · $pctFmt% całości"
+                                            AppLanguage.PT -> "${if (movementCount == 1) "1 movimento" else "$movementCount movimentos"} · $pctFmt% do total"
+                                        }
+                                        Text(
+                                            text = movementsText,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF64748B),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = diffChipBg
+                                        ) {
+                                            Text(
+                                                text = diffChipText,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                color = diffChipColor,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
                                     }
-                                    Text(
-                                        text = paymentsMadeText,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFF64748B)
-                                    )
                                 }
                             }
 
-                            // Listado detallado desplegable de todos los gastos pagados por esta persona
+                            // Desglose completo desplegable: resumen del cálculo neto + lista detallada de movimientos
                             AnimatedVisibility(visible = isExpanded) {
                                 Surface(
                                     modifier = Modifier
@@ -591,52 +968,148 @@ fun StatsTabScreen(
                                         modifier = Modifier.padding(10.dp),
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
-                                        if (personExpenses.isEmpty()) {
-                                            val noExpensesPerson = when (currentLang) {
-                                                AppLanguage.ES -> "${person.name} no ha realizado pagos de su bolsillo aún."
-                                                AppLanguage.EN -> "${person.name} has not paid any out-of-pocket expenses yet."
-                                                AppLanguage.FR -> "${person.name} n'a pas encore payé de dépenses de sa poche."
-                                                AppLanguage.IT -> "${person.name} non ha ancora sostenuto spese di tasca propria."
-                                                AppLanguage.ZH -> "${person.name} 尚未自掏腰包支付任何费用。"
-                                                AppLanguage.NL -> "${person.name} heeft nog geen uitgaven uit eigen zak betaald."
-                                                AppLanguage.DE -> "${person.name} hat noch keine Ausgaben aus eigener Tasche bezahlt."
-                                                AppLanguage.PL -> "${person.name} nie poniósł jeszcze żadnych wydatków z własnej kieszeni."
-                                                AppLanguage.PT -> "${person.name} ainda não realizou pagamentos do seu próprio bolso."
+                                        // Mini resumen del cálculo del gasto neto
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color.White,
+                                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                                            ) {
+                                                NetSpendBreakdownRow(
+                                                    label = paidDirectlyLabel,
+                                                    value = "+${FormatUtils.formatCurrency(summary.realExpensesPaid, trip.baseCurrency, currentLang.locale)}",
+                                                    valueColor = OceanNavy
+                                                )
+                                                if (summary.transfersSent > 0.004) {
+                                                    NetSpendBreakdownRow(
+                                                        label = transfersSentLabel,
+                                                        value = "+${FormatUtils.formatCurrency(summary.transfersSent, trip.baseCurrency, currentLang.locale)}",
+                                                        valueColor = TravelBlue
+                                                    )
+                                                }
+                                                if (summary.potContributions > 0.004) {
+                                                    NetSpendBreakdownRow(
+                                                        label = potContribSummaryLabel,
+                                                        value = "+${FormatUtils.formatCurrency(summary.potContributions, trip.baseCurrency, currentLang.locale)}",
+                                                        valueColor = Color(0xFF4F46E5)
+                                                    )
+                                                }
+                                                if (summary.transfersReceived > 0.004) {
+                                                    NetSpendBreakdownRow(
+                                                        label = transfersReceivedLabel,
+                                                        value = "-${FormatUtils.formatCurrency(summary.transfersReceived, trip.baseCurrency, currentLang.locale)}",
+                                                        valueColor = EmeraldGreenDark
+                                                    )
+                                                }
+                                                if (summary.potReceived > 0.004) {
+                                                    NetSpendBreakdownRow(
+                                                        label = potRecvSummaryLabel,
+                                                        value = "-${FormatUtils.formatCurrency(summary.potReceived, trip.baseCurrency, currentLang.locale)}",
+                                                        valueColor = EmeraldGreenDark
+                                                    )
+                                                }
+                                                HorizontalDivider(
+                                                    modifier = Modifier.padding(vertical = 2.dp),
+                                                    color = Color(0xFFE2E8F0)
+                                                )
+                                                NetSpendBreakdownRow(
+                                                    label = netSpendLabel,
+                                                    value = FormatUtils.formatCurrency(summary.netSpend, trip.baseCurrency, currentLang.locale),
+                                                    valueColor = OceanNavy,
+                                                    isBold = true
+                                                )
+                                                NetSpendBreakdownRow(
+                                                    label = diffVsAvgLabel,
+                                                    value = diffChipText,
+                                                    valueColor = diffChipColor,
+                                                    isBold = true
+                                                )
+                                            }
+                                        }
+
+                                        if (summary.entries.isEmpty()) {
+                                            val noMovementsPerson = when (currentLang) {
+                                                AppLanguage.ES -> "${person.name} no tiene gastos ni movimientos registrados aún."
+                                                AppLanguage.EN -> "${person.name} has no expenses or movements recorded yet."
+                                                AppLanguage.FR -> "${person.name} n'a pas encore de dépenses ni de mouvements enregistrés."
+                                                AppLanguage.IT -> "${person.name} non ha ancora spese o movimenti registrati."
+                                                AppLanguage.ZH -> "${person.name} 尚未记录任何支出或资金往来。"
+                                                AppLanguage.NL -> "${person.name} heeft nog geen uitgaven of transacties geregistreerd."
+                                                AppLanguage.DE -> "${person.name} hat noch keine Ausgaben oder Buchungen erfasst."
+                                                AppLanguage.PL -> "${person.name} nie ma jeszcze żadnych wydatków ani operacji."
+                                                AppLanguage.PT -> "${person.name} ainda não tem despesas nem movimentos registados."
                                             }
                                             Text(
-                                                text = noExpensesPerson,
+                                                text = noMovementsPerson,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color(0xFF64748B)
                                             )
                                         } else {
-                                            personExpenses.sortedByDescending { it.date }.forEach { exp ->
-                                                val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
+                                            summary.entries.forEach { entry ->
+                                                val entryLabel = entry.displayLabel(currentLang)
+                                                val subtitleText = when (entry.type) {
+                                                    ParticipantLedgerEntryType.REAL_EXPENSE_PAID -> {
+                                                        val catLabel = CategoryCatalog.displayName(entry.categoryName.orEmpty(), currentLang)
+                                                        "$catLabel · ${FormatUtils.formatShortDate(entry.date, currentLang.locale)}"
+                                                    }
+                                                    else -> {
+                                                        val datePart = FormatUtils.formatShortDate(entry.date, currentLang.locale)
+                                                        if (entry.description.isNotBlank()) {
+                                                            "$datePart · ${entry.description}"
+                                                        } else {
+                                                            datePart
+                                                        }
+                                                    }
+                                                }
+                                                val signedSign = if (entry.signedAmount >= 0) "+" else "-"
+                                                val formattedSigned = "$signedSign${FormatUtils.formatCurrency(entry.absoluteAmount, trip.baseCurrency, currentLang.locale)}"
+                                                val amountColor = when (entry.type) {
+                                                    ParticipantLedgerEntryType.REAL_EXPENSE_PAID -> avatarColor
+                                                    ParticipantLedgerEntryType.TRANSFER_SENT -> TravelBlue
+                                                    ParticipantLedgerEntryType.POT_CONTRIBUTION -> Color(0xFF4F46E5)
+                                                    ParticipantLedgerEntryType.TRANSFER_RECEIVED,
+                                                    ParticipantLedgerEntryType.POT_RECEIVED -> EmeraldGreenDark
+                                                }
+
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .clickable { onExpenseClick(exp) }
+                                                        .let { baseMod ->
+                                                            if (entry.sourceExpense != null) {
+                                                                baseMod.clickable { onExpenseClick(entry.sourceExpense) }
+                                                            } else {
+                                                                baseMod
+                                                            }
+                                                        }
                                                         .padding(vertical = 3.dp),
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column(modifier = Modifier.weight(1f)) {
                                                         Text(
-                                                            text = exp.placeName.ifBlank { exp.notes.ifBlank { displayCat } },
+                                                            text = entryLabel,
                                                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                                             color = OceanNavy,
                                                             maxLines = 1,
                                                             overflow = TextOverflow.Ellipsis
                                                         )
                                                         Text(
-                                                            text = "$displayCat · ${FormatUtils.formatShortDate(exp.date, currentLang.locale)}",
+                                                            text = subtitleText,
                                                             style = MaterialTheme.typography.labelSmall,
-                                                            color = Color(0xFF64748B)
+                                                            color = Color(0xFF64748B),
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
                                                         )
                                                     }
+                                                    Spacer(modifier = Modifier.width(8.dp))
                                                     Text(
-                                                        text = FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale),
+                                                        text = formattedSigned,
                                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
-                                                        color = avatarColor
+                                                        color = amountColor
                                                     )
                                                 }
                                             }
@@ -646,7 +1119,7 @@ fun StatsTabScreen(
                             }
                         }
 
-                        if (idx < byPerson.lastIndex) {
+                        if (idx < summaries.lastIndex) {
                             HorizontalDivider(color = Color(0xFFF1F5F9))
                         }
                     }
@@ -800,5 +1273,38 @@ private fun SummaryStatCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
+    }
+}
+
+@Composable
+private fun NetSpendBreakdownRow(
+    label: String,
+    value: String,
+    valueColor: Color,
+    isBold: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = if (isBold) FontWeight.ExtraBold else FontWeight.Medium
+            ),
+            color = if (isBold) OceanNavy else Color(0xFF475569),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = if (isBold) FontWeight.Black else FontWeight.Bold
+            ),
+            color = valueColor
+        )
     }
 }
