@@ -77,7 +77,8 @@ data class ParticipantLedgerEntry(
     fun displayLabel(lang: AppLanguage): String {
         val other = counterpartyName.orEmpty().ifBlank { "?" }
         return when (type) {
-            ParticipantLedgerEntryType.REAL_EXPENSE_PAID -> title
+            ParticipantLedgerEntryType.REAL_EXPENSE_PAID ->
+                title.ifBlank { CategoryCatalog.displayName(categoryName.orEmpty(), lang) }
             ParticipantLedgerEntryType.TRANSFER_SENT -> when (lang) {
                 AppLanguage.ES -> "Pago a $other"
                 AppLanguage.EN -> "Paid to $other"
@@ -310,7 +311,7 @@ object ParticipantNetSpendCalculator {
                             signedAmount = amt,
                             absoluteAmount = amt,
                             date = exp.date,
-                            title = exp.placeName.ifBlank { exp.notes.ifBlank { exp.category } },
+                            title = exp.placeName.ifBlank { exp.notes },
                             categoryName = exp.category,
                             description = exp.notes,
                             status = MovementStatus.COMPLETED,

@@ -120,7 +120,17 @@ object CategoryCatalog {
                 norm == "liquidacion de deudas" ||
                 norm == "liquidación de deuda" ||
                 norm == "liquidacion de deuda" ||
-                norm == "debt settlement"
+                norm == "debt settlement" ||
+                norm == "règlement de dettes" ||
+                norm == "reglement de dettes" ||
+                norm == "liquidazione debiti" ||
+                norm == "债务结算" ||
+                norm == "schuldaflossing" ||
+                norm == "schuldenausgleich" ||
+                norm == "rozliczenie długów" ||
+                norm == "rozliczenie dlugow" ||
+                norm == "liquidação de dívidas" ||
+                norm == "liquidacao de dividas"
     }
 
     fun isDebtSettlementExpense(expense: ExpenseEntity): Boolean {

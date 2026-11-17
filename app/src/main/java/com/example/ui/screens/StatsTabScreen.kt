@@ -351,7 +351,7 @@ fun StatsTabScreen(
                                         Spacer(modifier = Modifier.height(3.dp))
                                         val isDebtSettlement = CategoryCatalog.isDebtSettlementCategory(catName)
                                         val count = catExpenses.size
-                                        val pctFormatted = String.format(Locale.US, "%.1f", pct)
+                                        val pctFormatted = String.format(currentLang.locale, "%.1f", pct)
                                         val pctText = if (isDebtSettlement) {
                                             when (currentLang) {
                                                 AppLanguage.ES -> "${if (count == 1) "1 pago" else "$count pagos"} · $pctFormatted% del total"
@@ -918,7 +918,7 @@ fun StatsTabScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         val movementCount = summary.entries.size
-                                        val pctFmt = String.format(Locale.US, "%.1f", pct)
+                                        val pctFmt = String.format(currentLang.locale, "%.1f", pct)
                                         val movementsText = when (currentLang) {
                                             AppLanguage.ES -> "${if (movementCount == 1) "1 movimiento" else "$movementCount movimientos"} · $pctFmt% del total"
                                             AppLanguage.EN -> "${if (movementCount == 1) "1 movement" else "$movementCount movements"} · $pctFmt% of total"
@@ -927,7 +927,7 @@ fun StatsTabScreen(
                                             AppLanguage.ZH -> "$movementCount 条记录 · 占总额 $pctFmt%"
                                             AppLanguage.NL -> "${if (movementCount == 1) "1 transactie" else "$movementCount transacties"} · $pctFmt% van totaal"
                                             AppLanguage.DE -> "${if (movementCount == 1) "1 Buchung" else "$movementCount Buchungen"} · $pctFmt% gesamt"
-                                            AppLanguage.PL -> "$movementCount operacji · $pctFmt% całości"
+                                            AppLanguage.PL -> "${if (movementCount == 1) "1 operacja" else "$movementCount operacji"} · $pctFmt% całości"
                                             AppLanguage.PT -> "${if (movementCount == 1) "1 movimento" else "$movementCount movimentos"} · $pctFmt% do total"
                                         }
                                         Text(

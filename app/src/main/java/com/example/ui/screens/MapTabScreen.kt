@@ -518,7 +518,7 @@ fun MapTabScreen(
                             icon = createTravelMapPinDrawable(
                                 context = context,
                                 pinColor = catInfo.color,
-                                categoryName = exp.category,
+                                categoryName = catInfo.name,
                                 isSelected = isPinSelected
                             )
                             title = "${texts.originLabel}: ${exp.originName.ifBlank { exp.placeName }}"
@@ -545,7 +545,7 @@ fun MapTabScreen(
                         icon = createTravelMapPinDrawable(
                             context = context,
                             pinColor = catInfo.color,
-                            categoryName = exp.category,
+                            categoryName = catInfo.name,
                             isSelected = isPinSelected
                         )
                         title = exp.placeName.ifBlank { CategoryCatalog.displayName(exp.category, currentLang) }

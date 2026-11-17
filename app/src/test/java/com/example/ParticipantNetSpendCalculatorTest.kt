@@ -320,4 +320,63 @@ class ParticipantNetSpendCalculatorTest {
         // Juan: -25 (Recibido de Pepe) = -25 €
         assertEquals(-25.0, juanSummary.netSpend, 0.01)
     }
+
+    @Test
+    fun allNineLanguages_translateDebtSettlementAndLedgerLabelsCorrectly() {
+        val unnamedHotel = ExpenseEntity(
+            id = "e-unnamed",
+            tripId = "t1",
+            amount = 80.0,
+            currency = "EUR",
+            amountInBaseCurrency = 80.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-06-10",
+            paymentMethod = "Tarjeta",
+            notes = "",
+            placeName = "",
+            paidById = juan.id,
+            splits = listOf(
+                ExpenseSplit("su1", "e-unnamed", pepe.id, 40.0, 50.0),
+                ExpenseSplit("su2", "e-unnamed", juan.id, 40.0, 50.0)
+            )
+        )
+        val transfer = ParticipantTransfer("tx-1", pepe.id, juan.id, 40.0, "2026-06-11")
+        val potIn = CommonPotMovement("pm-1", pepe.id, CommonPotMovementType.CONTRIBUTION, 20.0, "2026-06-11")
+        val potOut = CommonPotMovement("pm-2", juan.id, CommonPotMovementType.RECEIVED_FROM_POT, 20.0, "2026-06-11")
+
+        val report = ParticipantNetSpendCalculator.calculate(
+            participants = listOf(pepe, juan),
+            expenses = listOf(unnamedHotel),
+            incomes = emptyList(),
+            extraTransfers = listOf(transfer),
+            extraPotMovements = listOf(potIn, potOut)
+        )
+
+        val pepeEntries = report.participantSummaries.first { it.participant.id == pepe.id }.entries
+        val juanEntries = report.participantSummaries.first { it.participant.id == juan.id }.entries
+
+        val sentEntry = pepeEntries.first { it.type == ParticipantLedgerEntryType.TRANSFER_SENT }
+        val recvEntry = juanEntries.first { it.type == ParticipantLedgerEntryType.TRANSFER_RECEIVED }
+        val potInEntry = pepeEntries.first { it.type == ParticipantLedgerEntryType.POT_CONTRIBUTION }
+        val potOutEntry = juanEntries.first { it.type == ParticipantLedgerEntryType.POT_RECEIVED }
+        val unnamedExpenseEntry = juanEntries.first { it.type == ParticipantLedgerEntryType.REAL_EXPENSE_PAID }
+
+        AppLanguage.entries.forEach { lang ->
+            val translatedDebtCat = CategoryCatalog.displayName(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY, lang)
+            assertTrue("Debt settlement category must be non-blank for $lang", translatedDebtCat.isNotBlank())
+            assertTrue("isDebtSettlementCategory must recognize $translatedDebtCat ($lang)", CategoryCatalog.isDebtSettlementCategory(translatedDebtCat))
+
+            val sentLabel = sentEntry.displayLabel(lang)
+            val recvLabel = recvEntry.displayLabel(lang)
+            assertTrue("Sent label must include Juan in $lang", sentLabel.contains("Juan"))
+            assertTrue("Recv label must include Pepe in $lang", recvLabel.contains("Pepe"))
+            assertTrue("Pot contribution label non-blank in $lang", potInEntry.displayLabel(lang).isNotBlank())
+            assertTrue("Pot received label non-blank in $lang", potOutEntry.displayLabel(lang).isNotBlank())
+
+            // Gasto sin lugar ni notas debe traducir la categoría de respaldo al idioma activo
+            val expectedHotelCat = CategoryCatalog.displayName("Alojamiento", lang)
+            assertEquals(expectedHotelCat, unnamedExpenseEntry.displayLabel(lang))
+        }
+    }
 }
