@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -55,6 +56,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,6 +78,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -1987,16 +1990,38 @@ fun AddExpenseModal(
             AppLanguage.PL -> "Pozostaw jako Ogólne"
             AppLanguage.PT -> "Manter como Geral"
         }
+        val renameFocusRequester = remember { FocusRequester() }
+        LaunchedEffect(Unit) {
+            delay(120)
+            try {
+                renameFocusRequester.requestFocus()
+            } catch (_: Exception) {}
+        }
+        val applyCustomGeneralName = {
+            val customName = tempGeneralNameInput.trim().ifEmpty { "General" }
+            customGeneralButtonLabel = customName
+            selectedCategory = customName
+            showRenameGeneralDialog = false
+        }
         AlertDialog(
             onDismissRequest = { showRenameGeneralDialog = false },
+            containerColor = Color.White,
+            titleContentColor = OceanNavy,
+            textContentColor = Color(0xFF334155),
             title = {
                 Text(
                     text = renameDialogTitle,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    color = OceanNavy
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
                     Text(
                         text = renameDialogDesc,
                         style = MaterialTheme.typography.bodySmall,
@@ -2005,22 +2030,42 @@ fun AddExpenseModal(
                     OutlinedTextField(
                         value = tempGeneralNameInput,
                         onValueChange = { tempGeneralNameInput = it },
-                        label = { Text(renameFieldLabel) },
-                        placeholder = { Text("General") },
+                        placeholder = {
+                            Text(
+                                text = renameFieldLabel,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color(0xFFF8FAFC),
+                            focusedBorderColor = TravelBlue,
+                            unfocusedBorderColor = Color(0xFF94A3B8),
+                            focusedTextColor = OceanNavy,
+                            unfocusedTextColor = OceanNavy,
+                            cursorColor = TravelBlue,
+                            focusedPlaceholderColor = Color(0xFF94A3B8),
+                            unfocusedPlaceholderColor = Color(0xFF94A3B8)
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { applyCustomGeneralName() }),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(renameFocusRequester)
+                            .testTag("rename_general_category_input")
                     )
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        val customName = tempGeneralNameInput.trim().ifEmpty { "General" }
-                        customGeneralButtonLabel = customName
-                        selectedCategory = customName
-                        showRenameGeneralDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = TravelBlue)
+                    onClick = { applyCustomGeneralName() },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TravelBlue,
+                        contentColor = Color.White
+                    )
                 ) {
                     Text(applyBtnLabel, fontWeight = FontWeight.Bold)
                 }
@@ -2031,9 +2076,11 @@ fun AddExpenseModal(
                         customGeneralButtonLabel = "General"
                         selectedCategory = "General"
                         showRenameGeneralDialog = false
-                    }
+                    },
+                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = OceanNavy)
                 ) {
-                    Text(keepGeneralLabel)
+                    Text(keepGeneralLabel, fontWeight = FontWeight.SemiBold)
                 }
             }
         )
