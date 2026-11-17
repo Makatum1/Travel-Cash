@@ -98,17 +98,16 @@ data class CategoryInfo(
 )
 
 object CategoryCatalog {
-    // Se cambia el lugar de Entradas y Ocio por Vuelos, y al lado de Entradas y Ocio se añade Taxi
+    // Taxi se sitúa junto a Vuelos (Transporte, Vuelos, Taxi), y al final junto a Entradas y Ocio queda General
     val categories = listOf(
         CategoryInfo("Restaurantes y Comida", "#F59E0B", Color(0xFFF59E0B), Icons.Default.Restaurant),
         CategoryInfo("Alojamiento", "#6366F1", Color(0xFF6366F1), Icons.Default.Hotel),
         CategoryInfo("Transporte", "#0066FF", Color(0xFF0066FF), Icons.Default.DirectionsBus),
         CategoryInfo("Vuelos", "#06B6D4", Color(0xFF06B6D4), Icons.Default.Flight),
+        CategoryInfo("Taxi", "#D97706", Color(0xFFD97706), Icons.Default.LocalTaxi),
         CategoryInfo("Compras y Supermercado", "#10B981", Color(0xFF10B981), Icons.Default.ShoppingCart),
         CategoryInfo("Cafés y Snacks", "#8B5CF6", Color(0xFF8B5CF6), Icons.Default.LocalCafe),
         CategoryInfo("Entradas y Ocio", "#EC4899", Color(0xFFEC4899), Icons.Default.ConfirmationNumber),
-        CategoryInfo("Taxi", "#D97706", Color(0xFFD97706), Icons.Default.LocalTaxi),
-        CategoryInfo("Salud y Farmacia", "#EF4444", Color(0xFFEF4444), Icons.Default.LocalHospital),
         CategoryInfo("General", "#64748B", Color(0xFF64748B), Icons.Default.Category)
     )
 
@@ -117,12 +116,16 @@ object CategoryCatalog {
             return categories.first { it.name == "Transporte" }
         }
         return categories.find { it.name.equals(name, ignoreCase = true) }
-            ?: CategoryInfo(
-                name = name.ifBlank { "General" },
-                hexColor = "#64748B",
-                color = Color(0xFF64748B),
-                icon = Icons.Default.Category
-            )
+            ?: if (name.equals("Salud y Farmacia", ignoreCase = true)) {
+                CategoryInfo("Salud y Farmacia", "#EF4444", Color(0xFFEF4444), Icons.Default.LocalHospital)
+            } else {
+                CategoryInfo(
+                    name = name.ifBlank { "General" },
+                    hexColor = "#64748B",
+                    color = Color(0xFF64748B),
+                    icon = Icons.Default.Category
+                )
+            }
     }
 
     /**

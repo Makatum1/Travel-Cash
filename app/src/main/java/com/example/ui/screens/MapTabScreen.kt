@@ -75,6 +75,7 @@ import com.example.data.model.PaymentMethodCatalog
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
 import com.example.ui.components.TravelLocationPinIcon
+import com.example.ui.components.createRouteCategoryBadgeDrawable
 import com.example.ui.components.createTravelMapPinDrawable
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.LocalAppLanguage
@@ -304,21 +305,21 @@ fun MapTabScreen(
         fitAllPins(mapViewRef)
     }
 
-    // Segmentos de ruta para Vuelos, Transporte y Taxi
+    // Segmentos de ruta estilizados para Vuelos, Transporte y Taxi con su icono identificativo
     val transitRouteSegments = remember(geoExpenses) {
         val sortedGeo = geoExpenses.sortedWith(
             compareBy<ExpenseEntity> { it.date }.thenBy { it.createdAt }
         )
-        val segments = mutableListOf<Triple<GeoPoint, GeoPoint, Boolean>>()
+        val segments = mutableListOf<Triple<GeoPoint, GeoPoint, Pair<String, ExpenseEntity?>>>()
         val seenPairs = mutableSetOf<String>()
 
-        fun addCoordsSegment(fLat: Double, fLon: Double, tLat: Double, tLon: Double, isFlight: Boolean) {
+        fun addCoordsSegment(fLat: Double, fLon: Double, tLat: Double, tLon: Double, catName: String, exp: ExpenseEntity?) {
             if (kotlin.math.abs(fLat - tLat) < 0.00001 && kotlin.math.abs(fLon - tLon) < 0.00001) return
             val p1 = String.format(java.util.Locale.US, "%.4f,%.4f", fLat, fLon)
             val p2 = String.format(java.util.Locale.US, "%.4f,%.4f", tLat, tLon)
             val key = listOf(p1, p2).sorted().joinToString("::")
             if (seenPairs.add(key)) {
-                segments.add(Triple(GeoPoint(fLat, fLon), GeoPoint(tLat, tLon), isFlight))
+                segments.add(Triple(GeoPoint(fLat, fLon), GeoPoint(tLat, tLon), Pair(catName, exp)))
             }
         }
 
@@ -331,8 +332,7 @@ fun MapTabScreen(
             if (oLat != null && oLon != null && dLat != null && dLon != null) {
                 val catName = CategoryCatalog.getCategory(exp.category).name
                 if (CategoryCatalog.isRouteCategory(catName)) {
-                    val isFlight = catName.equals("Vuelos", ignoreCase = true) || catName.equals("Vuelo", ignoreCase = true)
-                    addCoordsSegment(oLat, oLon, dLat, dLon, isFlight)
+                    addCoordsSegment(oLat, oLon, dLat, dLon, catName, exp)
                 }
             }
         }
@@ -347,16 +347,18 @@ fun MapTabScreen(
             val b = routeExpenses[i + 1]
             val catA = CategoryCatalog.getCategory(a.category).name
             val catB = CategoryCatalog.getCategory(b.category).name
-            val aIsFlight = catA.equals("Vuelos", ignoreCase = true) || catA.equals("Vuelo", ignoreCase = true)
-            val bIsFlight = catB.equals("Vuelos", ignoreCase = true) || catB.equals("Vuelo", ignoreCase = true)
 
             val fLat = a.latitude ?: continue
             val fLon = a.longitude ?: continue
             val tLat = b.originLatitude ?: b.latitude ?: continue
             val tLon = b.originLongitude ?: b.longitude ?: continue
 
-            val isFlight = aIsFlight || bIsFlight
-            addCoordsSegment(fLat, fLon, tLat, tLon, isFlight)
+            val segmentCat = when {
+                catA.equals("Vuelos", ignoreCase = true) || catB.equals("Vuelos", ignoreCase = true) -> "Vuelos"
+                catA.equals("Taxi", ignoreCase = true) || catB.equals("Taxi", ignoreCase = true) -> "Taxi"
+                else -> "Transporte"
+            }
+            addCoordsSegment(fLat, fLon, tLat, tLon, segmentCat, b)
         }
 
         segments.toList()
@@ -398,17 +400,29 @@ fun MapTabScreen(
                 })
                 map.overlays.add(mapEventsOverlay)
 
-                // 2. Líneas directas de transporte y vuelos
-                transitRouteSegments.forEach { (startPoint, endPoint, isFlight) ->
+                // 2. Líneas directas de transporte, taxi y vuelos con halo visual y chapa identificativa del gasto
+                transitRouteSegments.forEach { (startPoint, endPoint, catAndExp) ->
+                    val (catName, segmentExp) = catAndExp
+                    val isFlight = catName.equals("Vuelos", ignoreCase = true) || catName.equals("Vuelo", ignoreCase = true)
+                    val isTaxi = catName.equals("Taxi", ignoreCase = true)
+
+                    val haloColor = when {
+                        isFlight -> android.graphics.Color.argb(105, 186, 230, 253)
+                        isTaxi -> android.graphics.Color.argb(105, 254, 240, 138)
+                        else -> android.graphics.Color.argb(105, 191, 219, 254)
+                    }
+
+                    val lineColor = when {
+                        isFlight -> android.graphics.Color.rgb(2, 132, 199)
+                        isTaxi -> android.graphics.Color.rgb(217, 119, 6)
+                        else -> android.graphics.Color.rgb(0, 102, 255)
+                    }
+
                     val haloLine = Polyline(map).apply {
                         setPoints(listOf(startPoint, endPoint))
                         outlinePaint.apply {
-                            color = if (isFlight) {
-                                android.graphics.Color.argb(120, 186, 230, 253)
-                            } else {
-                                android.graphics.Color.argb(120, 153, 246, 228)
-                            }
-                            strokeWidth = if (isFlight) 13f else 11f
+                            color = haloColor
+                            strokeWidth = if (isFlight) 14f else 12f
                             style = Paint.Style.STROKE
                             strokeCap = Paint.Cap.ROUND
                             isAntiAlias = true
@@ -420,24 +434,52 @@ fun MapTabScreen(
                     val routeLine = Polyline(map).apply {
                         setPoints(listOf(startPoint, endPoint))
                         outlinePaint.apply {
-                            color = if (isFlight) {
-                                android.graphics.Color.rgb(2, 132, 199)
-                            } else {
-                                android.graphics.Color.rgb(13, 148, 136)
-                            }
+                            color = lineColor
                             strokeWidth = if (isFlight) 7.5f else 6.5f
                             style = Paint.Style.STROKE
                             strokeCap = Paint.Cap.ROUND
-                            pathEffect = if (isFlight) {
-                                DashPathEffect(floatArrayOf(22f, 14f), 0f)
-                            } else {
-                                DashPathEffect(floatArrayOf(14f, 9f), 0f)
+                            pathEffect = when {
+                                isFlight -> DashPathEffect(floatArrayOf(24f, 14f), 0f)
+                                isTaxi -> DashPathEffect(floatArrayOf(18f, 10f), 0f)
+                                else -> DashPathEffect(floatArrayOf(15f, 9f), 0f)
                             }
                             isAntiAlias = true
                         }
                         infoWindow = null
                     }
                     map.overlays.add(routeLine)
+
+                    // Chapa flotante con el icono identificativo en el punto medio del trayecto
+                    val midLat = (startPoint.latitude + endPoint.latitude) / 2.0
+                    val midLon = (startPoint.longitude + endPoint.longitude) / 2.0
+                    val midPoint = GeoPoint(midLat, midLon)
+
+                    val badgeColor = when {
+                        isFlight -> Color(0xFF0284C7)
+                        isTaxi -> Color(0xFFD97706)
+                        else -> Color(0xFF0066FF)
+                    }
+
+                    val badgeMarker = Marker(map).apply {
+                        position = midPoint
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        icon = createRouteCategoryBadgeDrawable(map.context, catName, badgeColor)
+                        title = segmentExp?.let { exp ->
+                            exp.placeName.ifBlank { CategoryCatalog.displayName(exp.category, currentLang) }
+                        } ?: CategoryCatalog.displayName(catName, currentLang)
+                        snippet = segmentExp?.let { exp ->
+                            "${FormatUtils.formatCurrency(exp.amountInBaseCurrency, trip.baseCurrency, currentLang.locale)}"
+                        }
+                        setOnMarkerClickListener { _, _ ->
+                            if (segmentExp != null) {
+                                selectedExpense = segmentExp
+                                map.controller.setZoom(15.0)
+                                map.controller.animateTo(midPoint)
+                            }
+                            true
+                        }
+                    }
+                    map.overlays.add(badgeMarker)
                 }
 
                 // 3. Marcadores de los gastos con pines con color por categoría

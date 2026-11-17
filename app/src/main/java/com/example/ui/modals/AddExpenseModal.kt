@@ -1071,8 +1071,8 @@ fun AddExpenseModal(
                     )
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         CategoryCatalog.categories.forEach { cat ->
                             val isGeneralButton = cat.name.equals("General", ignoreCase = true)
@@ -1106,27 +1106,27 @@ fun AddExpenseModal(
                                         selectedCategory = cat.name
                                     }
                                 },
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 color = if (isSelected) cat.color else cat.color.copy(alpha = 0.12f),
                                 border = BorderStroke(
-                                    1.dp,
+                                    1.2.dp,
                                     if (isSelected) cat.color else cat.color.copy(alpha = 0.35f)
                                 )
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.5.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = cat.icon,
                                         contentDescription = null,
                                         tint = if (isSelected) Color.White else cat.color,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(19.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = displayLabel,
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                         color = if (isSelected) Color.White else OceanNavy
                                     )
                                 }

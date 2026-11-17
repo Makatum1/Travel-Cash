@@ -465,3 +465,150 @@ fun createTravelMapPinDrawable(
     return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
 }
 
+/**
+ * Genera un Drawable circular estilizado con el icono del gasto (Avión para Vuelos, Taxi para Taxi,
+ * o Autobús para Transporte) para colocar en el punto medio de cada polilínea/trayecto en el mapa.
+ */
+fun createRouteCategoryBadgeDrawable(
+    context: android.content.Context,
+    categoryName: String,
+    badgeColor: Color
+): android.graphics.drawable.BitmapDrawable {
+    val density = context.resources.displayMetrics.density
+    val sizePx = (34 * density).toInt().coerceAtLeast(44)
+    val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val cx = sizePx / 2f
+    val cy = sizePx / 2f
+    val radius = (sizePx / 2f) - (2.5f * density)
+
+    // Sombra sutil inferior
+    val shadowPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(70, 15, 23, 42)
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy + (1.5f * density), radius, shadowPaint)
+
+    // Borde blanco exterior
+    val borderPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, radius, borderPaint)
+
+    // Círculo de fondo con el color de la categoría
+    val argbColor = android.graphics.Color.argb(
+        255,
+        (badgeColor.red * 255).toInt(),
+        (badgeColor.green * 255).toInt(),
+        (badgeColor.blue * 255).toInt()
+    )
+    val bodyPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = argbColor
+        style = android.graphics.Paint.Style.FILL
+    }
+    canvas.drawCircle(cx, cy, radius - (2.2f * density), bodyPaint)
+
+    // Icono blanco en el centro
+    val whiteIconPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = android.graphics.Paint.Style.FILL
+    }
+
+    val s = (sizePx * 0.44f) / 20f
+    val isFlight = categoryName.equals("Vuelos", ignoreCase = true) || categoryName.equals("Vuelo", ignoreCase = true)
+    val isTaxi = categoryName.equals("Taxi", ignoreCase = true)
+
+    if (isFlight) {
+        // Avión comercial (fuselaje, alas y cola)
+        val path = android.graphics.Path().apply {
+            moveTo(cx, cy - 8.5f * s)
+            lineTo(cx + 1.6f * s, cy - 5.5f * s)
+            lineTo(cx + 1.6f * s, cy - 2f * s)
+            lineTo(cx + 9.5f * s, cy + 3f * s)
+            lineTo(cx + 9.5f * s, cy + 4.8f * s)
+            lineTo(cx + 1.6f * s, cy + 2f * s)
+            lineTo(cx + 1.6f * s, cy + 5.5f * s)
+            lineTo(cx + 4.5f * s, cy + 8f * s)
+            lineTo(cx + 4.5f * s, cy + 9.2f * s)
+            lineTo(cx, cy + 8f * s)
+            lineTo(cx - 4.5f * s, cy + 9.2f * s)
+            lineTo(cx - 4.5f * s, cy + 8f * s)
+            lineTo(cx - 1.6f * s, cy + 5.5f * s)
+            lineTo(cx - 1.6f * s, cy + 2f * s)
+            lineTo(cx - 9.5f * s, cy + 4.8f * s)
+            lineTo(cx - 9.5f * s, cy + 3f * s)
+            lineTo(cx - 1.6f * s, cy - 2f * s)
+            lineTo(cx - 1.6f * s, cy - 5.5f * s)
+            close()
+        }
+        canvas.drawPath(path, whiteIconPaint)
+    } else if (isTaxi) {
+        // Taxi (coche frontal con cartel de TAXI superior y ruedas)
+        val signRect = android.graphics.RectF(cx - 3.2f * s, cy - 8.5f * s, cx + 3.2f * s, cy - 6.2f * s)
+        canvas.drawRoundRect(signRect, 1.2f * s, 1.2f * s, whiteIconPaint)
+
+        val cabinPath = android.graphics.Path().apply {
+            moveTo(cx - 4.5f * s, cy - 6.2f * s)
+            lineTo(cx + 4.5f * s, cy - 6.2f * s)
+            lineTo(cx + 6.8f * s, cy - 1.2f * s)
+            lineTo(cx - 6.8f * s, cy - 1.2f * s)
+            close()
+        }
+        canvas.drawPath(cabinPath, whiteIconPaint)
+
+        val bodyRect = android.graphics.RectF(cx - 7.8f * s, cy - 1.2f * s, cx + 7.8f * s, cy + 5.5f * s)
+        canvas.drawRoundRect(bodyRect, 2.2f * s, 2.2f * s, whiteIconPaint)
+
+        val wheelLeft = android.graphics.RectF(cx - 7f * s, cy + 4.5f * s, cx - 4.6f * s, cy + 7.5f * s)
+        val wheelRight = android.graphics.RectF(cx + 4.6f * s, cy + 4.5f * s, cx + 7f * s, cy + 7.5f * s)
+        canvas.drawRoundRect(wheelLeft, 1f * s, 1f * s, whiteIconPaint)
+        canvas.drawRoundRect(wheelRight, 1f * s, 1f * s, whiteIconPaint)
+
+        val innerDetailPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = argbColor
+            style = android.graphics.Paint.Style.FILL
+        }
+        val windowPath = android.graphics.Path().apply {
+            moveTo(cx - 3.6f * s, cy - 5.2f * s)
+            lineTo(cx + 3.6f * s, cy - 5.2f * s)
+            lineTo(cx + 5.2f * s, cy - 1.8f * s)
+            lineTo(cx - 5.2f * s, cy - 1.8f * s)
+            close()
+        }
+        canvas.drawPath(windowPath, innerDetailPaint)
+        canvas.drawCircle(cx - 5.4f * s, cy + 2f * s, 1.1f * s, innerDetailPaint)
+        canvas.drawCircle(cx + 5.4f * s, cy + 2f * s, 1.1f * s, innerDetailPaint)
+        val grillRect = android.graphics.RectF(cx - 2.5f * s, cy + 1.8f * s, cx + 2.5f * s, cy + 3.4f * s)
+        canvas.drawRoundRect(grillRect, 0.8f * s, 0.8f * s, innerDetailPaint)
+    } else {
+        // Transporte / Autobús (frontal panorámico con luna, faros y rejilla)
+        val busRect = android.graphics.RectF(cx - 6.8f * s, cy - 8.2f * s, cx + 6.8f * s, cy + 6.2f * s)
+        canvas.drawRoundRect(busRect, 2.5f * s, 2.5f * s, whiteIconPaint)
+
+        val wheelLeft = android.graphics.RectF(cx - 6.2f * s, cy + 5.5f * s, cx - 4f * s, cy + 8.2f * s)
+        val wheelRight = android.graphics.RectF(cx + 4f * s, cy + 5.5f * s, cx + 6.2f * s, cy + 8.2f * s)
+        canvas.drawRoundRect(wheelLeft, 1f * s, 1f * s, whiteIconPaint)
+        canvas.drawRoundRect(wheelRight, 1f * s, 1f * s, whiteIconPaint)
+
+        val innerDetailPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = argbColor
+            style = android.graphics.Paint.Style.FILL
+        }
+        val signRect = android.graphics.RectF(cx - 4.2f * s, cy - 7.5f * s, cx + 4.2f * s, cy - 6.4f * s)
+        canvas.drawRoundRect(signRect, 0.6f * s, 0.6f * s, innerDetailPaint)
+
+        val windowRect = android.graphics.RectF(cx - 5.4f * s, cy - 5.6f * s, cx + 5.4f * s, cy - 0.4f * s)
+        canvas.drawRoundRect(windowRect, 1.2f * s, 1.2f * s, innerDetailPaint)
+
+        canvas.drawCircle(cx - 4.6f * s, cy + 3f * s, 1.2f * s, innerDetailPaint)
+        canvas.drawCircle(cx + 4.6f * s, cy + 3f * s, 1.2f * s, innerDetailPaint)
+
+        val grillRect = android.graphics.RectF(cx - 2.2f * s, cy + 2.2f * s, cx + 2.2f * s, cy + 3.8f * s)
+        canvas.drawRoundRect(grillRect, 0.8f * s, 0.8f * s, innerDetailPaint)
+    }
+
+    return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+}
+
