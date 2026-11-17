@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.ExpenseSplit
 import com.example.data.model.IncomeEntity
+import com.example.data.model.CategoryCatalog
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
@@ -890,7 +891,7 @@ fun TravelCashApp(
                                         currency = activeTrip.baseCurrency,
                                         amountInBaseCurrency = settledAmount,
                                         exchangeRate = 1.0,
-                                        category = "General",
+                                        category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
                                         date = java.time.LocalDate.now().toString(),
                                         paymentMethod = method,
                                         notes = notes,

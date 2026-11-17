@@ -526,8 +526,9 @@ private fun ExpenseItemCard(
     currentLang: AppLanguage,
     onClick: () -> Unit
 ) {
-    val categoryInfo = CategoryCatalog.getCategory(expense.category)
-    val translatedCategory = CategoryCatalog.displayName(expense.category, currentLang)
+    val resolvedCategory = CategoryCatalog.resolveCategoryName(expense)
+    val categoryInfo = CategoryCatalog.getCategory(resolvedCategory)
+    val translatedCategory = CategoryCatalog.displayName(resolvedCategory, currentLang)
     val translatedPaymentMethod = PaymentMethodCatalog.displayName(expense.paymentMethod, currentLang)
 
     val perDayUnit = when (currentLang) {

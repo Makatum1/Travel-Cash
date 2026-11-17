@@ -1073,7 +1073,7 @@ private fun SettlementTransactionCard(
                                 participantMap[exp.paidById]?.name ?: texts.defaultTravelerName
                             }
                             val shareForSubject = exp.splits.find { it.participantId == sb.participantId }?.amount ?: 0.0
-                            val displayCat = CategoryCatalog.displayName(exp.category, currentLang)
+                            val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1407,7 +1407,7 @@ private fun ParticipantBalanceInteractiveCard(
                     }.sortedWith(compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }.thenBy { it.createdAt }).forEach { exp ->
                         val paidThis = exp.paidById == balance.participantId
                         val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
-                        val displayCat = CategoryCatalog.displayName(exp.category, currentLang)
+                        val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
                         val paidLabel = when (currentLang) {
                             AppLanguage.ES -> "Pagó"
                             AppLanguage.EN -> "Paid"

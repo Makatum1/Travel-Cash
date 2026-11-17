@@ -90,7 +90,7 @@ fun StatsTabScreen(
     var expandedPersonId by remember { mutableStateOf<String?>(null) }
 
     val byCategory = remember(expenses) {
-        expenses.groupBy { it.category }
+        expenses.groupBy { CategoryCatalog.resolveCategoryName(it) }
             .map { (catName, list) ->
                 Triple(catName, list, list.sumOf { it.amountInBaseCurrency })
             }
@@ -335,16 +335,33 @@ fun StatsTabScreen(
                                             trackColor = Color(0xFFE2E8F0)
                                         )
                                         Spacer(modifier = Modifier.height(3.dp))
-                                        val pctText = when (currentLang) {
-                                            AppLanguage.ES -> "${catExpenses.size} gastos · ${String.format(Locale.US, "%.1f", pct)}% del total"
-                                            AppLanguage.EN -> "${catExpenses.size} expenses · ${String.format(Locale.US, "%.1f", pct)}% of total"
-                                            AppLanguage.FR -> "${catExpenses.size} dépenses · ${String.format(Locale.US, "%.1f", pct)}% du total"
-                                            AppLanguage.IT -> "${catExpenses.size} spese · ${String.format(Locale.US, "%.1f", pct)}% del totale"
-                                            AppLanguage.ZH -> "${catExpenses.size} 笔支出 · 占总额 ${String.format(Locale.US, "%.1f", pct)}%"
-                                            AppLanguage.NL -> "${catExpenses.size} uitgaven · ${String.format(Locale.US, "%.1f", pct)}% van totaal"
-                                            AppLanguage.DE -> "${catExpenses.size} Ausgaben · ${String.format(Locale.US, "%.1f", pct)}% der Gesamtsumme"
-                                            AppLanguage.PL -> "${catExpenses.size} wydatków · ${String.format(Locale.US, "%.1f", pct)}% całości"
-                                            AppLanguage.PT -> "${catExpenses.size} despesas · ${String.format(Locale.US, "%.1f", pct)}% do total"
+                                        val isDebtSettlement = CategoryCatalog.isDebtSettlementCategory(catName)
+                                        val count = catExpenses.size
+                                        val pctFormatted = String.format(Locale.US, "%.1f", pct)
+                                        val pctText = if (isDebtSettlement) {
+                                            when (currentLang) {
+                                                AppLanguage.ES -> "${if (count == 1) "1 pago" else "$count pagos"} · $pctFormatted% del total"
+                                                AppLanguage.EN -> "${if (count == 1) "1 payment" else "$count payments"} · $pctFormatted% of total"
+                                                AppLanguage.FR -> "${if (count == 1) "1 paiement" else "$count paiements"} · $pctFormatted% du total"
+                                                AppLanguage.IT -> "${if (count == 1) "1 pagamento" else "$count pagamenti"} · $pctFormatted% del totale"
+                                                AppLanguage.ZH -> "$count 笔付款 · 占总额 $pctFormatted%"
+                                                AppLanguage.NL -> "${if (count == 1) "1 betaling" else "$count betalingen"} · $pctFormatted% van totaal"
+                                                AppLanguage.DE -> "${if (count == 1) "1 Zahlung" else "$count Zahlungen"} · $pctFormatted% der Gesamtsumme"
+                                                AppLanguage.PL -> "${if (count == 1) "1 płatność" else "$count płatności"} · $pctFormatted% całości"
+                                                AppLanguage.PT -> "${if (count == 1) "1 pagamento" else "$count pagamentos"} · $pctFormatted% do total"
+                                            }
+                                        } else {
+                                            when (currentLang) {
+                                                AppLanguage.ES -> "$count gastos · $pctFormatted% del total"
+                                                AppLanguage.EN -> "$count expenses · $pctFormatted% of total"
+                                                AppLanguage.FR -> "$count dépenses · $pctFormatted% du total"
+                                                AppLanguage.IT -> "$count spese · $pctFormatted% del totale"
+                                                AppLanguage.ZH -> "$count 笔支出 · 占总额 $pctFormatted%"
+                                                AppLanguage.NL -> "$count uitgaven · $pctFormatted% van totaal"
+                                                AppLanguage.DE -> "$count Ausgaben · $pctFormatted% der Gesamtsumme"
+                                                AppLanguage.PL -> "$count wydatków · $pctFormatted% całości"
+                                                AppLanguage.PT -> "$count despesas · $pctFormatted% do total"
+                                            }
                                         }
                                         Text(
                                             text = pctText,
@@ -593,7 +610,7 @@ fun StatsTabScreen(
                                             )
                                         } else {
                                             personExpenses.sortedByDescending { it.date }.forEach { exp ->
-                                                val displayCat = CategoryCatalog.displayName(exp.category, currentLang)
+                                                val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()

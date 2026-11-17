@@ -910,7 +910,7 @@ object ExportImportManager {
         canvas.drawText(texts.section2Title, margin, y, sectionPaint)
         y += 14f
 
-        val catStats = expenses.groupBy { it.category }
+        val catStats = expenses.groupBy { CategoryCatalog.resolveCategoryName(it) }
             .map { (cat, list) ->
                 val sum = list.sumOf { it.amountInBaseCurrency }
                 val count = list.size
@@ -944,7 +944,8 @@ object ExportImportManager {
                 fillPaint.color = Color.parseColor(catInfo.hexColor)
                 canvas.drawCircle(margin + 16f, y + 8.5f, 4f, fillPaint)
 
-                canvas.drawText(cat.take(24), margin + 26f, y + 12f, bodyBoldPaint)
+                val displayCatName = CategoryCatalog.displayName(cat, language)
+                canvas.drawText(displayCatName.take(24), margin + 26f, y + 12f, bodyBoldPaint)
                 canvas.drawText("$count ${texts.expensesUnit}", margin + 180f, y + 12f, bodyPaint)
                 canvas.drawText(FormatUtils.formatCurrency(sum, trip.baseCurrency, locale), margin + 270f, y + 12f, bodyBoldPaint)
                 canvas.drawText(String.format(locale, "%.1f%%", pct), margin + 380f, y + 12f, bodyBoldPaint)
@@ -1148,8 +1149,9 @@ object ExportImportManager {
             val initialSpaceNeeded = if (imageUris.isNotEmpty()) 110f else (if (nonImageUris.isNotEmpty()) 48f else 28f)
             ensureSpace(initialSpaceNeeded)
 
-            val catInfo = CategoryCatalog.getCategory(exp.category)
-            val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { exp.category } }
+            val resolvedCat = CategoryCatalog.resolveCategoryName(exp)
+            val catInfo = CategoryCatalog.getCategory(resolvedCat)
+            val placeText = exp.placeName.ifEmpty { exp.notes.ifEmpty { CategoryCatalog.displayName(resolvedCat, language) } }
             val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) texts.commonPotName else partNames[exp.paidById] ?: "-"
 
             // Fila principal del gasto: Tarjeta con borde sutil
