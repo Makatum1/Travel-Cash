@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.Flight
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.LocalCafe
@@ -12,12 +13,7 @@ import androidx.compose.material.icons.filled.LocalTaxi
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
-import androidx.compose.ui.unit.dp
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.ui.theme.AppLanguage
@@ -105,119 +101,6 @@ data class CategoryInfo(
 object CategoryCatalog {
     const val DEBT_SETTLEMENT_CATEGORY = "Liquidación de deudas"
 
-    /**
-     * Icono vectorial personalizado para Liquidación de deudas:
-     * manos intercambiando una bolsa de dinero ($) junto al indicador de porcentaje (%),
-     * manteniendo el estilo monocromático y limpio del resto de iconos de la app.
-     */
-    val DebtSettlementIcon: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "DebtSettlement",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f
-        ).apply {
-            // Círculo izquierdo con %
-            path(
-                fill = null,
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 1.45f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(5.6f, 5.3f)
-                arcTo(4.1f, 4.1f, 0f, false, true, 5.6f, 13.5f)
-                arcTo(4.1f, 4.1f, 0f, false, true, 5.6f, 5.3f)
-                close()
-                // Barra diagonal del %
-                moveTo(4.1f, 10.9f)
-                lineTo(7.1f, 7.9f)
-            }
-            // Puntos del %
-            path(fill = SolidColor(Color.Black)) {
-                moveTo(4.2f, 7.2f)
-                arcTo(0.8f, 0.8f, 0f, false, true, 4.2f, 8.8f)
-                arcTo(0.8f, 0.8f, 0f, false, true, 4.2f, 7.2f)
-                close()
-                moveTo(7.0f, 10.0f)
-                arcTo(0.8f, 0.8f, 0f, false, true, 7.0f, 11.6f)
-                arcTo(0.8f, 0.8f, 0f, false, true, 7.0f, 10.0f)
-                close()
-            }
-            // Parte superior fruncida de la bolsa, mano superior sujetándola y puño derecho
-            path(
-                fill = null,
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 1.45f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                // Boca superior de la bolsa
-                moveTo(13.0f, 3.6f)
-                lineTo(12.0f, 1.8f)
-                quadTo(12.3f, 1.2f, 13.5f, 1.6f)
-                lineTo(14.6f, 2.0f)
-                lineTo(15.8f, 1.3f)
-                quadTo(16.9f, 1.1f, 16.8f, 2.1f)
-                lineTo(16.3f, 3.6f)
-                // Puño derecho
-                moveTo(19.6f, 2.8f)
-                lineTo(22.2f, 2.8f)
-                lineTo(22.2f, 9.6f)
-                lineTo(19.6f, 9.6f)
-                close()
-                // Mano superior sujetando el cuello de la bolsa
-                moveTo(19.6f, 3.8f)
-                quadTo(17.5f, 3.2f, 16.3f, 3.6f)
-                lineTo(12.6f, 3.6f)
-                quadTo(11.3f, 3.8f, 11.4f, 4.9f)
-                quadTo(11.4f, 5.9f, 12.2f, 6.2f)
-                quadTo(11.3f, 6.6f, 11.4f, 7.6f)
-                quadTo(11.5f, 8.9f, 12.8f, 9.0f)
-                lineTo(17.5f, 9.0f)
-                quadTo(18.6f, 9.0f, 19.6f, 8.4f)
-                // Cuerpo de la bolsa de dinero
-                moveTo(12.2f, 9.0f)
-                curveTo(9.8f, 11.4f, 9.8f, 15.0f, 11.3f, 16.8f)
-                moveTo(17.2f, 9.0f)
-                curveTo(19.5f, 11.4f, 19.5f, 15.0f, 18.0f, 17.2f)
-                // Puño izquierdo inferior
-                moveTo(3.4f, 18.4f)
-                lineTo(5.6f, 17.4f)
-                lineTo(7.4f, 21.3f)
-                lineTo(5.2f, 22.4f)
-                close()
-                // Mano inferior recibiendo la bolsa
-                moveTo(6.1f, 18.1f)
-                quadTo(9.0f, 16.5f, 12.4f, 17.1f)
-                quadTo(13.6f, 17.4f, 13.3f, 18.3f)
-                quadTo(13.0f, 18.9f, 11.4f, 18.7f)
-                lineTo(9.6f, 18.6f)
-                moveTo(13.3f, 18.5f)
-                lineTo(18.8f, 17.3f)
-                quadTo(20.2f, 17.1f, 20.0f, 18.2f)
-                lineTo(14.2f, 20.8f)
-                lineTo(7.2f, 21.1f)
-            }
-            // Símbolo $ centrado dentro de la bolsa
-            path(
-                fill = null,
-                stroke = SolidColor(Color.Black),
-                strokeLineWidth = 1.25f,
-                strokeLineCap = StrokeCap.Round,
-                strokeLineJoin = StrokeJoin.Round
-            ) {
-                moveTo(14.7f, 10.8f)
-                lineTo(14.7f, 16.1f)
-                moveTo(16.0f, 12.1f)
-                curveTo(15.6f, 11.3f, 13.4f, 11.4f, 13.4f, 12.5f)
-                curveTo(13.4f, 13.5f, 16.0f, 13.4f, 16.0f, 14.5f)
-                curveTo(16.0f, 15.6f, 13.7f, 15.6f, 13.4f, 14.8f)
-            }
-        }.build()
-    }
-
     // Taxi se sitúa junto a Vuelos (Transporte, Vuelos, Taxi), y al final junto a Entradas y Ocio queda General
     val categories = listOf(
         CategoryInfo("Restaurantes y Comida", "#F59E0B", Color(0xFFF59E0B), Icons.Default.Restaurant),
@@ -250,7 +133,7 @@ object CategoryCatalog {
 
     fun getCategory(name: String): CategoryInfo {
         if (isDebtSettlementCategory(name)) {
-            return CategoryInfo(DEBT_SETTLEMENT_CATEGORY, "#0E7490", Color(0xFF0E7490), DebtSettlementIcon)
+            return CategoryInfo(DEBT_SETTLEMENT_CATEGORY, "#0E7490", Color(0xFF0E7490), Icons.Default.Euro)
         }
         if (name.equals("Transporte y Gasolina", ignoreCase = true)) {
             return categories.first { it.name == "Transporte" }
