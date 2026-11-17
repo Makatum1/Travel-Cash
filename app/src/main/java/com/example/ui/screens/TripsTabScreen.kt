@@ -319,6 +319,29 @@ fun TripsTabScreen(
                 )
             }
 
+            val setAsActiveLabel = when (currentLang) {
+                AppLanguage.ES -> "Establecer como viaje activo"
+                AppLanguage.EN -> "Set as Active Trip"
+                AppLanguage.FR -> "Définir comme voyage actif"
+                AppLanguage.IT -> "Imposta come viaggio attivo"
+                AppLanguage.ZH -> "设为当前活动行程"
+                AppLanguage.NL -> "Instellen als actieve reis"
+                AppLanguage.DE -> "Als aktive Reise festlegen"
+                AppLanguage.PL -> "Ustaw jako aktywną podróż"
+                AppLanguage.PT -> "Definir como viagem ativa"
+            }
+            val currentlyActiveLabel = when (currentLang) {
+                AppLanguage.ES -> "Viaje actualmente activo en la app"
+                AppLanguage.EN -> "Currently active trip in the app"
+                AppLanguage.FR -> "Voyage actuellement actif dans l'application"
+                AppLanguage.IT -> "Viaggio attualmente attivo nell'app"
+                AppLanguage.ZH -> "当前应用中的活动行程"
+                AppLanguage.NL -> "Momenteel actieve reis in de app"
+                AppLanguage.DE -> "Derzeit aktive Reise in der App"
+                AppLanguage.PL -> "Aktualnie aktywna podróż w aplikacji"
+                AppLanguage.PT -> "Viagem atualmente ativa na aplicação"
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -394,10 +417,43 @@ fun TripsTabScreen(
                             }
                         }
                         Spacer(modifier = Modifier.width(8.dp))
+
+                        // Botón circular para activar viaje directamente sin tener que desplegar
+                        Surface(
+                            shape = CircleShape,
+                            color = if (isActive) TravelBlue else Color(0xFFF8FAFC),
+                            border = BorderStroke(
+                                width = 1.5.dp,
+                                color = if (isActive) TravelBlue else Color(0xFFCBD5E1)
+                            ),
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .clickable { onSelectTrip(trip.id) }
+                                .testTag("activate_trip_circle_${trip.id}")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = if (isActive) currentlyActiveLabel else setAsActiveLabel,
+                                    tint = if (isActive) Color.White else Color(0xFF94A3B8),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Botón para desplegar / contraer opciones del viaje
                         Surface(
                             shape = CircleShape,
                             color = if (isExpanded) TravelBlue.copy(alpha = 0.12f) else Color(0xFFF1F5F9),
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    expandedTripIds = if (isExpanded) expandedTripIds - trip.id else expandedTripIds + trip.id
+                                }
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 val collapseLabel = when (currentLang) {
@@ -464,17 +520,6 @@ fun TripsTabScreen(
 
                             // Estado / Acción de selección como activo
                             if (!isActive) {
-                                val setAsActiveLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Establecer como viaje activo"
-                                    AppLanguage.EN -> "Set as Active Trip"
-                                    AppLanguage.FR -> "Définir comme voyage actif"
-                                    AppLanguage.IT -> "Imposta come viaggio attivo"
-                                    AppLanguage.ZH -> "设为当前活动行程"
-                                    AppLanguage.NL -> "Instellen als actieve reis"
-                                    AppLanguage.DE -> "Als aktive Reise festlegen"
-                                    AppLanguage.PL -> "Ustaw jako aktywną podróż"
-                                    AppLanguage.PT -> "Definir como viagem ativa"
-                                }
                                 Button(
                                     onClick = { onSelectTrip(trip.id) },
                                     colors = ButtonDefaults.buttonColors(
@@ -495,17 +540,6 @@ fun TripsTabScreen(
                                     )
                                 }
                             } else {
-                                val currentlyActiveLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Viaje actualmente activo en la app"
-                                    AppLanguage.EN -> "Currently active trip in the app"
-                                    AppLanguage.FR -> "Voyage actuellement actif dans l'application"
-                                    AppLanguage.IT -> "Viaggio attualmente attivo nell'app"
-                                    AppLanguage.ZH -> "当前应用中的活动行程"
-                                    AppLanguage.NL -> "Momenteel actieve reis in de app"
-                                    AppLanguage.DE -> "Derzeit aktive Reise in der App"
-                                    AppLanguage.PL -> "Aktualnie aktywna podróż w aplikacji"
-                                    AppLanguage.PT -> "Viagem atualmente ativa na aplicação"
-                                }
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
                                     color = TravelBlue.copy(alpha = 0.08f),
