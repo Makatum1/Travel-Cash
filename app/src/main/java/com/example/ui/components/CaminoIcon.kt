@@ -388,14 +388,20 @@ fun TravelLocationPinIcon(
  * Genera un Drawable de pin de localización personalizado acorde a la estética de Travel Cash
  * para los marcadores del mapa interactivo osmdroid.
  */
+/**
+ * Genera un Drawable de pin de localización personalizado acorde a la estética de Travel Cash
+ * para los marcadores del mapa interactivo osmdroid, mostrando en su círculo interior el icono
+ * de su categoría correspondiente respetando el color propio de dicha categoría.
+ */
 fun createTravelMapPinDrawable(
     context: android.content.Context,
     pinColor: Color,
+    categoryName: String = "",
     isSelected: Boolean = false
 ): android.graphics.drawable.BitmapDrawable {
     val density = context.resources.displayMetrics.density
-    val widthPx = ((if (isSelected) 44 else 36) * density).toInt().coerceAtLeast(48)
-    val heightPx = ((if (isSelected) 54 else 44) * density).toInt().coerceAtLeast(60)
+    val widthPx = ((if (isSelected) 46 else 38) * density).toInt().coerceAtLeast(50)
+    val heightPx = ((if (isSelected) 56 else 46) * density).toInt().coerceAtLeast(62)
 
     val bitmap = android.graphics.Bitmap.createBitmap(widthPx, heightPx, android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bitmap)
@@ -450,17 +456,160 @@ fun createTravelMapPinDrawable(
     canvas.drawPath(innerPath, bodyPaint)
     canvas.drawCircle(cx, cy, r, bodyPaint)
 
+    // Círculo interior blanco de contraste amplio
     val centerWhitePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         style = android.graphics.Paint.Style.FILL
     }
-    canvas.drawCircle(cx, cy, r * 0.50f, centerWhitePaint)
+    val innerWhiteRadius = r * 0.60f
+    canvas.drawCircle(cx, cy, innerWhiteRadius, centerWhitePaint)
 
-    val centerGoldPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.rgb(245, 158, 11) // Sol / Moneda dorada Travel Cash
+    // Icono de la categoría en el color de la propia categoría (respetando pinColor)
+    val iconPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = argbPin
         style = android.graphics.Paint.Style.FILL
     }
-    canvas.drawCircle(cx, cy, r * 0.25f, centerGoldPaint)
+    val iconStrokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = argbPin
+        style = android.graphics.Paint.Style.STROKE
+        strokeWidth = 1.2f * density
+        strokeCap = android.graphics.Paint.Cap.ROUND
+        strokeJoin = android.graphics.Paint.Join.ROUND
+    }
+
+    val s = (innerWhiteRadius * 0.72f) / 8f
+    val normCat = categoryName.trim().lowercase()
+
+    when {
+        normCat.contains("vuelo") -> {
+            // Avión
+            val path = android.graphics.Path().apply {
+                moveTo(cx, cy - 6.5f * s)
+                lineTo(cx + 1.3f * s, cy - 4.2f * s)
+                lineTo(cx + 1.3f * s, cy - 1.5f * s)
+                lineTo(cx + 7.2f * s, cy + 2.2f * s)
+                lineTo(cx + 7.2f * s, cy + 3.6f * s)
+                lineTo(cx + 1.3f * s, cy + 1.5f * s)
+                lineTo(cx + 1.3f * s, cy + 4f * s)
+                lineTo(cx + 3.4f * s, cy + 6f * s)
+                lineTo(cx + 3.4f * s, cy + 7f * s)
+                lineTo(cx, cy + 6f * s)
+                lineTo(cx - 3.4f * s, cy + 7f * s)
+                lineTo(cx - 3.4f * s, cy + 6f * s)
+                lineTo(cx - 1.3f * s, cy + 4f * s)
+                lineTo(cx - 1.3f * s, cy + 1.5f * s)
+                lineTo(cx - 7.2f * s, cy + 3.6f * s)
+                lineTo(cx - 7.2f * s, cy + 2.2f * s)
+                lineTo(cx - 1.3f * s, cy - 1.5f * s)
+                lineTo(cx - 1.3f * s, cy - 4.2f * s)
+                close()
+            }
+            canvas.drawPath(path, iconPaint)
+        }
+        normCat.contains("taxi") -> {
+            // Taxi con cartel superior
+            canvas.drawRoundRect(android.graphics.RectF(cx - 2.5f * s, cy - 7f * s, cx + 2.5f * s, cy - 5.2f * s), 0.8f * s, 0.8f * s, iconPaint)
+            val cabPath = android.graphics.Path().apply {
+                moveTo(cx - 3.8f * s, cy - 5.2f * s)
+                lineTo(cx + 3.8f * s, cy - 5.2f * s)
+                lineTo(cx + 5.6f * s, cy - 1f * s)
+                lineTo(cx - 5.6f * s, cy - 1f * s)
+                close()
+            }
+            canvas.drawPath(cabPath, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 6.5f * s, cy - 1f * s, cx + 6.5f * s, cy + 4f * s), 1.6f * s, 1.6f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.6f * s, cy + 3.5f * s, cx - 3.5f * s, cy + 6.2f * s), 0.8f * s, 0.8f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx + 3.5f * s, cy + 3.5f * s, cx + 5.6f * s, cy + 6.2f * s), 0.8f * s, 0.8f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 3.2f * s, cy - 4.4f * s, cx + 3.2f * s, cy - 1.8f * s), 0.8f * s, 0.8f * s, centerWhitePaint)
+        }
+        normCat.contains("transporte") -> {
+            // Autobús
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.5f * s, cy - 6.5f * s, cx + 5.5f * s, cy + 4.5f * s), 2f * s, 2f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 4.2f * s, cy - 4.8f * s, cx + 4.2f * s, cy - 0.5f * s), 1f * s, 1f * s, centerWhitePaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5f * s, cy + 4f * s, cx - 3.2f * s, cy + 6.5f * s), 0.8f * s, 0.8f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx + 3.2f * s, cy + 4f * s, cx + 5f * s, cy + 6.5f * s), 0.8f * s, 0.8f * s, iconPaint)
+            canvas.drawCircle(cx - 3.4f * s, cy + 2.2f * s, 0.9f * s, centerWhitePaint)
+            canvas.drawCircle(cx + 3.4f * s, cy + 2.2f * s, 0.9f * s, centerWhitePaint)
+        }
+        normCat.contains("restaurante") || normCat.contains("comida") -> {
+            // Tenedor y Cuchillo
+            canvas.drawRoundRect(android.graphics.RectF(cx - 4.6f * s, cy - 1f * s, cx - 3.4f * s, cy + 6.8f * s), 0.6f * s, 0.6f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.4f * s, cy - 3.6f * s, cx - 2.6f * s, cy - 0.8f * s), 0.6f * s, 0.6f * s, iconPaint)
+            canvas.drawLine(cx - 5.2f * s, cy - 3.6f * s, cx - 5.2f * s, cy - 6.8f * s, iconStrokePaint)
+            canvas.drawLine(cx - 4f * s, cy - 3.6f * s, cx - 4f * s, cy - 6.8f * s, iconStrokePaint)
+            canvas.drawLine(cx - 2.8f * s, cy - 3.6f * s, cx - 2.8f * s, cy - 6.8f * s, iconStrokePaint)
+
+            canvas.drawRoundRect(android.graphics.RectF(cx + 3.4f * s, cy - 1f * s, cx + 4.6f * s, cy + 6.8f * s), 0.6f * s, 0.6f * s, iconPaint)
+            val knife = android.graphics.Path().apply {
+                moveTo(cx + 3.4f * s, cy - 1f * s)
+                lineTo(cx + 3.4f * s, cy - 6.8f * s)
+                cubicTo(cx + 3.4f * s, cy - 6.8f * s, cx + 5.6f * s, cy - 5f * s, cx + 5.6f * s, cy - 1f * s)
+                close()
+            }
+            canvas.drawPath(knife, iconPaint)
+        }
+        normCat.contains("alojamiento") || normCat.contains("hotel") -> {
+            // Cama de hotel
+            canvas.drawRoundRect(android.graphics.RectF(cx - 6.5f * s, cy - 5.5f * s, cx - 5f * s, cy + 6f * s), 0.7f * s, 0.7f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx + 5f * s, cy - 1.5f * s, cx + 6.5f * s, cy + 6f * s), 0.7f * s, 0.7f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.5f * s, cy + 0.5f * s, cx + 6f * s, cy + 3.5f * s), 0.8f * s, 0.8f * s, iconPaint)
+            canvas.drawCircle(cx - 2.5f * s, cy - 1.8f * s, 1.6f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 0.5f * s, cy - 1.2f * s, cx + 5.2f * s, cy + 1.2f * s), 0.8f * s, 0.8f * s, iconPaint)
+        }
+        normCat.contains("compra") || normCat.contains("supermercado") -> {
+            // Carrito de compras
+            val cart = android.graphics.Path().apply {
+                moveTo(cx - 5.8f * s, cy - 4.8f * s)
+                lineTo(cx - 4f * s, cy - 4.8f * s)
+                lineTo(cx - 2.2f * s, cy + 1.8f * s)
+                lineTo(cx + 4.5f * s, cy + 1.8f * s)
+                lineTo(cx + 5.8f * s, cy - 3f * s)
+                lineTo(cx - 3f * s, cy - 3f * s)
+            }
+            canvas.drawPath(cart, iconStrokePaint)
+            canvas.drawCircle(cx - 1.5f * s, cy + 4.4f * s, 1.2f * s, iconPaint)
+            canvas.drawCircle(cx + 3.8f * s, cy + 4.4f * s, 1.2f * s, iconPaint)
+        }
+        normCat.contains("café") || normCat.contains("cafe") || normCat.contains("snack") -> {
+            // Taza de café
+            canvas.drawRoundRect(android.graphics.RectF(cx - 4.5f * s, cy - 3f * s, cx + 3f * s, cy + 3.2f * s), 1.3f * s, 1.3f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx + 1f * s, cy - 1.8f * s, cx + 5.5f * s, cy + 1.8f * s), 1.8f * s, 1.8f * s, iconStrokePaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.8f * s, cy + 4.2f * s, cx + 4.5f * s, cy + 5.8f * s), 0.7f * s, 0.7f * s, iconPaint)
+            canvas.drawLine(cx - 2.5f * s, cy - 4.8f * s, cx - 2.5f * s, cy - 6.5f * s, iconStrokePaint)
+            canvas.drawLine(cx - 0.5f * s, cy - 4.8f * s, cx - 0.5f * s, cy - 6.8f * s, iconStrokePaint)
+            canvas.drawLine(cx + 1.5f * s, cy - 4.8f * s, cx + 1.5f * s, cy - 6.5f * s, iconStrokePaint)
+        }
+        normCat.contains("entrada") || normCat.contains("ocio") -> {
+            // Billete / Entrada
+            val ticket = android.graphics.RectF(cx - 5.8f * s, cy - 4f * s, cx + 5.8f * s, cy + 4f * s)
+            canvas.drawRoundRect(ticket, 1.2f * s, 1.2f * s, iconPaint)
+            canvas.drawCircle(cx - 5.8f * s, cy, 1.5f * s, centerWhitePaint)
+            canvas.drawCircle(cx + 5.8f * s, cy, 1.5f * s, centerWhitePaint)
+            val dashP = android.graphics.Paint(centerWhitePaint).apply {
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 0.9f * density
+                pathEffect = android.graphics.DashPathEffect(floatArrayOf(2.5f * density, 1.8f * density), 0f)
+            }
+            canvas.drawLine(cx, cy - 3.5f * s, cx, cy + 3.5f * s, dashP)
+        }
+        normCat.contains("salud") || normCat.contains("farmacia") -> {
+            // Cruz médica
+            canvas.drawRoundRect(android.graphics.RectF(cx - 1.8f * s, cy - 5.5f * s, cx + 1.8f * s, cy + 5.5f * s), 1f * s, 1f * s, iconPaint)
+            canvas.drawRoundRect(android.graphics.RectF(cx - 5.5f * s, cy - 1.8f * s, cx + 5.5f * s, cy + 1.8f * s), 1f * s, 1f * s, iconPaint)
+        }
+        else -> {
+            // General / Diamante
+            val generalPath = android.graphics.Path().apply {
+                moveTo(cx, cy - 5.8f * s)
+                lineTo(cx + 4.2f * s, cy)
+                lineTo(cx, cy + 5.8f * s)
+                lineTo(cx - 4.2f * s, cy)
+                close()
+            }
+            canvas.drawPath(generalPath, iconPaint)
+            canvas.drawCircle(cx, cy, 1.5f * s, centerWhitePaint)
+        }
+    }
 
     return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
 }
