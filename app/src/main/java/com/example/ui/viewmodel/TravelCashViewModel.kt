@@ -148,6 +148,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     private val repository = TravelCashRepository(dao)
 
     private val prefs = application.getSharedPreferences("travel_cash_settings", Context.MODE_PRIVATE)
+    private val keyLastActiveTripId = "last_active_trip_id"
 
     private val _themeMode = MutableStateFlow(
         runCatching {
@@ -171,7 +172,20 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     private val _selectedTab = MutableStateFlow(MainTab.EXPENSES)
     val selectedTab: StateFlow<MainTab> = _selectedTab.asStateFlow()
 
-    private val _activeTripId = MutableStateFlow<String?>(null)
+    private val _activeTripId = MutableStateFlow<String?>(
+        prefs.getString(keyLastActiveTripId, null)?.takeIf { it.isNotBlank() }
+    )
+
+    private fun setActiveTripId(tripId: String?) {
+        _activeTripId.value = tripId
+        prefs.edit().apply {
+            if (tripId.isNullOrBlank()) {
+                remove(keyLastActiveTripId)
+            } else {
+                putString(keyLastActiveTripId, tripId)
+            }
+        }.apply()
+    }
 
     private val _toastMessage = MutableStateFlow<ToastMessage?>(null)
     val toastMessage: StateFlow<ToastMessage?> = _toastMessage.asStateFlow()
@@ -265,12 +279,15 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
 
         viewModelScope.launch {
             val seedTripId = repository.ensureSeedDataIfEmpty()
-            if (_activeTripId.value == null && seedTripId != null) {
-                _activeTripId.value = seedTripId
+            val allTrips = dao.getAllTripsOnce()
+            val savedId = _activeTripId.value
+            val validSavedTrip = if (savedId != null) allTrips.find { it.id == savedId } else null
+            if (validSavedTrip == null) {
+                val fallbackId = seedTripId ?: allTrips.firstOrNull()?.id
+                setActiveTripId(fallbackId)
             }
             // Asegurar que si existe el viaje de prueba (Viaje a Roma), el gasto del restaurante tenga la imagen de ejemplo
             try {
-                val allTrips = dao.getAllTripsOnce()
                 val romaTrip = allTrips.find { it.title.contains("Roma", ignoreCase = true) }
                 if (romaTrip != null) {
                     val romaExps = dao.getAllExpensesOnce().filter { it.tripId == romaTrip.id }
@@ -289,7 +306,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     fun selectActiveTrip(tripId: String) {
-        _activeTripId.value = tripId
+        setActiveTripId(tripId)
         clearExpenseFilters()
     }
 
@@ -409,7 +426,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
 
             repository.insertTrip(newTrip)
             repository.insertParticipants(parts)
-            _activeTripId.value = tripId
+            setActiveTripId(tripId)
             val lang = _language.value
             val msg = when (lang) {
                 AppLanguage.ES -> "Viaje \"${newTrip.title}\" creado correctamente"
@@ -693,7 +710,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             repository.insertExpenses(listOf(exp1, exp2, exp3))
             repository.insertIncome(sampleIncome)
 
-            _activeTripId.value = tripId
+            setActiveTripId(tripId)
             val sampleMsg = when (lang) {
                 AppLanguage.ES -> "¡Viaje de prueba \"${sampleTrip.title}\" añadido con éxito!"
                 AppLanguage.EN -> "Sample trip \"${sampleTrip.title}\" added successfully!"
@@ -786,7 +803,9 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             repository.deleteCompleteTrip(tripId)
             val remaining = repository.getAllTripsOnce()
-            _activeTripId.value = remaining.firstOrNull()?.id
+            if (_activeTripId.value == tripId || remaining.none { it.id == _activeTripId.value }) {
+                setActiveTripId(remaining.firstOrNull()?.id)
+            }
             showToast(UiTexts.get(_language.value).toastTripDeleted)
         }
     }
@@ -1207,7 +1226,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                 repository.insertParticipants(newParticipants)
             }
             repository.insertExpenses(newExpenses)
-            _activeTripId.value = targetTripId
+            setActiveTripId(targetTripId)
             val lang = _language.value
             val successMsg = when (lang) {
                 AppLanguage.ES -> "CSV importado: ${newExpenses.size} gastos registrados"
@@ -1452,7 +1471,7 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
                     newlyImportedCount++
 
                     if (_activeTripId.value == null) {
-                        _activeTripId.value = newTripId
+                        setActiveTripId(newTripId)
                     }
                 }
             }
