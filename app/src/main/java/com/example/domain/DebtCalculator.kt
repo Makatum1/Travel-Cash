@@ -1,5 +1,6 @@
 package com.example.domain
 
+import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
@@ -45,13 +46,46 @@ object DebtCalculator {
     private fun round2(value: Double): Double = (value * 100.0).roundToLong() / 100.0
 
     /**
+     * Calcula cuánto exceso de liquidación (bote personal / saldo a favor) custodia holderId a favor de ownerId.
+     * Si ownerId transfirió más dinero en liquidaciones a holderId de lo que le debía por gastos reales,
+     * el excedente queda en custodia para ir consumiéndose con futuros gastos antes de regenerar deuda.
+     */
+    fun getExcessPotHeld(
+        holderId: String,
+        ownerId: String,
+        expenses: List<ExpenseEntity>
+    ): Double {
+        val settlementExpenses = expenses.filter { CategoryCatalog.isDebtSettlementExpense(it) }
+        val realExpenses = expenses.filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+
+        val settlementsSent = settlementExpenses.filter {
+            it.paidById == ownerId && it.splits.any { s -> s.participantId == holderId }
+        }.sumOf { it.amountInBaseCurrency }
+        val settlementsReceived = settlementExpenses.filter {
+            it.paidById == holderId && it.splits.any { s -> s.participantId == ownerId }
+        }.sumOf { it.amountInBaseCurrency }
+        val netSettlement = settlementsSent - settlementsReceived
+
+        val realPaidByHolderForOwner = realExpenses.filter { it.paidById == holderId }.sumOf { exp ->
+            exp.splits.find { s -> s.participantId == ownerId }?.amount ?: 0.0
+        }
+        val realPaidByOwnerForHolder = realExpenses.filter { it.paidById == ownerId }.sumOf { exp ->
+            exp.splits.find { s -> s.participantId == holderId }?.amount ?: 0.0
+        }
+        val netRealDebt = max(0.0, realPaidByHolderForOwner - realPaidByOwnerForHolder)
+
+        return round2(max(0.0, netSettlement - netRealDebt))
+    }
+
+    /**
      * Calcula los balances individuales y las transacciones de liquidación de cuentas
      * siguiendo con exactitud matemática las reglas del modelo contable de Travel Cash:
      *
      * netBalance = (totalExpensesPaid - totalDebtDiscountCompensated + totalBoteContributed) - totalExpensesOwed
      *
      * Paso 1: Transacción desde Bote Común ('bote-comun') hacia el Acreedor por min(availableBote, creditoPorGastos)
-     * Paso 2: Deudas de participantes restantes (netBalance < 0) hacia los acreedores restantes.
+     * Paso 2: Deudas de participantes restantes (netBalance < 0) hacia los acreedores restantes,
+     * respetando que si un saldo a favor proviene de un bote personal en custodia, no genera deuda de cobro en efectivo.
      */
     fun calculateDebtBalances(
         participants: List<ParticipantEntity>,
@@ -76,38 +110,18 @@ object DebtCalculator {
 
         var availableBote = max(0.0, totalBoteCollected - totalSpentFromBoteDirectly)
 
-        // Separar gastos reales del viaje de las liquidaciones de deuda entre participantes
-        val realExpenses = expenses.filter { !com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
-        val settlementExpenses = expenses.filter { com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
-
+        // LÓGICA ORIGINAL RESTAURADA:
+        // Balance = Pagado de su bolsillo - Parte proporcional asumida (+ aportaciones al bote - descuentos)
         val balances = participants.map { participant ->
-            // Gastos reales que esta persona pagó de su bolsillo (excluyendo los que se pagaron con el Bote Común directamente)
-            val realPaidOutOfPocket = realExpenses.filter {
+            // Gastos que esta persona pagó de su bolsillo (excluyendo los que se pagaron con el Bote Común directamente)
+            val paidOutOfPocket = expenses.filter {
                 it.paidById == participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
             }.sumOf { it.amountInBaseCurrency }
 
-            // Gastos reales que a esta persona le correspondía asumir según los splits
-            val realOwed = realExpenses.sumOf { expense ->
+            // Suma de la parte de los gastos que a esta persona le correspondía asumir
+            val owed = expenses.sumOf { expense ->
                 val splitForPerson = expense.splits.find { it.participantId == participant.id }
-                if (splitForPerson != null) {
-                    splitForPerson.amount
-                } else if (expense.splits.isEmpty() && participants.isNotEmpty()) {
-                    expense.amountInBaseCurrency / participants.size
-                } else {
-                    0.0
-                }
-            }
-
-            // Liquidaciones/pagos enviados directamente a otros participantes
-            val settlementsSent = settlementExpenses.filter {
-                it.paidById == participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
-            }.sumOf { it.amountInBaseCurrency }
-
-            // Liquidaciones/pagos recibidos de otros participantes
-            val settlementsReceived = settlementExpenses.filter {
-                it.paidById != participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
-            }.sumOf { expense ->
-                expense.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
+                splitForPerson?.amount ?: 0.0
             }
 
             // Suma del dinero en efectivo que esta persona ha metido en el bote común
@@ -124,57 +138,19 @@ object DebtCalculator {
                     .sumOf { max(0.0, it.debtDiscount ?: 0.0) }
             }
 
-            val totalPaid = realPaidOutOfPocket + settlementsSent
-            val net = (totalPaid - settlementsReceived - debtDiscountCompensated + boteContributed) - realOwed
+            val net = (paidOutOfPocket - debtDiscountCompensated + boteContributed) - owed
 
             ParticipantBalance(
                 participantId = participant.id,
                 participantName = participant.name,
                 avatarColor = participant.avatarColor,
                 participantPhotoUri = participant.photoUri,
-                totalExpensesPaid = round2(totalPaid),
-                totalExpensesOwed = round2(realOwed),
+                totalExpensesPaid = round2(paidOutOfPocket),
+                totalExpensesOwed = round2(owed),
                 totalBoteContributed = round2(boteContributed),
                 totalDebtDiscountCompensated = round2(debtDiscountCompensated),
                 netBalance = round2(net)
             )
-        }
-
-        // Cálculo de excedentes de liquidación (Bote Personal / Saldo a favor gestionado por el administrador)
-        // Si p1 envía más dinero en liquidaciones a p2 de lo que le debía a p2 por gastos reales,
-        // el exceso se convierte en un bote personal de p1 custodiado por p2 para futuros gastos.
-        val personalPotsHeld = mutableMapOf<Pair<String, String>, Double>()
-        for (p1 in participants) {
-            for (p2 in participants) {
-                if (p1.id == p2.id) continue
-                val sentP1toP2 = settlementExpenses.filter {
-                    it.paidById == p1.id && it.splits.any { s -> s.participantId == p2.id }
-                }.sumOf { it.amountInBaseCurrency }
-                val sentP2toP1 = settlementExpenses.filter {
-                    it.paidById == p2.id && it.splits.any { s -> s.participantId == p1.id }
-                }.sumOf { it.amountInBaseCurrency }
-                val netSettlementP1toP2 = sentP1toP2 - sentP2toP1
-
-                val realCostP2forP1 = realExpenses.filter { it.paidById == p2.id }.sumOf { exp ->
-                    exp.splits.find { s -> s.participantId == p1.id }?.amount ?: 0.0
-                }
-                val realCostP1forP2 = realExpenses.filter { it.paidById == p1.id }.sumOf { exp ->
-                    exp.splits.find { s -> s.participantId == p2.id }?.amount ?: 0.0
-                }
-                val netRealDebtP1toP2 = max(0.0, realCostP2forP1 - realCostP1forP2)
-
-                if (netSettlementP1toP2 > netRealDebtP1toP2 + 0.009) {
-                    val excess = round2(netSettlementP1toP2 - netRealDebtP1toP2)
-                    personalPotsHeld[Pair(p1.id, p2.id)] = excess
-                }
-            }
-        }
-
-        val potHeldForOthersMap = participants.associate { p ->
-            p.id to personalPotsHeld.filter { it.key.second == p.id }.values.sum()
-        }
-        val potOwnedHeldByOthersMap = participants.associate { p ->
-            p.id to personalPotsHeld.filter { it.key.first == p.id }.values.sum()
         }
 
         val transactions = mutableListOf<DebtTransaction>()
@@ -246,54 +222,60 @@ object DebtCalculator {
         }
 
         // PASO 2: Deudas de Participantes Restantes
-        // Se calculan las posiciones netas ajustadas excluyendo los botes personales custodiados
-        // (el custodio que recibió un exceso no debe ese dinero como deuda en efectivo, sino que lo administra
-        // como saldo a favor del pagador para futuros gastos; y el pagador no es un acreedor exigiendo cobro en mano).
-        val adjustedNetMap = balances.associate { b ->
-            val potHeld = potHeldForOthersMap[b.participantId] ?: 0.0
-            val potOwned = potOwnedHeldByOthersMap[b.participantId] ?: 0.0
-            b.participantId to round2(b.netBalance + potHeld - potOwned)
-        }
-
+        // Para cada deudor (netBalance < 0), emparejamos con acreedores respetando la regla del Bote Personal:
+        // si el deudor custodia un bote personal del acreedor por un pago en exceso, no se genera una deuda en efectivo.
         val debtors = balances
-            .filter { (adjustedNetMap[it.participantId] ?: 0.0) < -0.009 }
-            .map { it.participantId to abs(adjustedNetMap[it.participantId] ?: 0.0) }
+            .filter { it.netBalance < -0.009 }
+            .map { it.participantId to abs(it.netBalance) }
             .toMutableList()
 
         val creditors = balances
-            .filter { (creditorRemaining[it.participantId] ?: 0.0) - (potOwnedHeldByOthersMap[it.participantId] ?: 0.0) > 0.009 }
-            .map { it.participantId to round2((creditorRemaining[it.participantId] ?: 0.0) - (potOwnedHeldByOthersMap[it.participantId] ?: 0.0)) }
+            .filter { (creditorRemaining[it.participantId] ?: 0.0) > 0.009 }
+            .map { it.participantId to (creditorRemaining[it.participantId] ?: 0.0) }
             .toMutableList()
 
         var dIdx = 0
-        var cIdx = 0
-        while (dIdx < debtors.size && cIdx < creditors.size) {
+        while (dIdx < debtors.size) {
             val (debtorId, debtAmt) = debtors[dIdx]
-            val (creditorId, credAmt) = creditors[cIdx]
-
-            val settled = round2(min(debtAmt, credAmt))
-            if (settled > 0.009) {
-                val debtorName = balances.find { it.participantId == debtorId }?.participantName ?: "Participante"
-                val creditorName = balances.find { it.participantId == creditorId }?.participantName ?: "Participante"
-                transactions.add(
-                    DebtTransaction(
-                        fromParticipantId = debtorId,
-                        fromName = debtorName,
-                        toParticipantId = creditorId,
-                        toName = creditorName,
-                        amount = settled,
-                        isFromBote = false
-                    )
-                )
+            if (debtAmt <= 0.009) {
+                dIdx++
+                continue
             }
 
-            val newDebt = debtAmt - settled
-            val newCred = credAmt - settled
-            debtors[dIdx] = debtorId to newDebt
-            creditors[cIdx] = creditorId to newCred
+            var cIdx = 0
+            while (cIdx < creditors.size && debtors[dIdx].second > 0.009) {
+                val currentDebtAmt = debtors[dIdx].second
+                val (creditorId, credAmt) = creditors[cIdx]
+                if (credAmt <= 0.009) {
+                    cIdx++
+                    continue
+                }
 
-            if (newDebt <= 0.009) dIdx++
-            if (newCred <= 0.009) cIdx++
+                // Si el deudor es el custodio de un bote personal del acreedor (pago en exceso),
+                // esa parte del balance no genera una deuda en efectivo entre ellos.
+                val excessPot = getExcessPotHeld(holderId = debtorId, ownerId = creditorId, expenses = expenses)
+                val effectiveDebt = max(0.0, currentDebtAmt - excessPot)
+
+                val settled = round2(min(effectiveDebt, credAmt))
+                if (settled > 0.009) {
+                    val debtorName = balances.find { it.participantId == debtorId }?.participantName ?: "Participante"
+                    val creditorName = balances.find { it.participantId == creditorId }?.participantName ?: "Participante"
+                    transactions.add(
+                        DebtTransaction(
+                            fromParticipantId = debtorId,
+                            fromName = debtorName,
+                            toParticipantId = creditorId,
+                            toName = creditorName,
+                            amount = settled,
+                            isFromBote = false
+                        )
+                    )
+                    debtors[dIdx] = debtorId to (currentDebtAmt - settled)
+                    creditors[cIdx] = creditorId to (credAmt - settled)
+                }
+                cIdx++
+            }
+            dIdx++
         }
 
         return DebtCalculationResult(

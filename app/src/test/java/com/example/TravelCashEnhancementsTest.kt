@@ -438,4 +438,65 @@ class TravelCashEnhancementsTest {
         assertEquals("u1", txRegenerated.toParticipantId)
         assertEquals(46.0, txRegenerated.amount, 0.01)
     }
+
+    @Test
+    fun standardMultiParticipantTrip_originalDebtCalculationAndNormalSettlement_worksCleanly() {
+        val u1 = ParticipantEntity("u1", "t1", "Ana", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Carlos", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Beatriz", "#F59E0B")
+        val participants = listOf(u1, u2, u3)
+
+        // Gasto 1: Ana paga 300€ repartido entre los 3 (100€ cada uno)
+        val expense1 = ExpenseEntity(
+            id = "exp-shared",
+            tripId = "t1",
+            amount = 300.0,
+            currency = "EUR",
+            amountInBaseCurrency = 300.0,
+            exchangeRate = 1.0,
+            category = "Restaurantes y Comida",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Cena grupo",
+            paidById = "u1",
+            splits = listOf(
+                ExpenseSplit("s1", "exp-shared", "u1", 100.0, 33.33),
+                ExpenseSplit("s2", "exp-shared", "u2", 100.0, 33.33),
+                ExpenseSplit("s3", "exp-shared", "u3", 100.0, 33.33)
+            )
+        )
+
+        val res1 = DebtCalculator.calculateDebtBalances(participants, listOf(expense1), emptyList())
+        assertEquals(2, res1.transactions.size)
+        assertTrue(res1.transactions.any { it.fromParticipantId == "u2" && it.toParticipantId == "u1" && it.amount == 100.0 })
+        assertTrue(res1.transactions.any { it.fromParticipantId == "u3" && it.toParticipantId == "u1" && it.amount == 100.0 })
+
+        // Liquidación normal: Carlos liquida sus 100€ a Ana
+        val settleCarlos = ExpenseEntity(
+            id = "settle-carlos",
+            tripId = "t1",
+            amount = 100.0,
+            currency = "EUR",
+            amountInBaseCurrency = 100.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Bizum",
+            notes = "Liquidación Carlos a Ana",
+            paidById = "u2",
+            splits = listOf(ExpenseSplit("sc", "settle-carlos", "u1", 100.0, 100.0))
+        )
+
+        val res2 = DebtCalculator.calculateDebtBalances(participants, listOf(expense1, settleCarlos), emptyList())
+        // Carlos ya no debe nada; solo Beatriz debe 100€ a Ana
+        assertEquals(1, res2.transactions.size)
+        assertEquals("u3", res2.transactions.first().fromParticipantId)
+        assertEquals("u1", res2.transactions.first().toParticipantId)
+        assertEquals(100.0, res2.transactions.first().amount, 0.01)
+
+        val carlosBalance = res2.participantBalances.first { it.participantId == "u2" }
+        assertEquals(100.0, carlosBalance.totalExpensesPaid, 0.01)
+        assertEquals(100.0, carlosBalance.totalExpensesOwed, 0.01)
+        assertEquals(0.0, carlosBalance.netBalance, 0.01)
+    }
 }

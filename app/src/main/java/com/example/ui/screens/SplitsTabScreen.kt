@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -1630,11 +1631,11 @@ fun SettleDebtsModal(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight(),
+                    .fillMaxHeight(0.92f),
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White
             ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxSize()) {
                 // Cabecera del modal con botón de Cerrar (y Volver si hay deuda seleccionada)
                 Row(
                     modifier = Modifier
@@ -1750,7 +1751,7 @@ fun SettleDebtsModal(
 
                 Column(
                     modifier = Modifier
-                        .weight(1f, fill = false)
+                        .weight(1f)
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -2511,8 +2512,8 @@ fun SettleDebtsModal(
                         }
                     }
 
-                    // Espacio inferior para scrollear botones de liquidación (Total, Mitad, Bizum, Efectivo) por encima del teclado
-                    Spacer(modifier = Modifier.height(180.dp))
+                    // Espacio inferior de separación
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
                 // Botones inferiores estilizados como botones completos
@@ -2536,6 +2537,7 @@ fun SettleDebtsModal(
                                 contentColor = OceanNavy
                             ),
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp)
@@ -2544,10 +2546,10 @@ fun SettleDebtsModal(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                                 tint = OceanNavy
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (currentLang) {
                                     AppLanguage.ES -> "Volver"
@@ -2561,7 +2563,8 @@ fun SettleDebtsModal(
                                     AppLanguage.PT -> "Voltar"
                                 },
                                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = OceanNavy
+                                color = OceanNavy,
+                                maxLines = 1
                             )
                         }
 
@@ -2609,13 +2612,14 @@ fun SettleDebtsModal(
                                 disabledContainerColor = Color(0xFFCBD5E1),
                                 disabledContentColor = Color(0xFF94A3B8)
                             ),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
                             modifier = Modifier
-                                .weight(1.35f)
+                                .weight(1f)
                                 .height(48.dp)
                                 .testTag("confirm_settlement_button")
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (currentLang) {
                                     AppLanguage.ES -> "Confirmar Liquidación"
@@ -2628,7 +2632,8 @@ fun SettleDebtsModal(
                                     AppLanguage.PL -> "Potwierdź rozliczenie"
                                     AppLanguage.PT -> "Confirmar Liquidação"
                                 },
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1
                             )
                         }
                     } else {
