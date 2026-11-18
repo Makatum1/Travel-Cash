@@ -76,16 +76,38 @@ object DebtCalculator {
 
         var availableBote = max(0.0, totalBoteCollected - totalSpentFromBoteDirectly)
 
+        // Separar gastos reales del viaje de las liquidaciones de deuda entre participantes
+        val realExpenses = expenses.filter { !com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
+        val settlementExpenses = expenses.filter { com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
+
         val balances = participants.map { participant ->
-            // Gastos que esta persona pagó de su bolsillo (excluyendo los que se pagaron con el Bote Común directamente)
-            val paidOutOfPocket = expenses.filter {
+            // Gastos reales que esta persona pagó de su bolsillo (excluyendo los que se pagaron con el Bote Común directamente)
+            val realPaidOutOfPocket = realExpenses.filter {
                 it.paidById == participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
             }.sumOf { it.amountInBaseCurrency }
 
-            // Suma de la parte de los gastos que a esta persona le correspondía asumir
-            val owed = expenses.sumOf { expense ->
+            // Gastos reales que a esta persona le correspondía asumir según los splits
+            val realOwed = realExpenses.sumOf { expense ->
                 val splitForPerson = expense.splits.find { it.participantId == participant.id }
-                splitForPerson?.amount ?: 0.0
+                if (splitForPerson != null) {
+                    splitForPerson.amount
+                } else if (expense.splits.isEmpty() && participants.isNotEmpty()) {
+                    expense.amountInBaseCurrency / participants.size
+                } else {
+                    0.0
+                }
+            }
+
+            // Liquidaciones/pagos enviados directamente a otros participantes
+            val settlementsSent = settlementExpenses.filter {
+                it.paidById == participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
+            }.sumOf { it.amountInBaseCurrency }
+
+            // Liquidaciones/pagos recibidos de otros participantes
+            val settlementsReceived = settlementExpenses.filter {
+                it.paidById != participant.id && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
+            }.sumOf { expense ->
+                expense.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
             }
 
             // Suma del dinero en efectivo que esta persona ha metido en el bote común
@@ -102,19 +124,57 @@ object DebtCalculator {
                     .sumOf { max(0.0, it.debtDiscount ?: 0.0) }
             }
 
-            val net = (paidOutOfPocket - debtDiscountCompensated + boteContributed) - owed
+            val totalPaid = realPaidOutOfPocket + settlementsSent
+            val net = (totalPaid - settlementsReceived - debtDiscountCompensated + boteContributed) - realOwed
 
             ParticipantBalance(
                 participantId = participant.id,
                 participantName = participant.name,
                 avatarColor = participant.avatarColor,
                 participantPhotoUri = participant.photoUri,
-                totalExpensesPaid = round2(paidOutOfPocket),
-                totalExpensesOwed = round2(owed),
+                totalExpensesPaid = round2(totalPaid),
+                totalExpensesOwed = round2(realOwed),
                 totalBoteContributed = round2(boteContributed),
                 totalDebtDiscountCompensated = round2(debtDiscountCompensated),
                 netBalance = round2(net)
             )
+        }
+
+        // Cálculo de excedentes de liquidación (Bote Personal / Saldo a favor gestionado por el administrador)
+        // Si p1 envía más dinero en liquidaciones a p2 de lo que le debía a p2 por gastos reales,
+        // el exceso se convierte en un bote personal de p1 custodiado por p2 para futuros gastos.
+        val personalPotsHeld = mutableMapOf<Pair<String, String>, Double>()
+        for (p1 in participants) {
+            for (p2 in participants) {
+                if (p1.id == p2.id) continue
+                val sentP1toP2 = settlementExpenses.filter {
+                    it.paidById == p1.id && it.splits.any { s -> s.participantId == p2.id }
+                }.sumOf { it.amountInBaseCurrency }
+                val sentP2toP1 = settlementExpenses.filter {
+                    it.paidById == p2.id && it.splits.any { s -> s.participantId == p1.id }
+                }.sumOf { it.amountInBaseCurrency }
+                val netSettlementP1toP2 = sentP1toP2 - sentP2toP1
+
+                val realCostP2forP1 = realExpenses.filter { it.paidById == p2.id }.sumOf { exp ->
+                    exp.splits.find { s -> s.participantId == p1.id }?.amount ?: 0.0
+                }
+                val realCostP1forP2 = realExpenses.filter { it.paidById == p1.id }.sumOf { exp ->
+                    exp.splits.find { s -> s.participantId == p2.id }?.amount ?: 0.0
+                }
+                val netRealDebtP1toP2 = max(0.0, realCostP2forP1 - realCostP1forP2)
+
+                if (netSettlementP1toP2 > netRealDebtP1toP2 + 0.009) {
+                    val excess = round2(netSettlementP1toP2 - netRealDebtP1toP2)
+                    personalPotsHeld[Pair(p1.id, p2.id)] = excess
+                }
+            }
+        }
+
+        val potHeldForOthersMap = participants.associate { p ->
+            p.id to personalPotsHeld.filter { it.key.second == p.id }.values.sum()
+        }
+        val potOwnedHeldByOthersMap = participants.associate { p ->
+            p.id to personalPotsHeld.filter { it.key.first == p.id }.values.sum()
         }
 
         val transactions = mutableListOf<DebtTransaction>()
@@ -132,7 +192,7 @@ object DebtCalculator {
         // (creditoPorGastos = (totalExpensesPaid - totalDebtDiscountCompensated) - totalExpensesOwed > 0)
         for (b in balances) {
             if (availableBote <= 0.009) break
-            val creditoPorGastos = (b.totalExpensesPaid - b.totalDebtDiscountCompensated) - b.totalExpensesOwed
+            val creditoPorGastos = max(0.0, (b.totalExpensesPaid - b.totalDebtDiscountCompensated) - b.totalExpensesOwed)
             val currentCreditorNeed = creditorRemaining[b.participantId] ?: 0.0
             val eligibleFromBote = min(creditoPorGastos, currentCreditorNeed)
             if (eligibleFromBote > 0.009) {
@@ -186,15 +246,23 @@ object DebtCalculator {
         }
 
         // PASO 2: Deudas de Participantes Restantes
-        // Para cada deudor (netBalance < 0), su deuda es lo que debe de gastos menos lo que ya ha puesto en el bote (-netBalance)
+        // Se calculan las posiciones netas ajustadas excluyendo los botes personales custodiados
+        // (el custodio que recibió un exceso no debe ese dinero como deuda en efectivo, sino que lo administra
+        // como saldo a favor del pagador para futuros gastos; y el pagador no es un acreedor exigiendo cobro en mano).
+        val adjustedNetMap = balances.associate { b ->
+            val potHeld = potHeldForOthersMap[b.participantId] ?: 0.0
+            val potOwned = potOwnedHeldByOthersMap[b.participantId] ?: 0.0
+            b.participantId to round2(b.netBalance + potHeld - potOwned)
+        }
+
         val debtors = balances
-            .filter { it.netBalance < -0.009 }
-            .map { it.participantId to abs(it.netBalance) }
+            .filter { (adjustedNetMap[it.participantId] ?: 0.0) < -0.009 }
+            .map { it.participantId to abs(adjustedNetMap[it.participantId] ?: 0.0) }
             .toMutableList()
 
         val creditors = balances
-            .filter { (creditorRemaining[it.participantId] ?: 0.0) > 0.009 }
-            .map { it.participantId to (creditorRemaining[it.participantId] ?: 0.0) }
+            .filter { (creditorRemaining[it.participantId] ?: 0.0) - (potOwnedHeldByOthersMap[it.participantId] ?: 0.0) > 0.009 }
+            .map { it.participantId to round2((creditorRemaining[it.participantId] ?: 0.0) - (potOwnedHeldByOthersMap[it.participantId] ?: 0.0)) }
             .toMutableList()
 
         var dIdx = 0

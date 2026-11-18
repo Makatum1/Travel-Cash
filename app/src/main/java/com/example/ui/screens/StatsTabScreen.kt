@@ -554,15 +554,15 @@ fun StatsTabScreen(
                         AppLanguage.PT -> "Assumido"
                     }
                     val reserveColLabel = when (currentLang) {
-                        AppLanguage.ES -> "Reserva"
-                        AppLanguage.EN -> "Credit"
-                        AppLanguage.FR -> "Réserve"
-                        AppLanguage.IT -> "Riserva"
-                        AppLanguage.ZH -> "结余"
-                        AppLanguage.NL -> "Tegoed"
-                        AppLanguage.DE -> "Guthaben"
-                        AppLanguage.PL -> "Nadpłata"
-                        AppLanguage.PT -> "Reserva"
+                        AppLanguage.ES -> "Bote personal"
+                        AppLanguage.EN -> "Personal pot"
+                        AppLanguage.FR -> "Cagnotte pers."
+                        AppLanguage.IT -> "Cassa pers."
+                        AppLanguage.ZH -> "个人备用金"
+                        AppLanguage.NL -> "Persoonlijke pot"
+                        AppLanguage.DE -> "Persönliche Kasse"
+                        AppLanguage.PL -> "Własna kasa"
+                        AppLanguage.PT -> "Fundo pessoal"
                     }
                     val debtColLabel = when (currentLang) {
                         AppLanguage.ES -> "Debe"
@@ -598,15 +598,15 @@ fun StatsTabScreen(
                         AppLanguage.PT -> "Em dia"
                     }
                     val inFavorSuffix = when (currentLang) {
-                        AppLanguage.ES -> "a favor"
-                        AppLanguage.EN -> "credit"
-                        AppLanguage.FR -> "en faveur"
-                        AppLanguage.IT -> "a favore"
-                        AppLanguage.ZH -> "结余"
-                        AppLanguage.NL -> "tegoed"
-                        AppLanguage.DE -> "Guthaben"
-                        AppLanguage.PL -> "na plus"
-                        AppLanguage.PT -> "a favor"
+                        AppLanguage.ES -> "a favor / bote"
+                        AppLanguage.EN -> "credit / pot"
+                        AppLanguage.FR -> "en faveur / cagnotte"
+                        AppLanguage.IT -> "a favore / cassa"
+                        AppLanguage.ZH -> "结余 / 备用金"
+                        AppLanguage.NL -> "tegoed / pot"
+                        AppLanguage.DE -> "Guthaben / Kasse"
+                        AppLanguage.PL -> "na plus / kasa"
+                        AppLanguage.PT -> "a favor / fundo"
                     }
                     val owesSuffix = when (currentLang) {
                         AppLanguage.ES -> "debe"

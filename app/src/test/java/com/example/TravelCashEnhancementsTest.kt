@@ -313,4 +313,129 @@ class TravelCashEnhancementsTest {
 
         assertEquals(listOf("e-new", "e-mid", "e-old"), sortedDescending.map { it.id })
     }
+
+    @Test
+    fun excessSettlementPayment_becomesPersonalPotAndConsumesSubsequentExpensesBeforeRegeneratingDebt() {
+        val user1 = ParticipantEntity("u1", "t1", "Usuario 1 (Admin)", "#0066FF")
+        val user2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val participants = listOf(user1, user2)
+
+        // Paso 1: Usuario 1 paga un gasto inicial de 296€ que le correspondía asumir al Usuario 2
+        val initialExpense = ExpenseEntity(
+            id = "exp-init",
+            tripId = "t1",
+            amount = 296.0,
+            currency = "EUR",
+            amountInBaseCurrency = 296.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Hotel",
+            paidById = "u1",
+            splits = listOf(ExpenseSplit("s1", "exp-init", "u2", 296.0, 100.0))
+        )
+
+        val res1 = DebtCalculator.calculateDebtBalances(participants, listOf(initialExpense), emptyList())
+        assertEquals(1, res1.transactions.size)
+        assertEquals("u2", res1.transactions.first().fromParticipantId)
+        assertEquals("u1", res1.transactions.first().toParticipantId)
+        assertEquals(296.0, res1.transactions.first().amount, 0.01)
+
+        // Paso 2: Usuario 2 le da 500€ al Usuario 1 (liquidación manual con pago en exceso)
+        val excessSettlement = ExpenseEntity(
+            id = "settle-excess",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Bizum",
+            notes = "Liquidación con exceso: 500€",
+            paidById = "u2",
+            splits = listOf(ExpenseSplit("s2", "settle-excess", "u1", 500.0, 100.0))
+        )
+
+        val expensesStep2 = listOf(initialExpense, excessSettlement)
+        val res2 = DebtCalculator.calculateDebtBalances(participants, expensesStep2, emptyList())
+        val netReport2 = ParticipantNetSpendCalculator.calculate(participants, expensesStep2, emptyList())
+
+        val u1Balance2 = res2.participantBalances.first { it.participantId == "u1" }
+        val u2Balance2 = res2.participantBalances.first { it.participantId == "u2" }
+        val u2Summary2 = netReport2.participantSummaries.first { it.participant.id == "u2" }
+
+        // El desembolso de Usuario 2 es 500€, su gasto asumido es 296€ y su balance a favor es +204€
+        assertEquals(500.0, u2Balance2.totalExpensesPaid, 0.01)
+        assertEquals(296.0, u2Balance2.totalExpensesOwed, 0.01)
+        assertEquals(204.0, u2Balance2.netBalance, 0.01)
+
+        assertEquals(500.0, u2Summary2.netSpend, 0.01)
+        assertEquals(296.0, u2Summary2.assumedSpend, 0.01)
+        assertEquals(204.0, u2Summary2.balance, 0.01)
+
+        // No hay deudas pendientes entre ellos: el excedente de 204€ es bote personal de Usuario 2
+        assertTrue(res2.transactions.isEmpty())
+
+        // Paso 3: Usuario 1 paga un nuevo gasto de 100€ imputable a Usuario 2
+        // Se debe ir consumiendo del bote personal (quedan 104€ a favor) y NO generar deuda
+        val expense3 = ExpenseEntity(
+            id = "exp-3",
+            tripId = "t1",
+            amount = 100.0,
+            currency = "EUR",
+            amountInBaseCurrency = 100.0,
+            exchangeRate = 1.0,
+            category = "Restaurantes y Comida",
+            date = "2026-07-03",
+            paymentMethod = "Tarjeta",
+            notes = "Cena",
+            paidById = "u1",
+            splits = listOf(ExpenseSplit("s3", "exp-3", "u2", 100.0, 100.0))
+        )
+
+        val expensesStep3 = listOf(initialExpense, excessSettlement, expense3)
+        val res3 = DebtCalculator.calculateDebtBalances(participants, expensesStep3, emptyList())
+        val u2Balance3 = res3.participantBalances.first { it.participantId == "u2" }
+
+        assertEquals(500.0, u2Balance3.totalExpensesPaid, 0.01)
+        assertEquals(396.0, u2Balance3.totalExpensesOwed, 0.01)
+        assertEquals(104.0, u2Balance3.netBalance, 0.01)
+        // Sigue sin haber deuda porque aún le quedan 104€ en su bote personal
+        assertTrue(res3.transactions.isEmpty())
+
+        // Paso 4: Usuario 1 paga otro gasto de 150€ imputable a Usuario 2
+        // Ahora el consumo total de Usuario 2 es 296 + 100 + 150 = 546€
+        // El bote de 500€ se ha agotado por completo y ahora Usuario 2 vuelve a deber la diferencia (46€) a Usuario 1
+        val expense4 = ExpenseEntity(
+            id = "exp-4",
+            tripId = "t1",
+            amount = 150.0,
+            currency = "EUR",
+            amountInBaseCurrency = 150.0,
+            exchangeRate = 1.0,
+            category = "Excursiones",
+            date = "2026-07-04",
+            paymentMethod = "Tarjeta",
+            notes = "Tour guiado",
+            paidById = "u1",
+            splits = listOf(ExpenseSplit("s4", "exp-4", "u2", 150.0, 100.0))
+        )
+
+        val expensesStep4 = listOf(initialExpense, excessSettlement, expense3, expense4)
+        val res4 = DebtCalculator.calculateDebtBalances(participants, expensesStep4, emptyList())
+        val u2Balance4 = res4.participantBalances.first { it.participantId == "u2" }
+
+        assertEquals(500.0, u2Balance4.totalExpensesPaid, 0.01)
+        assertEquals(546.0, u2Balance4.totalExpensesOwed, 0.01)
+        assertEquals(-46.0, u2Balance4.netBalance, 0.01)
+
+        // Ahora que el bote se agotó, se regenera la deuda pendiente de 46€ desde Usuario 2 a Usuario 1
+        assertEquals(1, res4.transactions.size)
+        val txRegenerated = res4.transactions.first()
+        assertEquals("u2", txRegenerated.fromParticipantId)
+        assertEquals("u1", txRegenerated.toParticipantId)
+        assertEquals(46.0, txRegenerated.amount, 0.01)
+    }
 }

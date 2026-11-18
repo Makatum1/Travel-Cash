@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,15 +15,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -35,6 +40,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -793,6 +800,7 @@ fun SplitsTabScreen(
         SettleDebtsModal(
             trip = trip,
             debtTransactions = debtResult.transactions,
+            participants = participants,
             currentLang = currentLang,
             onDismiss = { showSettleDebtsModal = false },
             onConfirmSettlement = onSettleDebt
@@ -1238,15 +1246,15 @@ private fun ParticipantBalanceInteractiveCard(
                         Text(
                             text = if (balance.netBalance > 0.009) {
                                 when (currentLang) {
-                                    AppLanguage.ES -> "A percibir (se le debe)"
-                                    AppLanguage.EN -> "To receive (owed)"
-                                    AppLanguage.FR -> "À percevoir (on lui doit)"
-                                    AppLanguage.IT -> "Da ricevere (credito)"
-                                    AppLanguage.ZH -> "应收（待还）"
-                                    AppLanguage.NL -> "Te ontvangen (tegoed)"
-                                    AppLanguage.DE -> "Zu erhalten (Guthaben)"
-                                    AppLanguage.PL -> "Do odbioru (należność)"
-                                    AppLanguage.PT -> "A receber (a haver)"
+                                    AppLanguage.ES -> "Saldo a favor (bote personal)"
+                                    AppLanguage.EN -> "Credit balance (personal pot)"
+                                    AppLanguage.FR -> "Solde créditeur (cagnotte pers.)"
+                                    AppLanguage.IT -> "Saldo a favore (cassa pers.)"
+                                    AppLanguage.ZH -> "贷方结余（个人备用金）"
+                                    AppLanguage.NL -> "Tegoed (persoonlijke pot)"
+                                    AppLanguage.DE -> "Guthaben (persönliche Kasse)"
+                                    AppLanguage.PL -> "Saldo dodatnie (własna kasa)"
+                                    AppLanguage.PT -> "Saldo a favor (fundo pessoal)"
                                 }
                             } else if (balance.netBalance < -0.009) {
                                 when (currentLang) {
@@ -1384,15 +1392,15 @@ private fun ParticipantBalanceInteractiveCard(
                     HorizontalDivider(color = Color(0xFFE2E8F0))
                     MathRow(
                         label = when (currentLang) {
-                            AppLanguage.ES -> "Fórmula Balance Neto:"
-                            AppLanguage.EN -> "Net Balance Formula:"
-                            AppLanguage.FR -> "Formule du solde net :"
-                            AppLanguage.IT -> "Formula saldo netto:"
-                            AppLanguage.ZH -> "净余额公式："
-                            AppLanguage.NL -> "Formule nettosaldo:"
-                            AppLanguage.DE -> "Nettosaldo-Formel:"
-                            AppLanguage.PL -> "Wzór salda netto:"
-                            AppLanguage.PT -> "Fórmula Saldo Líquido:"
+                            AppLanguage.ES -> if (isPositive) "Saldo a favor (bote personal):" else "Deuda pendiente:"
+                            AppLanguage.EN -> if (isPositive) "Credit balance (personal pot):" else "Pending debt:"
+                            AppLanguage.FR -> if (isPositive) "Solde créditeur (cagnotte pers.) :" else "Dette en attente :"
+                            AppLanguage.IT -> if (isPositive) "Saldo a favore (cassa pers.):" else "Debito in sospeso:"
+                            AppLanguage.ZH -> if (isPositive) "贷方结余（个人备用金）：" else "待还债务："
+                            AppLanguage.NL -> if (isPositive) "Tegoed (persoonlijke pot):" else "Openstaande schuld:"
+                            AppLanguage.DE -> if (isPositive) "Guthaben (persönliche Kasse):" else "Ausstehende Schuld:"
+                            AppLanguage.PL -> if (isPositive) "Saldo dodatnie (własna kasa):" else "Zaległy dług:"
+                            AppLanguage.PT -> if (isPositive) "Saldo a favor (fundo pessoal):" else "Dívida pendente:"
                         },
                         value = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
                         valueColor = if (isPositive) EmeraldGreenDark else CoralRedDark,
@@ -1561,6 +1569,7 @@ private fun MathRow(
 fun SettleDebtsModal(
     trip: TripEntity,
     debtTransactions: List<DebtTransaction>,
+    participants: List<ParticipantEntity>,
     currentLang: AppLanguage,
     onDismiss: () -> Unit,
     onConfirmSettlement: (DebtTransaction, Double, String, String) -> Unit
@@ -1568,8 +1577,18 @@ fun SettleDebtsModal(
     val context = LocalContext.current
     val texts = UiTexts.get(currentLang)
     var selectedDebt by remember { mutableStateOf<DebtTransaction?>(null) }
+    var isManualSettlement by remember { mutableStateOf(false) }
     var amountText by remember { mutableStateOf("") }
     var settlementDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
+
+    var manualPayerId by remember(participants) { mutableStateOf(participants.firstOrNull()?.id.orEmpty()) }
+    var manualPayeeId by remember(participants) {
+        mutableStateOf(
+            participants.getOrNull(1)?.id ?: participants.firstOrNull()?.id.orEmpty()
+        )
+    }
+    var expandedPayerDropdown by remember { mutableStateOf(false) }
+    var expandedPayeeDropdown by remember { mutableStateOf(false) }
 
     val cashLabel = PaymentMethodCatalog.displayName("Efectivo", currentLang)
     val bizumLabel = PaymentMethodCatalog.displayName("Bizum / Transferencia", currentLang)
@@ -1580,6 +1599,18 @@ fun SettleDebtsModal(
     }
     var selectedPaymentMethod by remember(currentLang) { mutableStateOf(cashLabel) }
 
+    val settlementDateLabel = when (currentLang) {
+        AppLanguage.ES -> "Fecha de la liquidación"
+        AppLanguage.EN -> "Settlement date"
+        AppLanguage.FR -> "Date du règlement"
+        AppLanguage.IT -> "Data della liquidazione"
+        AppLanguage.ZH -> "结算日期"
+        AppLanguage.NL -> "Vereffeningsdatum"
+        AppLanguage.DE -> "Abrechnungsdatum"
+        AppLanguage.PL -> "Data rozliczenia"
+        AppLanguage.PT -> "Data da liquidação"
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -1587,14 +1618,22 @@ fun SettleDebtsModal(
             decorFitsSystemWindows = false
         )
     ) {
-        Surface(
+        Box(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(top = 16.dp, bottom = 16.dp)
-                .imePadding(),
-            shape = RoundedCornerShape(20.dp),
-            color = Color.White
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center
         ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                shape = RoundedCornerShape(20.dp),
+                color = Color.White
+            ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 // Cabecera del modal con botón de Cerrar (y Volver si hay deuda seleccionada)
                 Row(
@@ -1616,16 +1655,30 @@ fun SettleDebtsModal(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = when (currentLang) {
-                                AppLanguage.ES -> "Saldar Deudas"
-                                AppLanguage.EN -> "Settle Debts"
-                                AppLanguage.FR -> "Régler les dettes"
-                                AppLanguage.IT -> "Saldare i debiti"
-                                AppLanguage.ZH -> "结清债务"
-                                AppLanguage.NL -> "Schulden vereffenen"
-                                AppLanguage.DE -> "Schulden begleichen"
-                                AppLanguage.PL -> "Ureguluj długi"
-                                AppLanguage.PT -> "Liquidar Dívidas"
+                            text = if (isManualSettlement) {
+                                when (currentLang) {
+                                    AppLanguage.ES -> "Liquidación manual"
+                                    AppLanguage.EN -> "Manual settlement"
+                                    AppLanguage.FR -> "Règlement manuel"
+                                    AppLanguage.IT -> "Liquidazione manuale"
+                                    AppLanguage.ZH -> "手动结算"
+                                    AppLanguage.NL -> "Handmatige vereffening"
+                                    AppLanguage.DE -> "Manuelle Abrechnung"
+                                    AppLanguage.PL -> "Ręczne rozliczenie"
+                                    AppLanguage.PT -> "Liquidação manual"
+                                }
+                            } else {
+                                when (currentLang) {
+                                    AppLanguage.ES -> "Saldar Deudas"
+                                    AppLanguage.EN -> "Settle Debts"
+                                    AppLanguage.FR -> "Régler les dettes"
+                                    AppLanguage.IT -> "Saldare i debiti"
+                                    AppLanguage.ZH -> "结清债务"
+                                    AppLanguage.NL -> "Schulden vereffenen"
+                                    AppLanguage.DE -> "Schulden begleichen"
+                                    AppLanguage.PL -> "Ureguluj długi"
+                                    AppLanguage.PT -> "Liquidar Dívidas"
+                                }
                             },
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                             color = Color.White
@@ -1636,9 +1689,12 @@ fun SettleDebtsModal(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        if (selectedDebt != null) {
+                        if (selectedDebt != null || isManualSettlement) {
                             Button(
-                                onClick = { selectedDebt = null },
+                                onClick = {
+                                    selectedDebt = null
+                                    isManualSettlement = false
+                                },
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.White.copy(alpha = 0.22f),
@@ -1699,7 +1755,7 @@ fun SettleDebtsModal(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (selectedDebt == null) {
+                    if (selectedDebt == null && !isManualSettlement) {
                         // Vista 1: Listado de deudas pendientes
                         Text(
                             text = when (currentLang) {
@@ -1716,6 +1772,47 @@ fun SettleDebtsModal(
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF64748B)
                         )
+
+                        // BOTÓN 'Liquidación manual' EN PRIMERA POSICIÓN DE LA LISTA
+                        Button(
+                            onClick = {
+                                isManualSettlement = true
+                                amountText = ""
+                                settlementDate = java.time.LocalDate.now().toString()
+                                manualPayerId = participants.firstOrNull()?.id.orEmpty()
+                                manualPayeeId = participants.getOrNull(1)?.id ?: participants.firstOrNull()?.id.orEmpty()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = EmeraldGreen,
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("manual_settlement_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = when (currentLang) {
+                                    AppLanguage.ES -> "Liquidación manual"
+                                    AppLanguage.EN -> "Manual settlement"
+                                    AppLanguage.FR -> "Règlement manuel"
+                                    AppLanguage.IT -> "Liquidazione manuale"
+                                    AppLanguage.ZH -> "手动结算"
+                                    AppLanguage.NL -> "Handmatige vereffening"
+                                    AppLanguage.DE -> "Manuelle Abrechnung"
+                                    AppLanguage.PL -> "Ręczne rozliczenie"
+                                    AppLanguage.PT -> "Liquidação manual"
+                                },
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
 
                         if (debtTransactions.isEmpty()) {
                             Surface(
@@ -1806,6 +1903,7 @@ fun SettleDebtsModal(
                                             onClick = {
                                                 selectedDebt = tx
                                                 amountText = String.format(java.util.Locale.US, "%.2f", tx.amount)
+                                                settlementDate = java.time.LocalDate.now().toString()
                                             },
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
@@ -1826,6 +1924,322 @@ fun SettleDebtsModal(
                                             )
                                         }
                                     }
+                                }
+                            }
+                        }
+                    } else if (isManualSettlement) {
+                        // Vista 3: Formulario de Liquidación Manual (selectores libres Pagado por y Pagado a, y Cuantía editable)
+                        val paidByLabel = when (currentLang) {
+                            AppLanguage.ES -> "Pagado por"
+                            AppLanguage.EN -> "Paid by"
+                            AppLanguage.FR -> "Payé par"
+                            AppLanguage.IT -> "Pagato da"
+                            AppLanguage.ZH -> "付款人"
+                            AppLanguage.NL -> "Betaald door"
+                            AppLanguage.DE -> "Bezahlt von"
+                            AppLanguage.PL -> "Zapłacone przez"
+                            AppLanguage.PT -> "Pago por"
+                        }
+                        val paidToLabel = when (currentLang) {
+                            AppLanguage.ES -> "Pagado a"
+                            AppLanguage.EN -> "Paid to"
+                            AppLanguage.FR -> "Payé à"
+                            AppLanguage.IT -> "Pagato a"
+                            AppLanguage.ZH -> "收款人"
+                            AppLanguage.NL -> "Betaald aan"
+                            AppLanguage.DE -> "Bezahlt an"
+                            AppLanguage.PL -> "Zapłacone dla"
+                            AppLanguage.PT -> "Pago a"
+                        }
+                        val amountInputLabel = when (currentLang) {
+                            AppLanguage.ES -> "Cuantía (${trip.baseCurrency})"
+                            AppLanguage.EN -> "Amount (${trip.baseCurrency})"
+                            AppLanguage.FR -> "Montant (${trip.baseCurrency})"
+                            AppLanguage.IT -> "Importo (${trip.baseCurrency})"
+                            AppLanguage.ZH -> "金额 (${trip.baseCurrency})"
+                            AppLanguage.NL -> "Bedrag (${trip.baseCurrency})"
+                            AppLanguage.DE -> "Betrag (${trip.baseCurrency})"
+                            AppLanguage.PL -> "Kwota (${trip.baseCurrency})"
+                            AppLanguage.PT -> "Quantia (${trip.baseCurrency})"
+                        }
+
+                        // Selector Pagado por
+                        Text(
+                            text = paidByLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF475569)
+                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            val selectedPayer = participants.find { it.id == manualPayerId }
+                            Surface(
+                                onClick = { expandedPayerDropdown = true },
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (selectedPayer != null) {
+                                        com.example.ui.components.EditableParticipantAvatar(
+                                            name = selectedPayer.name,
+                                            avatarColorHex = selectedPayer.avatarColor,
+                                            photoUri = selectedPayer.photoUri,
+                                            onClick = {},
+                                            size = 28.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = selectedPayer.name,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = OceanNavy,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = paidByLabel,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF94A3B8),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                            DropdownMenu(
+                                expanded = expandedPayerDropdown,
+                                onDismissRequest = { expandedPayerDropdown = false },
+                                modifier = Modifier.background(Color.White)
+                            ) {
+                                participants.forEach { p ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                com.example.ui.components.EditableParticipantAvatar(
+                                                    name = p.name,
+                                                    avatarColorHex = p.avatarColor,
+                                                    photoUri = p.photoUri,
+                                                    onClick = {},
+                                                    size = 24.dp
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = p.name,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = if (p.id == manualPayerId) FontWeight.Bold else FontWeight.Normal
+                                                    ),
+                                                    color = OceanNavy
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            manualPayerId = p.id
+                                            if (manualPayeeId == p.id) {
+                                                manualPayeeId = participants.firstOrNull { it.id != p.id }?.id.orEmpty()
+                                            }
+                                            expandedPayerDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Selector Pagado a
+                        Text(
+                            text = paidToLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF475569)
+                        )
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            val selectedPayee = participants.find { it.id == manualPayeeId }
+                            Surface(
+                                onClick = { expandedPayeeDropdown = true },
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (selectedPayee != null) {
+                                        com.example.ui.components.EditableParticipantAvatar(
+                                            name = selectedPayee.name,
+                                            avatarColorHex = selectedPayee.avatarColor,
+                                            photoUri = selectedPayee.photoUri,
+                                            onClick = {},
+                                            size = 28.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = selectedPayee.name,
+                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = OceanNavy,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Text(
+                                            text = paidToLabel,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color(0xFF94A3B8),
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowDropDown,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                            DropdownMenu(
+                                expanded = expandedPayeeDropdown,
+                                onDismissRequest = { expandedPayeeDropdown = false },
+                                modifier = Modifier.background(Color.White)
+                            ) {
+                                participants.filter { it.id != manualPayerId }.forEach { p ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                com.example.ui.components.EditableParticipantAvatar(
+                                                    name = p.name,
+                                                    avatarColorHex = p.avatarColor,
+                                                    photoUri = p.photoUri,
+                                                    onClick = {},
+                                                    size = 24.dp
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = p.name,
+                                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                                        fontWeight = if (p.id == manualPayeeId) FontWeight.Bold else FontWeight.Normal
+                                                    ),
+                                                    color = OceanNavy
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            manualPayeeId = p.id
+                                            expandedPayeeDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Cuantía editable libremente
+                        OutlinedTextField(
+                            value = amountText,
+                            onValueChange = { amountText = it },
+                            label = {
+                                Text(amountInputLabel)
+                            },
+                            placeholder = { Text("0.00") },
+                            singleLine = true,
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                            ),
+                            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color(0xFF334155),
+                                unfocusedTextColor = Color(0xFF334155),
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = EmeraldGreenDark,
+                                unfocusedBorderColor = Color(0xFFCBD5E1)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("manual_settlement_amount_input")
+                        )
+
+                        // Fecha de la liquidación (editable y con hoy por defecto)
+                        Surface(
+                            onClick = {
+                                val d = try {
+                                    java.time.LocalDate.parse(FormatUtils.parseFlexibleDateToIso(settlementDate))
+                                } catch (_: Exception) {
+                                    java.time.LocalDate.now()
+                                }
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        settlementDate = String.format(
+                                            java.util.Locale.US,
+                                            "%04d-%02d-%02d",
+                                            year,
+                                            month + 1,
+                                            dayOfMonth
+                                        )
+                                    },
+                                    d.year,
+                                    d.monthValue - 1,
+                                    d.dayOfMonth
+                                ).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = EmeraldGreenDark)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = settlementDateLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = FormatUtils.formatShortDate(settlementDate, currentLang.locale),
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = OceanNavy
+                                    )
+                                }
+                            }
+                        }
+
+                        // Método de pago para registrar la liquidación
+                        Text(
+                            text = texts.paymentMethodLabel,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color(0xFF475569)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            paymentMethods.forEach { method ->
+                                val isSelected = selectedPaymentMethod == method
+                                Button(
+                                    onClick = { selectedPaymentMethod = method },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
+                                        contentColor = if (isSelected) Color.White else Color(0xFF334155)
+                                    ),
+                                    border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
+                                ) {
+                                    Text(
+                                        text = method,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        ),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1
+                                    )
                                 }
                             }
                         }
@@ -2110,9 +2524,12 @@ fun SettleDebtsModal(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (selectedDebt != null) {
+                    if (selectedDebt != null || isManualSettlement) {
                         Button(
-                            onClick = { selectedDebt = null },
+                            onClick = {
+                                selectedDebt = null
+                                isManualSettlement = false
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFE2E8F0),
@@ -2149,17 +2566,39 @@ fun SettleDebtsModal(
                         }
 
                         val parsedAmt = amountText.replace(",", ".").toDoubleOrNull() ?: 0.0
-                        val isValid = parsedAmt > 0.009
+                        val isValid = parsedAmt > 0.009 && (!isManualSettlement || (manualPayerId.isNotBlank() && manualPayeeId.isNotBlank() && manualPayerId != manualPayeeId))
                         Button(
                             onClick = {
-                                if (isValid && selectedDebt != null) {
-                                    onConfirmSettlement(
-                                        selectedDebt!!,
-                                        parsedAmt,
-                                        selectedPaymentMethod,
-                                        FormatUtils.parseFlexibleDateToIso(settlementDate)
-                                    )
-                                    onDismiss()
+                                if (isValid) {
+                                    if (isManualSettlement) {
+                                        val payer = participants.find { it.id == manualPayerId }
+                                        val payee = participants.find { it.id == manualPayeeId }
+                                        if (payer != null && payee != null) {
+                                            val tx = DebtTransaction(
+                                                fromParticipantId = payer.id,
+                                                fromName = payer.name,
+                                                toParticipantId = payee.id,
+                                                toName = payee.name,
+                                                amount = parsedAmt,
+                                                isFromBote = false
+                                            )
+                                            onConfirmSettlement(
+                                                tx,
+                                                parsedAmt,
+                                                selectedPaymentMethod,
+                                                FormatUtils.parseFlexibleDateToIso(settlementDate)
+                                            )
+                                            onDismiss()
+                                        }
+                                    } else if (selectedDebt != null) {
+                                        onConfirmSettlement(
+                                            selectedDebt!!,
+                                            parsedAmt,
+                                            selectedPaymentMethod,
+                                            FormatUtils.parseFlexibleDateToIso(settlementDate)
+                                        )
+                                        onDismiss()
+                                    }
                                 }
                             },
                             enabled = isValid,
@@ -2224,4 +2663,5 @@ fun SettleDebtsModal(
             }
         }
     }
+}
 }
