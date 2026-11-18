@@ -1,5 +1,6 @@
 ﻿package com.example.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -50,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,7 +104,8 @@ fun SplitsTabScreen(
     onAddIncomeClick: () -> Unit,
     onEditIncomeClick: (IncomeEntity) -> Unit,
     onDeleteIncomeClick: (String) -> Unit,
-    onSettleDebt: (DebtTransaction, Double, String) -> Unit = { _, _, _ -> },
+    onExpenseClick: (ExpenseEntity) -> Unit = {},
+    onSettleDebt: (DebtTransaction, Double, String, String) -> Unit = { _, _, _, _ -> },
     topHeader: @Composable () -> Unit = {}
 ) {
     val currentLang = LocalAppLanguage.current
@@ -333,6 +337,7 @@ fun SplitsTabScreen(
                                     expenses = expenses,
                                     incomes = incomes,
                                     currentLang = currentLang,
+                                    onExpenseClick = onExpenseClick,
                                     onClick = {
                                         expandedTransactionIndex = if (isExpanded) null else idx
                                     }
@@ -385,10 +390,13 @@ fun SplitsTabScreen(
                                 baseCurrency = trip.baseCurrency,
                                 isExpanded = isExpanded,
                                 expenses = expenses,
+                                incomes = incomes,
                                 currentLang = currentLang,
                                 onAvatarClick = {
                                     participantMap[balance.participantId]?.let { onParticipantAvatarClick(it) }
                                 },
+                                onExpenseClick = onExpenseClick,
+                                onIncomeClick = onEditIncomeClick,
                                 onClick = {
                                     expandedParticipantId = if (isExpanded) null else balance.participantId
                                 }
@@ -802,6 +810,7 @@ private fun SettlementTransactionCard(
     expenses: List<ExpenseEntity>,
     incomes: List<IncomeEntity>,
     currentLang: AppLanguage,
+    onExpenseClick: (ExpenseEntity) -> Unit,
     onClick: () -> Unit
 ) {
     val texts = UiTexts.get(currentLang)
@@ -1077,6 +1086,8 @@ private fun SettlementTransactionCard(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { onExpenseClick(exp) }
                                     .padding(vertical = 2.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
@@ -1184,8 +1195,11 @@ private fun ParticipantBalanceInteractiveCard(
     baseCurrency: String,
     isExpanded: Boolean,
     expenses: List<ExpenseEntity>,
+    incomes: List<IncomeEntity>,
     currentLang: AppLanguage,
     onAvatarClick: () -> Unit,
+    onExpenseClick: (ExpenseEntity) -> Unit,
+    onIncomeClick: (IncomeEntity) -> Unit,
     onClick: () -> Unit
 ) {
     val isPositive = balance.netBalance >= -0.004
@@ -1402,54 +1416,114 @@ private fun ParticipantBalanceInteractiveCard(
                         color = OceanNavy
                     )
 
-                    expenses.filter { exp ->
+                    val paidLabel = when (currentLang) {
+                        AppLanguage.ES -> "Pagó"
+                        AppLanguage.EN -> "Paid"
+                        AppLanguage.FR -> "A payé"
+                        AppLanguage.IT -> "Ha pagato"
+                        AppLanguage.ZH -> "支付了"
+                        AppLanguage.NL -> "Betaalde"
+                        AppLanguage.DE -> "Bezahlte"
+                        AppLanguage.PL -> "Zapłacił(a)"
+                        AppLanguage.PT -> "Pagou"
+                    }
+                    val shareLabel = when (currentLang) {
+                        AppLanguage.ES -> "Cuota"
+                        AppLanguage.EN -> "Share"
+                        AppLanguage.FR -> "Part"
+                        AppLanguage.IT -> "Quota"
+                        AppLanguage.ZH -> "份额"
+                        AppLanguage.NL -> "Aandeel"
+                        AppLanguage.DE -> "Anteil"
+                        AppLanguage.PL -> "Udział"
+                        AppLanguage.PT -> "Quota"
+                    }
+                    val potPutLabel = when (currentLang) {
+                        AppLanguage.ES -> "Bote"
+                        AppLanguage.EN -> "Pot"
+                        AppLanguage.FR -> "Cagnotte"
+                        AppLanguage.IT -> "Cassa"
+                        AppLanguage.ZH -> "公账"
+                        AppLanguage.NL -> "Pot"
+                        AppLanguage.DE -> "Kasse"
+                        AppLanguage.PL -> "Kasa"
+                        AppLanguage.PT -> "Fundo"
+                    }
+
+                    // Lista cronológica unificada: gastos, liquidaciones y aportaciones al bote sincronizados por fecha
+                    val expenseMovements = expenses.filter { exp ->
                         exp.paidById == balance.participantId || exp.splits.any { it.participantId == balance.participantId }
-                    }.sortedWith(compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }.thenBy { it.createdAt }).forEach { exp ->
-                        val paidThis = exp.paidById == balance.participantId
-                        val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
-                        val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
-                        val paidLabel = when (currentLang) {
-                            AppLanguage.ES -> "Pagó"
-                            AppLanguage.EN -> "Paid"
-                            AppLanguage.FR -> "A payé"
-                            AppLanguage.IT -> "Ha pagato"
-                            AppLanguage.ZH -> "支付了"
-                            AppLanguage.NL -> "Betaalde"
-                            AppLanguage.DE -> "Bezahlte"
-                            AppLanguage.PL -> "Zapłacił(a)"
-                            AppLanguage.PT -> "Pagou"
-                        }
-                        val shareLabel = when (currentLang) {
-                            AppLanguage.ES -> "Cuota"
-                            AppLanguage.EN -> "Share"
-                            AppLanguage.FR -> "Part"
-                            AppLanguage.IT -> "Quota"
-                            AppLanguage.ZH -> "份额"
-                            AppLanguage.NL -> "Aandeel"
-                            AppLanguage.DE -> "Anteil"
-                            AppLanguage.PL -> "Udział"
-                            AppLanguage.PT -> "Quota"
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "• ${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${exp.placeName.ifBlank { displayCat }.take(22)}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = OceanNavy,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Text(
-                                text = buildString {
-                                    if (paidThis) {
-                                        append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
+                    }.map { exp ->
+                        Triple(FormatUtils.parseFlexibleDateToIso(exp.date), exp.createdAt, exp as Any)
+                    }
+                    val incomeMovements = incomes.mapNotNull { inc ->
+                        val contrib = inc.contributions.find { it.participantId == balance.participantId && (it.amount > 0.004 || (it.debtDiscount ?: 0.0) > 0.004) }
+                        if (contrib != null) {
+                            Triple(FormatUtils.parseFlexibleDateToIso(inc.date), 0L, (inc to contrib) as Any)
+                        } else null
+                    }
+                    val unifiedMovements = (expenseMovements + incomeMovements)
+                        .sortedWith(compareBy<Triple<String, Long, Any>> { it.first }.thenBy { it.second })
+
+                    unifiedMovements.forEach { (_, _, rawItem) ->
+                        when (rawItem) {
+                            is ExpenseEntity -> {
+                                val exp = rawItem
+                                val paidThis = exp.paidById == balance.participantId
+                                val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
+                                val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .clickable { onExpenseClick(exp) }
+                                        .padding(vertical = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "• ${FormatUtils.formatShortDate(exp.date, currentLang.locale)} · ${exp.placeName.ifBlank { displayCat }.take(24)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = OceanNavy,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = buildString {
+                                            if (paidThis) {
+                                                append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
+                                            }
+                                            append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
+                                        },
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = if (paidThis) TravelBlue else Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                            is Pair<*, *> -> {
+                                val inc = rawItem.first as? IncomeEntity
+                                val contrib = rawItem.second as? com.example.data.model.IncomeContribution
+                                if (inc != null && contrib != null) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .clickable { onIncomeClick(inc) }
+                                            .padding(vertical = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = "• ${FormatUtils.formatShortDate(inc.date, currentLang.locale)} · ${inc.description.ifBlank { potPutLabel }.take(24)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = EmeraldGreenDark,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Text(
+                                            text = "$potPutLabel: +${FormatUtils.formatCurrency(contrib.amount, baseCurrency, currentLang.locale)}",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = EmeraldGreenDark
+                                        )
                                     }
-                                    append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
-                                },
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = if (paidThis) TravelBlue else Color(0xFF64748B)
-                            )
+                                }
+                            }
                         }
                     }
                 }
@@ -1489,11 +1563,13 @@ fun SettleDebtsModal(
     debtTransactions: List<DebtTransaction>,
     currentLang: AppLanguage,
     onDismiss: () -> Unit,
-    onConfirmSettlement: (DebtTransaction, Double, String) -> Unit
+    onConfirmSettlement: (DebtTransaction, Double, String, String) -> Unit
 ) {
+    val context = LocalContext.current
     val texts = UiTexts.get(currentLang)
     var selectedDebt by remember { mutableStateOf<DebtTransaction?>(null) }
     var amountText by remember { mutableStateOf("") }
+    var settlementDate by remember { mutableStateOf(java.time.LocalDate.now().toString()) }
 
     val cashLabel = PaymentMethodCatalog.displayName("Efectivo", currentLang)
     val bizumLabel = PaymentMethodCatalog.displayName("Bizum / Transferencia", currentLang)
@@ -1924,6 +2000,67 @@ fun SettleDebtsModal(
                             }
                         }
 
+                        // Fecha de la liquidación (editable y sincronizada en toda la app)
+                        val settlementDateLabel = when (currentLang) {
+                            AppLanguage.ES -> "Fecha de la liquidación"
+                            AppLanguage.EN -> "Settlement date"
+                            AppLanguage.FR -> "Date du règlement"
+                            AppLanguage.IT -> "Data della liquidazione"
+                            AppLanguage.ZH -> "结算日期"
+                            AppLanguage.NL -> "Vereffeningsdatum"
+                            AppLanguage.DE -> "Abrechnungsdatum"
+                            AppLanguage.PL -> "Data rozliczenia"
+                            AppLanguage.PT -> "Data da liquidação"
+                        }
+                        Surface(
+                            onClick = {
+                                val d = try {
+                                    java.time.LocalDate.parse(FormatUtils.parseFlexibleDateToIso(settlementDate))
+                                } catch (_: Exception) {
+                                    java.time.LocalDate.now()
+                                }
+                                DatePickerDialog(
+                                    context,
+                                    { _, year, month, dayOfMonth ->
+                                        settlementDate = String.format(
+                                            java.util.Locale.US,
+                                            "%04d-%02d-%02d",
+                                            year,
+                                            month + 1,
+                                            dayOfMonth
+                                        )
+                                    },
+                                    d.year,
+                                    d.monthValue - 1,
+                                    d.dayOfMonth
+                                ).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = EmeraldGreenDark)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = settlementDateLabel,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = FormatUtils.formatShortDate(settlementDate, currentLang.locale),
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = OceanNavy
+                                    )
+                                }
+                            }
+                        }
+
                         // Método de pago para registrar la liquidación
                         Text(
                             text = texts.paymentMethodLabel,
@@ -2016,7 +2153,12 @@ fun SettleDebtsModal(
                         Button(
                             onClick = {
                                 if (isValid && selectedDebt != null) {
-                                    onConfirmSettlement(selectedDebt!!, parsedAmt, selectedPaymentMethod)
+                                    onConfirmSettlement(
+                                        selectedDebt!!,
+                                        parsedAmt,
+                                        selectedPaymentMethod,
+                                        FormatUtils.parseFlexibleDateToIso(settlementDate)
+                                    )
                                     onDismiss()
                                 }
                             },

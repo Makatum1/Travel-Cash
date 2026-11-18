@@ -22,7 +22,9 @@ import com.example.domain.DebtCalculator
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppThemeMode
 import com.example.util.CsvColumnMapping
+import com.example.util.DailyReminderScheduler
 import com.example.util.ExportImportManager
+import com.example.util.FormatUtils
 import com.example.util.ParsedCsvSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -169,6 +171,21 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     )
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
+    private val _reminderNotificationsEnabled = MutableStateFlow(
+        prefs.getBoolean(DailyReminderScheduler.KEY_ENABLED, true)
+    )
+    val reminderNotificationsEnabled: StateFlow<Boolean> = _reminderNotificationsEnabled.asStateFlow()
+
+    private val _reminderHour = MutableStateFlow(
+        prefs.getInt(DailyReminderScheduler.KEY_HOUR, DailyReminderScheduler.DEFAULT_HOUR).coerceIn(0, 23)
+    )
+    val reminderHour: StateFlow<Int> = _reminderHour.asStateFlow()
+
+    private val _reminderMinute = MutableStateFlow(
+        prefs.getInt(DailyReminderScheduler.KEY_MINUTE, DailyReminderScheduler.DEFAULT_MINUTE).coerceIn(0, 59)
+    )
+    val reminderMinute: StateFlow<Int> = _reminderMinute.asStateFlow()
+
     private val _selectedTab = MutableStateFlow(MainTab.EXPENSES)
     val selectedTab: StateFlow<MainTab> = _selectedTab.asStateFlow()
 
@@ -275,7 +292,16 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     init {
         val initialLang = _language.value
         java.util.Locale.setDefault(initialLang.locale)
-        com.example.util.FormatUtils.currentAppLocale = initialLang.locale
+        FormatUtils.currentAppLocale = initialLang.locale
+
+        // Por defecto el recordatorio diario está activado a las 21:00 (o a la hora configurada por el usuario)
+        if (_reminderNotificationsEnabled.value) {
+            DailyReminderScheduler.scheduleDailyReminder(
+                context = getApplication(),
+                hour = _reminderHour.value,
+                minute = _reminderMinute.value
+            )
+        }
 
         viewModelScope.launch {
             val seedTripId = repository.ensureSeedDataIfEmpty()
@@ -844,11 +870,6 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
 
 
 
-    private val _reminderNotificationsEnabled = MutableStateFlow(
-        prefs.getBoolean("reminder_notifications_enabled", false)
-    )
-    val reminderNotificationsEnabled: StateFlow<Boolean> = _reminderNotificationsEnabled.asStateFlow()
-
     fun setThemeMode(mode: AppThemeMode) {
         _themeMode.value = mode
         prefs.edit().putString("theme_mode_v2", mode.name).apply()
@@ -875,96 +896,31 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
 
     fun setReminderNotificationsEnabled(enabled: Boolean) {
         _reminderNotificationsEnabled.value = enabled
-        prefs.edit().putBoolean("reminder_notifications_enabled", enabled).apply()
+        prefs.edit().putBoolean(DailyReminderScheduler.KEY_ENABLED, enabled).apply()
         val lang = _language.value
         val app = getApplication<Application>()
-        val nm = app.getSystemService(Context.NOTIFICATION_SERVICE) as? android.app.NotificationManager
-        val channelId = "travel_cash_reminders"
-
-        val channelName = when (lang) {
-            AppLanguage.ES -> "Recordatorios de Gastos de Viaje"
-            AppLanguage.EN -> "Trip Expense Reminders"
-            AppLanguage.FR -> "Rappels de dépenses de voyage"
-            AppLanguage.IT -> "Promemoria spese di viaggio"
-            AppLanguage.ZH -> "旅行支出提醒"
-            AppLanguage.NL -> "Reiskostenherinneringen"
-            AppLanguage.DE -> "Reisekosten-Erinnerungen"
-            AppLanguage.PL -> "Przypomnienia o wydatkach w podróży"
-            AppLanguage.PT -> "Lembretes de Despesas de Viagem"
-        }
-
-        val channelDesc = when (lang) {
-            AppLanguage.ES -> "Recordatorios para anotar los gastos diarios del viaje y el bote común"
-            AppLanguage.EN -> "Reminders to log daily trip expenses and common pot contributions"
-            AppLanguage.FR -> "Rappels pour enregistrer les dépenses quotidiennes du voyage et la cagnotte"
-            AppLanguage.IT -> "Promemoria per registrare le spese giornaliere del viaggio e la cassa comune"
-            AppLanguage.ZH -> "提醒记录每日旅行支出及公账存入"
-            AppLanguage.NL -> "Herinneringen om dagelijkse reiskosten en inleg in de pot vast te leggen"
-            AppLanguage.DE -> "Erinnerungen zur Erfassung täglicher Reiseausgaben und Kassenbeiträge"
-            AppLanguage.PL -> "Przypomnienia o zapisywaniu codziennych wydatków z podróży i wspólnej kasy"
-            AppLanguage.PT -> "Lembretes para registar as despesas diárias da viagem e o fundo comum"
-        }
-
-        val notifTitle = when (lang) {
-            AppLanguage.ES -> "Travel Cash · Recordatorio Activado"
-            AppLanguage.EN -> "Travel Cash · Expense Reminder Active"
-            AppLanguage.FR -> "Travel Cash · Rappel activé"
-            AppLanguage.IT -> "Travel Cash · Promemoria attivato"
-            AppLanguage.ZH -> "Travel Cash · 支出提醒已激活"
-            AppLanguage.NL -> "Travel Cash · Herinnering actief"
-            AppLanguage.DE -> "Travel Cash · Erinnerung aktiviert"
-            AppLanguage.PL -> "Travel Cash · Przypomnienie aktywne"
-            AppLanguage.PT -> "Travel Cash · Lembrete Ativado"
-        }
+        val formattedTime = DailyReminderScheduler.formatTime(_reminderHour.value, _reminderMinute.value)
 
         if (enabled) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val channel = android.app.NotificationChannel(
-                    channelId,
-                    channelName,
-                    android.app.NotificationManager.IMPORTANCE_DEFAULT
-                ).apply {
-                    description = channelDesc
-                }
-                nm?.createNotificationChannel(channel)
-            }
-            try {
-                val activeTitle = uiState.value.activeTrip?.title ?: "Travel Cash"
-                val notifText = when (lang) {
-                    AppLanguage.ES -> "No olvides registrar los gastos de hoy en \"$activeTitle\"."
-                    AppLanguage.EN -> "Don't forget to log today's expenses for \"$activeTitle\"."
-                    AppLanguage.FR -> "N'oubliez pas d'enregistrer les dépenses du jour pour « $activeTitle »."
-                    AppLanguage.IT -> "Non dimenticare di registrare le spese di oggi in \"$activeTitle\"."
-                    AppLanguage.ZH -> "别忘了记录今天在 \"$activeTitle\" 中的支出。"
-                    AppLanguage.NL -> "Vergeet niet de uitgaven van vandaag voor \"$activeTitle\" te registreren."
-                    AppLanguage.DE -> "Vergessen Sie nicht, die heutigen Ausgaben für „$activeTitle“ zu erfassen."
-                    AppLanguage.PL -> "Nie zapomnij zarejestrować dzisiejszych wydatków w „$activeTitle”."
-                    AppLanguage.PT -> "Não se esqueça de registar as despesas de hoje em \"$activeTitle\"."
-                }
-                val notification = androidx.core.app.NotificationCompat.Builder(app, channelId)
-                    .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                    .setContentTitle(notifTitle)
-                    .setContentText(notifText)
-                    .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
-                    .setAutoCancel(true)
-                    .build()
-                nm?.notify(1001, notification)
-            } catch (_: SecurityException) {
-            }
+            DailyReminderScheduler.scheduleDailyReminder(
+                context = app,
+                hour = _reminderHour.value,
+                minute = _reminderMinute.value
+            )
             val enabledToast = when (lang) {
-                AppLanguage.ES -> "🔔 Notificaciones de recordatorio activadas"
-                AppLanguage.EN -> "🔔 Reminder notifications enabled"
-                AppLanguage.FR -> "🔔 Notifications de rappel activées"
-                AppLanguage.IT -> "🔔 Notifiche di promemoria attivate"
-                AppLanguage.ZH -> "🔔 提醒通知已开启"
-                AppLanguage.NL -> "🔔 Herinneringsmeldingen ingeschakeld"
-                AppLanguage.DE -> "🔔 Erinnerungsbenachrichtigungen aktiviert"
-                AppLanguage.PL -> "🔔 Powiadomienia z przypomnieniami włączone"
-                AppLanguage.PT -> "🔔 Notificações de lembrete ativadas"
+                AppLanguage.ES -> "🔔 Recordatorio diario activado a las $formattedTime"
+                AppLanguage.EN -> "🔔 Daily reminder enabled at $formattedTime"
+                AppLanguage.FR -> "🔔 Rappel quotidien activé à $formattedTime"
+                AppLanguage.IT -> "🔔 Promemoria giornaliero attivato alle $formattedTime"
+                AppLanguage.ZH -> "🔔 每日提醒已开启（$formattedTime）"
+                AppLanguage.NL -> "🔔 Dagelijkse herinnering ingeschakeld om $formattedTime"
+                AppLanguage.DE -> "🔔 Tägliche Erinnerung aktiviert um $formattedTime Uhr"
+                AppLanguage.PL -> "🔔 Codzienne przypomnienie włączone o $formattedTime"
+                AppLanguage.PT -> "🔔 Lembrete diário ativado às $formattedTime"
             }
             showToast(enabledToast)
         } else {
-            nm?.cancel(1001)
+            DailyReminderScheduler.cancelDailyReminder(app)
             val disabledToast = when (lang) {
                 AppLanguage.ES -> "🔕 Notificaciones de recordatorio desactivadas"
                 AppLanguage.EN -> "🔕 Reminder notifications disabled"
@@ -978,6 +934,41 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             }
             showToast(disabledToast)
         }
+    }
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        val cleanHour = hour.coerceIn(0, 23)
+        val cleanMinute = minute.coerceIn(0, 59)
+        _reminderHour.value = cleanHour
+        _reminderMinute.value = cleanMinute
+        prefs.edit()
+            .putInt(DailyReminderScheduler.KEY_HOUR, cleanHour)
+            .putInt(DailyReminderScheduler.KEY_MINUTE, cleanMinute)
+            .apply()
+
+        val app = getApplication<Application>()
+        if (_reminderNotificationsEnabled.value) {
+            DailyReminderScheduler.scheduleDailyReminder(
+                context = app,
+                hour = cleanHour,
+                minute = cleanMinute
+            )
+        }
+
+        val lang = _language.value
+        val formattedTime = DailyReminderScheduler.formatTime(cleanHour, cleanMinute)
+        val timeUpdatedToast = when (lang) {
+            AppLanguage.ES -> "⏰ Hora del recordatorio actualizada a las $formattedTime"
+            AppLanguage.EN -> "⏰ Reminder time updated to $formattedTime"
+            AppLanguage.FR -> "⏰ Heure du rappel mise à jour à $formattedTime"
+            AppLanguage.IT -> "⏰ Orario del promemoria aggiornato alle $formattedTime"
+            AppLanguage.ZH -> "⏰ 提醒时间已更新为 $formattedTime"
+            AppLanguage.NL -> "⏰ Herinneringstijd bijgewerkt naar $formattedTime"
+            AppLanguage.DE -> "⏰ Erinnerungszeit auf $formattedTime Uhr geändert"
+            AppLanguage.PL -> "⏰ Godzina przypomnienia zmieniona na $formattedTime"
+            AppLanguage.PT -> "⏰ Hora do lembrete atualizada para as $formattedTime"
+        }
+        showToast(timeUpdatedToast)
     }
 
     fun updateParticipantPhoto(participant: ParticipantEntity, newPhotoUri: String?) {
@@ -1058,12 +1049,15 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     // =========================================================================
     fun saveExpense(expense: ExpenseEntity, isEdit: Boolean) {
         val texts = UiTexts.get(_language.value)
+        val normalizedExpense = expense.copy(
+            date = FormatUtils.parseFlexibleDateToIso(expense.date)
+        )
         viewModelScope.launch {
             if (isEdit) {
-                repository.updateExpense(expense)
+                repository.updateExpense(normalizedExpense)
                 showToast(texts.toastExpenseUpdated)
             } else {
-                repository.insertExpense(expense)
+                repository.insertExpense(normalizedExpense)
                 showToast(texts.toastExpenseSaved)
             }
         }
@@ -1082,12 +1076,15 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     // =========================================================================
     fun saveIncome(income: IncomeEntity, isEdit: Boolean) {
         val texts = UiTexts.get(_language.value)
+        val normalizedIncome = income.copy(
+            date = FormatUtils.parseFlexibleDateToIso(income.date)
+        )
         viewModelScope.launch {
             if (isEdit) {
-                repository.updateIncome(income)
+                repository.updateIncome(normalizedIncome)
                 showToast(texts.toastIncomeSaved)
             } else {
-                repository.insertIncome(income)
+                repository.insertIncome(normalizedIncome)
                 showToast(texts.toastIncomeSaved)
             }
         }

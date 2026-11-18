@@ -95,17 +95,19 @@ fun StatsTabScreen(
         FormatUtils.calculateTripDays(trip.startDate, trip.endDate)
     }
     val avgPerDay = if (tripDays > 0) totalSpent / tripDays else 0.0
-    val avgPerPerson = netSpendReport.equalShareAverage
 
-    val highestSpendingDay = remember(realExpenses) {
-        realExpenses.groupBy { it.date }
-            .mapValues { (_, list) -> list.sumOf { it.amountInBaseCurrency } }
-            .maxByOrNull { it.value }
+    val byPersonAndCategory = remember(participants, expenses) {
+        ParticipantNetSpendCalculator.calculateByParticipantAndCategory(
+            participants = participants,
+            expenses = expenses
+        )
     }
 
-    // Estado interactivo de filas desplegadas en Categorías y Personas
+    // Estado interactivo de filas desplegadas en Categorías, Personas y Persona × Categoría
     var expandedCategoryName by remember { mutableStateOf<String?>(null) }
     var expandedPersonId by remember { mutableStateOf<String?>(null) }
+    var expandedPersonCategoryId by remember { mutableStateOf<String?>(null) }
+    var expandedPersonCategoryDetailKey by remember { mutableStateOf<String?>(null) }
 
     val byCategory = remember(expenses) {
         expenses.groupBy { CategoryCatalog.resolveCategoryName(it) }
@@ -137,85 +139,49 @@ fun StatsTabScreen(
             topHeader()
         }
 
-        // TARJETAS RESUMEN SUPERIORES (4 KPIs)
+        // TARJETAS RESUMEN SUPERIORES (Gasto Total y Media por Día)
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val realExpCount = netSpendReport.realExpenseCount
-                    val expCountSubtitle = when (currentLang) {
-                        AppLanguage.ES -> "$realExpCount gastos registrados"
-                        AppLanguage.EN -> "$realExpCount expenses recorded"
-                        AppLanguage.FR -> "$realExpCount dépenses enregistrées"
-                        AppLanguage.IT -> "$realExpCount spese registrate"
-                        AppLanguage.ZH -> "已记录 $realExpCount 笔支出"
-                        AppLanguage.NL -> "$realExpCount geregistreerde uitgaven"
-                        AppLanguage.DE -> "$realExpCount erfasste Ausgaben"
-                        AppLanguage.PL -> "$realExpCount zarejestrowanych wydatków"
-                        AppLanguage.PT -> "$realExpCount despesas registadas"
-                    }
-                    SummaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        title = texts.totalSpentTitle,
-                        value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
-                        subtitle = expCountSubtitle,
-                        accentColor = TravelBlue
-                    )
-                    val daysSubtitle = when (currentLang) {
-                        AppLanguage.ES -> "En $tripDays días de viaje"
-                        AppLanguage.EN -> "Over $tripDays trip days"
-                        AppLanguage.FR -> "Sur $tripDays jours de voyage"
-                        AppLanguage.IT -> "In $tripDays giorni di viaggio"
-                        AppLanguage.ZH -> "在 $tripDays 天的行程中"
-                        AppLanguage.NL -> "Over $tripDays reisdagen"
-                        AppLanguage.DE -> "Über $tripDays Reisetage"
-                        AppLanguage.PL -> "W ciągu $tripDays dni podróży"
-                        AppLanguage.PT -> "Em $tripDays dias de viagem"
-                    }
-                    SummaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        title = texts.avgPerDayTitle,
-                        value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency, currentLang.locale),
-                        subtitle = daysSubtitle,
-                        accentColor = EmeraldGreenDark
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val realExpCount = netSpendReport.realExpenseCount
+                val expCountSubtitle = when (currentLang) {
+                    AppLanguage.ES -> "$realExpCount gastos registrados"
+                    AppLanguage.EN -> "$realExpCount expenses recorded"
+                    AppLanguage.FR -> "$realExpCount dépenses enregistrées"
+                    AppLanguage.IT -> "$realExpCount spese registrate"
+                    AppLanguage.ZH -> "已记录 $realExpCount 笔支出"
+                    AppLanguage.NL -> "$realExpCount geregistreerde uitgaven"
+                    AppLanguage.DE -> "$realExpCount erfasste Ausgaben"
+                    AppLanguage.PL -> "$realExpCount zarejestrowanych wydatków"
+                    AppLanguage.PT -> "$realExpCount despesas registadas"
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val partCountSubtitle = when (currentLang) {
-                        AppLanguage.ES -> "${participants.size} participantes"
-                        AppLanguage.EN -> "${participants.size} participants"
-                        AppLanguage.FR -> "${participants.size} participants"
-                        AppLanguage.IT -> "${participants.size} partecipanti"
-                        AppLanguage.ZH -> "${participants.size} 位参与者"
-                        AppLanguage.NL -> "${participants.size} deelnemers"
-                        AppLanguage.DE -> "${participants.size} Teilnehmer"
-                        AppLanguage.PL -> "${participants.size} uczestników"
-                        AppLanguage.PT -> "${participants.size} participantes"
-                    }
-                    SummaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        title = texts.avgPerPersonTitle,
-                        value = FormatUtils.formatCurrency(avgPerPerson, trip.baseCurrency, currentLang.locale),
-                        subtitle = partCountSubtitle,
-                        accentColor = Color(0xFF6366F1)
-                    )
-                    SummaryStatCard(
-                        modifier = Modifier.weight(1f),
-                        title = texts.highestDayTitle,
-                        value = highestSpendingDay?.let {
-                            FormatUtils.formatCurrency(it.value, trip.baseCurrency, currentLang.locale)
-                        } ?: texts.noDataLabel,
-                        subtitle = highestSpendingDay?.let {
-                            FormatUtils.formatShortDate(it.key, currentLang.locale)
-                        } ?: texts.noDataLabel,
-                        accentColor = Color(0xFFF59E0B)
-                    )
+                SummaryStatCard(
+                    modifier = Modifier.weight(1f),
+                    title = texts.totalSpentTitle,
+                    value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
+                    subtitle = expCountSubtitle,
+                    accentColor = TravelBlue
+                )
+                val daysSubtitle = when (currentLang) {
+                    AppLanguage.ES -> "En $tripDays días de viaje"
+                    AppLanguage.EN -> "Over $tripDays trip days"
+                    AppLanguage.FR -> "Sur $tripDays jours de voyage"
+                    AppLanguage.IT -> "In $tripDays giorni di viaggio"
+                    AppLanguage.ZH -> "在 $tripDays 天的行程中"
+                    AppLanguage.NL -> "Over $tripDays reisdagen"
+                    AppLanguage.DE -> "Über $tripDays Reisetage"
+                    AppLanguage.PL -> "W ciągu $tripDays dni podróży"
+                    AppLanguage.PT -> "Em $tripDays dias de viagem"
                 }
+                SummaryStatCard(
+                    modifier = Modifier.weight(1f),
+                    title = texts.avgPerDayTitle,
+                    value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency, currentLang.locale),
+                    subtitle = daysSubtitle,
+                    accentColor = EmeraldGreenDark
+                )
             }
         }
 
@@ -397,7 +363,7 @@ fun StatsTabScreen(
                                             modifier = Modifier.padding(10.dp),
                                             verticalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
-                                            catExpenses.sortedByDescending { it.date }.forEach { exp ->
+                                            catExpenses.sortedByDescending { FormatUtils.parseFlexibleDateToIso(it.date) }.forEach { exp ->
                                                 val payer = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) {
                                                     texts.commonPotName
                                                 } else {
@@ -994,6 +960,330 @@ fun StatsTabScreen(
 
                         if (idx < summaries.lastIndex) {
                             HorizontalDivider(color = Color(0xFFF1F5F9))
+                        }
+                    }
+                }
+            }
+        }
+
+        // SECCIÓN 2B: DESGLOSE DE GASTOS POR PERSONA Y CATEGORÍA
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("stats_person_category_card"),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    val personCategoryTitle = when (currentLang) {
+                        AppLanguage.ES -> "Gastos por persona y categoría"
+                        AppLanguage.EN -> "Expenses by person & category"
+                        AppLanguage.FR -> "Dépenses par personne et catégorie"
+                        AppLanguage.IT -> "Spese per persona e categoria"
+                        AppLanguage.ZH -> "按人员与类别统计支出"
+                        AppLanguage.NL -> "Uitgaven per persoon en categorie"
+                        AppLanguage.DE -> "Ausgaben nach Person & Kategorie"
+                        AppLanguage.PL -> "Wydatki według osoby i kategorii"
+                        AppLanguage.PT -> "Despesas por pessoa e categoria"
+                    }
+                    val tapForCategoriesHint = when (currentLang) {
+                        AppLanguage.ES -> "Pulsa para ver categorías"
+                        AppLanguage.EN -> "Tap for categories"
+                        AppLanguage.FR -> "Appuyer pour les catégories"
+                        AppLanguage.IT -> "Tocca per le categorie"
+                        AppLanguage.ZH -> "点击查看类别"
+                        AppLanguage.NL -> "Tik voor categorieën"
+                        AppLanguage.DE -> "Tippen für Kategorien"
+                        AppLanguage.PL -> "Dotknij po kategorie"
+                        AppLanguage.PT -> "Tocar para categorias"
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = personCategoryTitle,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                            color = OceanNavy,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = tapForCategoriesHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TravelBlue
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (byPersonAndCategory.isEmpty() || byPersonAndCategory.all { it.categories.isEmpty() }) {
+                        Text(
+                            text = texts.noExpensesYetStats,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF64748B)
+                        )
+                    } else {
+                        byPersonAndCategory.forEachIndexed { idx, personBreakdown ->
+                            val person = personBreakdown.participant
+                            val avatarColor = AvatarColorPalette.parseHexColor(person.avatarColor)
+                            val isPersonExpanded = expandedPersonCategoryId == person.id
+                            val catCount = personBreakdown.categories.size
+                            val expCount = personBreakdown.totalExpenseCount
+
+                            val summarySubtitle = when (currentLang) {
+                                AppLanguage.ES -> "${if (catCount == 1) "1 categoría" else "$catCount categorías"} · ${if (expCount == 1) "1 gasto" else "$expCount gastos"}"
+                                AppLanguage.EN -> "${if (catCount == 1) "1 category" else "$catCount categories"} · ${if (expCount == 1) "1 expense" else "$expCount expenses"}"
+                                AppLanguage.FR -> "${if (catCount == 1) "1 catégorie" else "$catCount catégories"} · ${if (expCount == 1) "1 dépense" else "$expCount dépenses"}"
+                                AppLanguage.IT -> "${if (catCount == 1) "1 categoria" else "$catCount categorie"} · ${if (expCount == 1) "1 spesa" else "$expCount spese"}"
+                                AppLanguage.ZH -> "$catCount 个类别 · $expCount 笔支出"
+                                AppLanguage.NL -> "${if (catCount == 1) "1 categorie" else "$catCount categorieën"} · ${if (expCount == 1) "1 uitgave" else "$expCount uitgaven"}"
+                                AppLanguage.DE -> "${if (catCount == 1) "1 Kategorie" else "$catCount Kategorien"} · ${if (expCount == 1) "1 Ausgabe" else "$expCount Ausgaben"}"
+                                AppLanguage.PL -> "$catCount kat. · $expCount wyd."
+                                AppLanguage.PT -> "${if (catCount == 1) "1 categoria" else "$catCount categorias"} · ${if (expCount == 1) "1 despesa" else "$expCount despesas"}"
+                            }
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable {
+                                        expandedPersonCategoryId = if (isPersonExpanded) null else person.id
+                                    }
+                                    .padding(vertical = 6.dp)
+                                    .testTag("stats_person_cat_row_${person.id}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    com.example.ui.components.EditableParticipantAvatar(
+                                        name = person.name,
+                                        avatarColorHex = person.avatarColor,
+                                        photoUri = person.photoUri,
+                                        onClick = { onParticipantAvatarClick(person) },
+                                        size = 36.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = person.name,
+                                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                                color = OceanNavy,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = FormatUtils.formatCurrency(personBreakdown.totalAmount, trip.baseCurrency, currentLang.locale),
+                                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                                                    color = OceanNavy
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Icon(
+                                                    imageVector = if (isPersonExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF64748B),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = summarySubtitle,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                }
+
+                                AnimatedVisibility(visible = isPersonExpanded) {
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 8.dp),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFF8FAFC),
+                                        border = BorderStroke(1.dp, avatarColor.copy(alpha = 0.35f))
+                                    ) {
+                                        if (personBreakdown.categories.isEmpty()) {
+                                            val noCatExpensesForPerson = when (currentLang) {
+                                                AppLanguage.ES -> "${person.name} no tiene gastos asignados por categoría aún."
+                                                AppLanguage.EN -> "${person.name} has no expenses assigned by category yet."
+                                                AppLanguage.FR -> "${person.name} n'a pas encore de dépenses par catégorie."
+                                                AppLanguage.IT -> "${person.name} non ha ancora spese per categoria."
+                                                AppLanguage.ZH -> "${person.name} 尚未有分类支出。"
+                                                AppLanguage.NL -> "${person.name} heeft nog geen uitgaven per categorie."
+                                                AppLanguage.DE -> "${person.name} hat noch keine Ausgaben nach Kategorie."
+                                                AppLanguage.PL -> "${person.name} nie ma jeszcze wydatków według kategorii."
+                                                AppLanguage.PT -> "${person.name} ainda não tem despesas por categoria."
+                                            }
+                                            Text(
+                                                text = noCatExpensesForPerson,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color(0xFF64748B),
+                                                modifier = Modifier.padding(10.dp)
+                                            )
+                                        } else {
+                                            Column(
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                personBreakdown.categories.forEachIndexed { catIdx, catItem ->
+                                                    val catInfo = CategoryCatalog.getCategory(catItem.categoryName)
+                                                    val displayCatName = CategoryCatalog.displayName(catItem.categoryName, currentLang)
+                                                    val catPct = if (personBreakdown.totalAmount > 0.0) {
+                                                        (catItem.totalAmount / personBreakdown.totalAmount) * 100.0
+                                                    } else 0.0
+                                                    val pctStr = String.format(currentLang.locale, "%.1f", catPct)
+                                                    val detailKey = "${person.id}::${catItem.categoryName}"
+                                                    val isCatDetailOpen = expandedPersonCategoryDetailKey == detailKey
+                                                    val catExpCountText = when (currentLang) {
+                                                        AppLanguage.ES -> "${if (catItem.expenseCount == 1) "1 gasto" else "${catItem.expenseCount} gastos"} · $pctStr%"
+                                                        AppLanguage.EN -> "${if (catItem.expenseCount == 1) "1 expense" else "${catItem.expenseCount} expenses"} · $pctStr%"
+                                                        AppLanguage.FR -> "${if (catItem.expenseCount == 1) "1 dépense" else "${catItem.expenseCount} dépenses"} · $pctStr%"
+                                                        AppLanguage.IT -> "${if (catItem.expenseCount == 1) "1 spesa" else "${catItem.expenseCount} spese"} · $pctStr%"
+                                                        AppLanguage.ZH -> "${catItem.expenseCount} 笔支出 · $pctStr%"
+                                                        AppLanguage.NL -> "${if (catItem.expenseCount == 1) "1 uitgave" else "${catItem.expenseCount} uitgaven"} · $pctStr%"
+                                                        AppLanguage.DE -> "${if (catItem.expenseCount == 1) "1 Ausgabe" else "${catItem.expenseCount} Ausgaben"} · $pctStr%"
+                                                        AppLanguage.PL -> "${catItem.expenseCount} wyd. · $pctStr%"
+                                                        AppLanguage.PT -> "${if (catItem.expenseCount == 1) "1 despesa" else "${catItem.expenseCount} despesas"} · $pctStr%"
+                                                    }
+
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clip(RoundedCornerShape(8.dp))
+                                                            .background(Color.White)
+                                                            .clickable {
+                                                                expandedPersonCategoryDetailKey = if (isCatDetailOpen) null else detailKey
+                                                            }
+                                                            .padding(8.dp)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(30.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(catInfo.color.copy(alpha = 0.16f)),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = catInfo.icon,
+                                                                    contentDescription = displayCatName,
+                                                                    tint = catInfo.color,
+                                                                    modifier = Modifier.size(16.dp)
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Row(
+                                                                    modifier = Modifier.fillMaxWidth(),
+                                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                                    verticalAlignment = Alignment.CenterVertically
+                                                                ) {
+                                                                    Text(
+                                                                        text = displayCatName,
+                                                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                                                        color = OceanNavy,
+                                                                        maxLines = 1,
+                                                                        overflow = TextOverflow.Ellipsis,
+                                                                        modifier = Modifier.weight(1f)
+                                                                    )
+                                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                                    Text(
+                                                                        text = FormatUtils.formatCurrency(catItem.totalAmount, trip.baseCurrency, currentLang.locale),
+                                                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                                                        color = catInfo.color
+                                                                    )
+                                                                }
+                                                                Spacer(modifier = Modifier.height(3.dp))
+                                                                LinearProgressIndicator(
+                                                                    progress = { (catPct / 100.0).toFloat().coerceIn(0f, 1f) },
+                                                                    modifier = Modifier
+                                                                        .fillMaxWidth()
+                                                                        .height(5.dp)
+                                                                        .clip(CircleShape),
+                                                                    color = catInfo.color,
+                                                                    trackColor = Color(0xFFE2E8F0)
+                                                                )
+                                                                Spacer(modifier = Modifier.height(2.dp))
+                                                                Text(
+                                                                    text = catExpCountText,
+                                                                    style = MaterialTheme.typography.labelSmall,
+                                                                    color = Color(0xFF64748B)
+                                                                )
+                                                            }
+                                                        }
+
+                                                        AnimatedVisibility(visible = isCatDetailOpen) {
+                                                            Column(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .padding(top = 6.dp),
+                                                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                            ) {
+                                                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                                                                catItem.details.forEach { detail ->
+                                                                    Row(
+                                                                        modifier = Modifier
+                                                                            .fillMaxWidth()
+                                                                            .clickable { onExpenseClick(detail.expense) }
+                                                                            .padding(vertical = 2.dp),
+                                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                                        verticalAlignment = Alignment.CenterVertically
+                                                                    ) {
+                                                                        Column(modifier = Modifier.weight(1f)) {
+                                                                            Text(
+                                                                                text = detail.expense.placeName.ifBlank { detail.expense.notes.ifBlank { displayCatName } },
+                                                                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                                                                color = OceanNavy,
+                                                                                maxLines = 1,
+                                                                                overflow = TextOverflow.Ellipsis
+                                                                            )
+                                                                            Text(
+                                                                                text = FormatUtils.formatShortDate(detail.expense.date, currentLang.locale),
+                                                                                style = MaterialTheme.typography.labelSmall,
+                                                                                color = Color(0xFF64748B)
+                                                                            )
+                                                                        }
+                                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                                        Text(
+                                                                            text = FormatUtils.formatCurrency(detail.participantAmount, trip.baseCurrency, currentLang.locale),
+                                                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                                                            color = catInfo.color
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (catIdx < personBreakdown.categories.lastIndex) {
+                                                        HorizontalDivider(color = Color(0xFFE2E8F0).copy(alpha = 0.6f))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (idx < byPersonAndCategory.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFF1F5F9))
+                            }
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.app.DatePickerDialog
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,6 +30,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Euro
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
@@ -37,6 +42,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +51,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,9 +108,27 @@ fun ExpensesTabScreen(
         CategoryCatalog.categories.dropLast(1).map { it.name.lowercase(Locale.ROOT) }.toSet()
     }
 
-    // Las liquidaciones de deuda no aparecen en la pestaña Gastos (solo gastos reales del viaje)
+    // Separar gastos reales del viaje y liquidaciones de deuda (que se muestran agrupadas)
     val realExpenses = remember(expenses) {
         expenses.filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+    }
+    val settlementExpenses = remember(expenses) {
+        expenses.filter { CategoryCatalog.isDebtSettlementExpense(it) }
+    }
+
+    val isSettlementsFilterSelected = selectedCategoryFilter != null &&
+        CategoryCatalog.isDebtSettlementCategory(selectedCategoryFilter)
+
+    val settlementsLabel = when (currentLang) {
+        AppLanguage.ES -> "Liquidaciones"
+        AppLanguage.EN -> "Settlements"
+        AppLanguage.FR -> "Règlements"
+        AppLanguage.IT -> "Liquidazioni"
+        AppLanguage.ZH -> "债务结算"
+        AppLanguage.NL -> "Vereffeningen"
+        AppLanguage.DE -> "Abrechnungen"
+        AppLanguage.PL -> "Rozliczenia"
+        AppLanguage.PT -> "Liquidações"
     }
 
     // Contadores por categoría sobre los gastos reales del viaje
@@ -115,21 +142,29 @@ fun ExpensesTabScreen(
         }.eachCount()
     }
 
-    // Filtrado en tiempo real combinable (texto/fecha/categoría) exclusivamente sobre gastos reales
-    val filteredExpenses = remember(realExpenses, searchQuery, selectedDateFilter, selectedCategoryFilter) {
-        val q = searchQuery.trim().lowercase(Locale.ROOT)
-        realExpenses.filter { exp ->
-            val matchesCategory = when {
-                selectedCategoryFilter == null -> true
-                selectedCategoryFilter.equals("General", ignoreCase = true) ->
-                    !standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))
-                else -> exp.category.equals(selectedCategoryFilter, ignoreCase = true)
-            }
+    val normalizedDateFilter = remember(selectedDateFilter) {
+        selectedDateFilter?.let { FormatUtils.parseFlexibleDateToIso(it) }
+    }
 
-            val matchesDate = selectedDateFilter == null || exp.date == selectedDateFilter
+    // Filtrado en tiempo real combinable (texto/fecha/categoría) sobre gastos reales
+    val filteredExpenses = remember(realExpenses, searchQuery, normalizedDateFilter, selectedCategoryFilter) {
+        if (isSettlementsFilterSelected) {
+            emptyList()
+        } else {
+            val q = searchQuery.trim().lowercase(Locale.ROOT)
+            realExpenses.filter { exp ->
+                val matchesCategory = when {
+                    selectedCategoryFilter == null -> true
+                    selectedCategoryFilter.equals("General", ignoreCase = true) ->
+                        !standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))
+                    else -> exp.category.equals(selectedCategoryFilter, ignoreCase = true)
+                }
 
-            val formattedDateShort = FormatUtils.formatShortDate(exp.date, locale).lowercase(Locale.ROOT)
-            val matchesQuery = q.isEmpty() ||
+                val matchesDate = normalizedDateFilter == null ||
+                    FormatUtils.parseFlexibleDateToIso(exp.date) == normalizedDateFilter
+
+                val formattedDateShort = FormatUtils.formatShortDate(exp.date, locale).lowercase(Locale.ROOT)
+                val matchesQuery = q.isEmpty() ||
                     exp.placeName.lowercase(Locale.ROOT).contains(q) ||
                     exp.notes.lowercase(Locale.ROOT).contains(q) ||
                     exp.category.lowercase(Locale.ROOT).contains(q) ||
@@ -137,16 +172,67 @@ fun ExpensesTabScreen(
                     exp.date.lowercase(Locale.ROOT).contains(q) ||
                     formattedDateShort.contains(q)
 
-            matchesCategory && matchesDate && matchesQuery
-        }.sortedWith(
-            compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
-                .thenBy { it.createdAt }
-        )
+                matchesCategory && matchesDate && matchesQuery
+            }.sortedWith(
+                compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                    .thenBy { it.createdAt }
+            )
+        }
+    }
+
+    // Filtrado en tiempo real sobre liquidaciones de deudas
+    val filteredSettlements = remember(
+        settlementExpenses,
+        searchQuery,
+        normalizedDateFilter,
+        selectedCategoryFilter,
+        participantMap,
+        settlementsLabel
+    ) {
+        if (selectedCategoryFilter != null && !isSettlementsFilterSelected) {
+            emptyList()
+        } else {
+            val q = searchQuery.trim().lowercase(Locale.ROOT)
+            settlementExpenses.filter { exp ->
+                val matchesDate = normalizedDateFilter == null ||
+                    FormatUtils.parseFlexibleDateToIso(exp.date) == normalizedDateFilter
+
+                val formattedDateShort = FormatUtils.formatShortDate(exp.date, locale).lowercase(Locale.ROOT)
+                val payerName = if (exp.paidById == DebtCalculator.BOTE_COMUN_ID) {
+                    texts.commonPotName
+                } else {
+                    participantMap[exp.paidById]?.name ?: ""
+                }
+                val recipientNames = exp.splits.mapNotNull { participantMap[it.participantId]?.name }.joinToString(" ")
+
+                val matchesQuery = q.isEmpty() ||
+                    settlementsLabel.lowercase(Locale.ROOT).contains(q) ||
+                    exp.placeName.lowercase(Locale.ROOT).contains(q) ||
+                    exp.notes.lowercase(Locale.ROOT).contains(q) ||
+                    exp.date.lowercase(Locale.ROOT).contains(q) ||
+                    formattedDateShort.contains(q) ||
+                    payerName.lowercase(Locale.ROOT).contains(q) ||
+                    recipientNames.lowercase(Locale.ROOT).contains(q)
+
+                matchesDate && matchesQuery
+            }.sortedWith(
+                compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                    .thenBy { it.createdAt }
+            )
+        }
+    }
+
+    var settlementsExpanded by remember(selectedCategoryFilter) {
+        mutableStateOf(isSettlementsFilterSelected)
     }
 
     val groupedByDate = remember(filteredExpenses) {
-        filteredExpenses.groupBy { it.date }
+        filteredExpenses.groupBy { FormatUtils.parseFlexibleDateToIso(it.date) }
     }
+
+    val showGroupedSettlementsCard = (selectedCategoryFilter == null || isSettlementsFilterSelected) &&
+        filteredSettlements.isNotEmpty()
+    val hasAnyVisibleRecords = filteredExpenses.isNotEmpty() || showGroupedSettlementsCard
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
@@ -347,7 +433,7 @@ fun ExpensesTabScreen(
                         )
                     ) {
                         Text(
-                            text = "${texts.allFilter} (${realExpenses.size})",
+                            text = "${texts.allFilter} (${expenses.size})",
                             fontSize = 11.sp,
                             fontWeight = if (selectedCategoryFilter == null) FontWeight.Bold else FontWeight.Medium,
                             color = if (selectedCategoryFilter == null) Color.White else Color(0xFF475569),
@@ -388,11 +474,43 @@ fun ExpensesTabScreen(
                             }
                         }
                     }
+
+                    // Botón de filtro dedicado para Liquidaciones de deuda
+                    val settlementChipColor = Color(0xFF0E7490)
+                    Surface(
+                        onClick = { onCategoryFilterChange(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY) },
+                        shape = RoundedCornerShape(7.dp),
+                        color = if (isSettlementsFilterSelected) settlementChipColor else Color(0xFFF8FAFC),
+                        border = BorderStroke(
+                            0.8.dp,
+                            if (isSettlementsFilterSelected) settlementChipColor else Color(0xFFCBD5E1)
+                        ),
+                        modifier = Modifier.testTag("filter_chip_settlements")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Euro,
+                                contentDescription = null,
+                                tint = if (isSettlementsFilterSelected) Color.White else settlementChipColor,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "$settlementsLabel (${settlementExpenses.size})",
+                                fontSize = 11.sp,
+                                fontWeight = if (isSettlementsFilterSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSettlementsFilterSelected) Color.White else Color(0xFF334155)
+                            )
+                        }
+                    }
                 }
             }
 
-            // 5. Estado vacío o Listado agrupado por fecha
-            if (filteredExpenses.isEmpty()) {
+            // 5. Estado vacío o Listado agrupado por fecha + Registro agrupado de Liquidaciones
+            if (!hasAnyVisibleRecords) {
                 item(key = "expenses_empty_state") {
                     Box(
                         modifier = Modifier
@@ -409,17 +527,17 @@ fun ExpensesTabScreen(
                             )
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (realExpenses.isEmpty()) texts.noExpensesRecorded else texts.noExpensesMatchFilter,
+                                text = if (expenses.isEmpty()) texts.noExpensesRecorded else texts.noExpensesMatchFilter,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = if (realExpenses.isEmpty()) texts.noExpensesRecordedSubtitle else texts.noExpensesMatchFilterSubtitle,
+                                text = if (expenses.isEmpty()) texts.noExpensesRecordedSubtitle else texts.noExpensesMatchFilterSubtitle,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            if (realExpenses.isNotEmpty()) {
+                            if (expenses.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Surface(
                                     onClick = onClearAllFilters,
@@ -460,6 +578,22 @@ fun ExpensesTabScreen(
                             },
                             currentLang = currentLang,
                             onClick = { onExpenseClick(expense) }
+                        )
+                    }
+                }
+
+                // Registro único agrupado de Liquidaciones (desplegable para ver y editar cada una)
+                if (showGroupedSettlementsCard) {
+                    item(key = "grouped_settlements_card") {
+                        GroupedSettlementsCard(
+                            title = settlementsLabel,
+                            settlements = filteredSettlements,
+                            participantMap = participantMap,
+                            baseCurrency = trip.baseCurrency,
+                            currentLang = currentLang,
+                            isExpanded = settlementsExpanded,
+                            onToggleExpand = { settlementsExpanded = !settlementsExpanded },
+                            onSettlementClick = onExpenseClick
                         )
                     }
                 }
@@ -751,6 +885,198 @@ private fun ExpenseItemCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupedSettlementsCard(
+    title: String,
+    settlements: List<ExpenseEntity>,
+    participantMap: Map<String, ParticipantEntity>,
+    baseCurrency: String,
+    currentLang: AppLanguage,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
+    onSettlementClick: (ExpenseEntity) -> Unit
+) {
+    val texts = UiTexts.get(currentLang)
+    val locale = currentLang.locale
+    val accentColor = Color(0xFF0E7490)
+    val totalSettled = settlements.sumOf { it.amountInBaseCurrency }
+    val count = settlements.size
+
+    val countLabel = when (currentLang) {
+        AppLanguage.ES -> if (count == 1) "1 liquidación · Pulsa para ver y editar" else "$count liquidaciones · Pulsa para ver y editar"
+        AppLanguage.EN -> if (count == 1) "1 settlement · Tap to view & edit" else "$count settlements · Tap to view & edit"
+        AppLanguage.FR -> if (count == 1) "1 règlement · Appuyer pour voir et modifier" else "$count règlements · Appuyer pour voir et modifier"
+        AppLanguage.IT -> if (count == 1) "1 liquidazione · Tocca per vedere e modificare" else "$count liquidazioni · Tocca per vedere e modificare"
+        AppLanguage.ZH -> "$count 笔结算 · 点击查看并编辑"
+        AppLanguage.NL -> if (count == 1) "1 vereffening · Tik om te bekijken en bewerken" else "$count vereffeningen · Tik om te bekijken en bewerken"
+        AppLanguage.DE -> if (count == 1) "1 Abrechnung · Tippen zum Ansehen & Bearbeiten" else "$count Abrechnungen · Tippen zum Ansehen & Bearbeiten"
+        AppLanguage.PL -> if (count == 1) "1 rozliczenie · Dotknij, aby zobaczyć i edytować" else "$count rozliczeń · Dotknij, aby zobaczyć i edytować"
+        AppLanguage.PT -> if (count == 1) "1 liquidação · Tocar para ver e editar" else "$count liquidações · Tocar para ver e editar"
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 6.dp)
+            .testTag("grouped_settlements_record"),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.8.dp),
+        border = BorderStroke(1.2.dp, accentColor.copy(alpha = 0.45f))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Cabecera del registro único agrupado "Liquidaciones"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggleExpand() }
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Euro,
+                        contentDescription = title,
+                        tint = accentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                        color = OceanNavy,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = countLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = FormatUtils.formatCurrency(totalSettled, baseCurrency, locale),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.5.sp
+                        ),
+                        color = accentColor
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = Color(0xFF64748B),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Desplegable con todas las liquidaciones individuales editables
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF8FAFC))
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    settlements.forEachIndexed { idx, settlement ->
+                        val payerName = if (settlement.paidById == DebtCalculator.BOTE_COMUN_ID) {
+                            texts.commonPotName
+                        } else {
+                            participantMap[settlement.paidById]?.name ?: texts.defaultTravelerName
+                        }
+                        val recipientNames = settlement.splits
+                            .filter { it.amount > 0.004 }
+                            .mapNotNull { participantMap[it.participantId]?.name }
+                            .joinToString(", ")
+                        val routeSubtitle = if (recipientNames.isNotBlank()) {
+                            "$payerName → $recipientNames"
+                        } else {
+                            payerName
+                        }
+                        val translatedMethod = PaymentMethodCatalog.displayName(settlement.paymentMethod, currentLang)
+
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { onSettlementClick(settlement) }
+                                .testTag("settlement_item_${settlement.id}"),
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = settlement.placeName.ifBlank { routeSubtitle },
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                        color = OceanNavy,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "📅 ${FormatUtils.formatShortDate(settlement.date, locale)} · $routeSubtitle · $translatedMethod",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color(0xFF64748B),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = FormatUtils.formatCurrency(settlement.amountInBaseCurrency, baseCurrency, locale),
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = accentColor
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = null,
+                                        tint = TravelBlue,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (idx < settlements.lastIndex) {
+                            HorizontalDivider(color = Color(0xFFE2E8F0).copy(alpha = 0.5f))
+                        }
+                    }
                 }
             }
         }

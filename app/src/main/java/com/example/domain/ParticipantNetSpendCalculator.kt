@@ -163,6 +163,25 @@ data class TripNetSpendReport(
     val potMovements: List<CommonPotMovement>
 )
 
+data class ParticipantCategoryExpenseDetail(
+    val expense: ExpenseEntity,
+    val participantAmount: Double
+)
+
+data class ParticipantCategorySpendItem(
+    val categoryName: String,
+    val totalAmount: Double,
+    val expenseCount: Int,
+    val details: List<ParticipantCategoryExpenseDetail>
+)
+
+data class ParticipantCategoryBreakdown(
+    val participant: ParticipantEntity,
+    val totalAmount: Double,
+    val totalExpenseCount: Int,
+    val categories: List<ParticipantCategorySpendItem>
+)
+
 object ParticipantNetSpendCalculator {
 
     private fun round2(value: Double): Double = (value * 100.0).roundToLong() / 100.0
@@ -469,5 +488,68 @@ object ParticipantNetSpendCalculator {
             transfers = allTransfers,
             potMovements = allPotMovements
         )
+    }
+
+    /**
+     * Agrupa los gastos reales del viaje por participante y categoría (excluyendo liquidaciones de deuda),
+     * usando la parte asumida de cada participante en cada gasto para reflejar su gasto real por categoría
+     * (por ejemplo, cuánto ha gastado una persona en Alojamiento, Restaurantes y Comida, Transporte, etc.).
+     */
+    fun calculateByParticipantAndCategory(
+        participants: List<ParticipantEntity>,
+        expenses: List<ExpenseEntity>
+    ): List<ParticipantCategoryBreakdown> {
+        val realExpenses = expenses.filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+
+        return participants.map { participant ->
+            val categoryBuckets = LinkedHashMap<String, MutableList<ParticipantCategoryExpenseDetail>>()
+
+            for (exp in realExpenses) {
+                val share = if (exp.splits.isNotEmpty()) {
+                    exp.splits
+                        .filter { it.participantId == participant.id }
+                        .sumOf { it.amount }
+                } else if (participants.isNotEmpty()) {
+                    exp.amountInBaseCurrency / participants.size
+                } else {
+                    0.0
+                }
+
+                if (share > 0.004) {
+                    val canonicalCat = CategoryCatalog.getCategory(exp.category).name
+                    categoryBuckets
+                        .getOrPut(canonicalCat) { mutableListOf() }
+                        .add(
+                            ParticipantCategoryExpenseDetail(
+                                expense = exp,
+                                participantAmount = round2(share)
+                            )
+                        )
+                }
+            }
+
+            val categories = categoryBuckets.map { (catName, details) ->
+                val sortedDetails = details.sortedByDescending {
+                    FormatUtils.parseFlexibleDateToIso(it.expense.date)
+                }
+                val catTotal = round2(sortedDetails.sumOf { it.participantAmount })
+                ParticipantCategorySpendItem(
+                    categoryName = catName,
+                    totalAmount = catTotal,
+                    expenseCount = sortedDetails.size,
+                    details = sortedDetails
+                )
+            }.sortedByDescending { it.totalAmount }
+
+            val totalForPerson = round2(categories.sumOf { it.totalAmount })
+            val totalCountForPerson = categories.sumOf { it.expenseCount }
+
+            ParticipantCategoryBreakdown(
+                participant = participant,
+                totalAmount = totalForPerson,
+                totalExpenseCount = totalCountForPerson,
+                categories = categories
+            )
+        }.sortedByDescending { it.totalAmount }
     }
 }

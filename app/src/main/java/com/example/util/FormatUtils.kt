@@ -34,7 +34,12 @@ object FormatUtils {
 
     fun formatShortDate(isoDate: String, locale: Locale = currentAppLocale): String {
         return try {
-            val parsed = LocalDate.parse(isoDate.take(10))
+            val normalized = if (isoDate.trim().matches(Regex("\\d{4}-\\d{2}-\\d{2}.*"))) {
+                isoDate.trim().take(10)
+            } else {
+                parseFlexibleDateToIso(isoDate)
+            }
+            val parsed = LocalDate.parse(normalized)
             val lang = locale.language.lowercase(Locale.ROOT)
             val pattern = when (lang) {
                 "zh" -> "yyyy/MM/dd"
@@ -51,7 +56,12 @@ object FormatUtils {
 
     fun formatLongDate(isoDate: String, locale: Locale = currentAppLocale): String {
         return try {
-            val parsed = LocalDate.parse(isoDate.take(10))
+            val normalized = if (isoDate.trim().matches(Regex("\\d{4}-\\d{2}-\\d{2}.*"))) {
+                isoDate.trim().take(10)
+            } else {
+                parseFlexibleDateToIso(isoDate)
+            }
+            val parsed = LocalDate.parse(normalized)
             val lang = locale.language.lowercase(Locale.ROOT)
             val pattern = when (lang) {
                 "zh" -> "yyyy年M月d日 EEEE"

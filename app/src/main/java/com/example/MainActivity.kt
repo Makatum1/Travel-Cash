@@ -156,6 +156,8 @@ fun TravelCashApp(
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val reminderNotificationsEnabled by viewModel.reminderNotificationsEnabled.collectAsStateWithLifecycle()
+    val reminderHour by viewModel.reminderHour.collectAsStateWithLifecycle()
+    val reminderMinute by viewModel.reminderMinute.collectAsStateWithLifecycle()
     val texts = UiTexts.get(language)
 
     fun sanitizeTripFileName(title: String, extension: String): String {
@@ -780,10 +782,13 @@ fun TravelCashApp(
                         themeMode = themeMode,
                         language = language,
                         reminderNotificationsEnabled = reminderNotificationsEnabled,
+                        reminderHour = reminderHour,
+                        reminderMinute = reminderMinute,
                         trips = uiState.trips,
                         onThemeModeChange = viewModel::setThemeMode,
                         onLanguageChange = viewModel::setLanguage,
                         onReminderNotificationsChange = viewModel::setReminderNotificationsEnabled,
+                        onReminderTimeChange = viewModel::setReminderTime,
                         onExportZipClick = { trip ->
                             if (trip == null && uiState.trips.isEmpty()) {
                                 viewModel.showToast(texts.toastNoTripsToExport, isError = true)
@@ -843,7 +848,11 @@ fun TravelCashApp(
                                     showIncomeModal = true
                                 },
                                 onDeleteIncomeClick = viewModel::deleteIncome,
-                                onSettleDebt = { tx, settledAmount, paymentMethod ->
+                                onExpenseClick = { exp ->
+                                    editingExpense = exp
+                                    showAddOrEditExpenseModal = true
+                                },
+                                onSettleDebt = { tx, settledAmount, paymentMethod, settlementDate ->
                                     val expenseId = "settle-${java.util.UUID.randomUUID().toString().take(8)}"
                                     val fromName = if (tx.isFromBote) texts.commonPotName else tx.fromName
                                     val place = if (tx.isFromBote) {
@@ -892,7 +901,7 @@ fun TravelCashApp(
                                         amountInBaseCurrency = settledAmount,
                                         exchangeRate = 1.0,
                                         category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
-                                        date = java.time.LocalDate.now().toString(),
+                                        date = FormatUtils.parseFlexibleDateToIso(settlementDate),
                                         paymentMethod = method,
                                         notes = notes,
                                         latitude = null,

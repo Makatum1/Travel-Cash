@@ -74,6 +74,8 @@ import com.example.data.model.ParticipantEntity
 import com.example.data.model.PaymentMethodCatalog
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
+import com.example.domain.MapPinInput
+import com.example.domain.MapWaypointOffsetCalculator
 import com.example.ui.components.TravelLocationPinIcon
 import com.example.ui.components.createRouteCategoryBadgeDrawable
 import com.example.ui.components.createTravelMapPinDrawable
@@ -140,8 +142,34 @@ fun MapTabScreen(
         }
     }
 
+    // Las liquidaciones de deuda quedan excluidas estrictamente del mapa
     val geoExpenses = remember(expenses) {
-        expenses.filter { it.latitude != null && it.longitude != null }
+        expenses.filter {
+            !CategoryCatalog.isDebtSettlementExpense(it) &&
+                it.latitude != null &&
+                it.longitude != null
+        }
+    }
+
+    // Desplazamiento puramente visual (en tiempo de renderizado) para waypoints con coordenadas idénticas o solapadas.
+    // Nunca modifica las coordenadas reales guardadas en la base de datos.
+    val renderPinCoords = remember(geoExpenses) {
+        val pinInputs = buildList {
+            geoExpenses.forEach { exp ->
+                val lat = exp.latitude ?: return@forEach
+                val lon = exp.longitude ?: return@forEach
+                add(MapPinInput("dest-${exp.id}", lat, lon))
+
+                val oLat = exp.originLatitude
+                val oLon = exp.originLongitude
+                if (oLat != null && oLon != null &&
+                    (kotlin.math.abs(oLat - lat) > 0.00001 || kotlin.math.abs(oLon - lon) > 0.00001)
+                ) {
+                    add(MapPinInput("origin-${exp.id}", oLat, oLon))
+                }
+            }
+        }
+        MapWaypointOffsetCalculator.computeDisplayCoordinates(pinInputs)
     }
 
     // Agrupación de gastos geolocalizados por Categoría canónica
@@ -506,14 +534,15 @@ fun MapTabScreen(
                         AppLanguage.PT -> "Pago por"
                     }
 
-                    // Marcador de origen
+                    // Marcador de origen (con desplazamiento visual si se solapa con otro waypoint)
                     val oLat = exp.originLatitude
                     val oLon = exp.originLongitude
                     if (oLat != null && oLon != null &&
                         (kotlin.math.abs(oLat - lat) > 0.00001 || kotlin.math.abs(oLon - lon) > 0.00001)
                     ) {
+                        val (displayOriginLat, displayOriginLon) = renderPinCoords["origin-${exp.id}"] ?: (oLat to oLon)
                         val originMarker = Marker(map).apply {
-                            position = GeoPoint(oLat, oLon)
+                            position = GeoPoint(displayOriginLat, displayOriginLon)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                             icon = createTravelMapPinDrawable(
                                 context = context,
@@ -530,7 +559,7 @@ fun MapTabScreen(
                                 } else {
                                     selectedExpense = exp
                                     map.controller.setZoom(14.5)
-                                    map.controller.animateTo(GeoPoint(oLat, oLon))
+                                    map.controller.animateTo(GeoPoint(displayOriginLat, displayOriginLon))
                                 }
                                 true
                             }
@@ -538,9 +567,10 @@ fun MapTabScreen(
                         map.overlays.add(originMarker)
                     }
 
-                    // Marcador del gasto
+                    // Marcador del gasto (con desplazamiento visual si coincide con otros waypoints)
+                    val (displayLat, displayLon) = renderPinCoords["dest-${exp.id}"] ?: (lat to lon)
                     val marker = Marker(map).apply {
-                        position = GeoPoint(lat, lon)
+                        position = GeoPoint(displayLat, displayLon)
                         setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         icon = createTravelMapPinDrawable(
                             context = context,
@@ -557,7 +587,7 @@ fun MapTabScreen(
                             } else {
                                 selectedExpense = exp
                                 map.controller.setZoom(16.0)
-                                map.controller.animateTo(GeoPoint(lat, lon))
+                                map.controller.animateTo(GeoPoint(displayLat, displayLon))
                             }
                             true
                         }
@@ -1184,8 +1214,9 @@ fun MapTabScreen(
                                                     val lat = exp.latitude
                                                     val lon = exp.longitude
                                                     if (lat != null && lon != null) {
+                                                        val (dLat, dLon) = renderPinCoords["dest-${exp.id}"] ?: (lat to lon)
                                                         mapViewRef?.controller?.setZoom(16.0)
-                                                        mapViewRef?.controller?.animateTo(GeoPoint(lat, lon))
+                                                        mapViewRef?.controller?.animateTo(GeoPoint(dLat, dLon))
                                                     }
                                                 }
                                             }

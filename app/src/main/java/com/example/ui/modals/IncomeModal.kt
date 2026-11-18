@@ -189,8 +189,11 @@ fun IncomeModal(
         mutableStateOf(existingIncome?.description ?: "Aportación al Bote Común")
     }
 
-    var selectedDate by remember {
-        mutableStateOf(existingIncome?.date ?: LocalDate.now().toString())
+    var selectedDate by remember(existingIncome?.id, existingIncome?.date) {
+        mutableStateOf(
+            existingIncome?.date?.let { FormatUtils.parseFlexibleDateToIso(it) }
+                ?: LocalDate.now().toString()
+        )
     }
 
     val selectedMap = remember {
@@ -942,7 +945,7 @@ fun IncomeModal(
                     Surface(
                         onClick = {
                             val d = try {
-                                LocalDate.parse(selectedDate)
+                                LocalDate.parse(FormatUtils.parseFlexibleDateToIso(selectedDate))
                             } catch (e: Exception) {
                                 LocalDate.now()
                             }
@@ -1094,7 +1097,7 @@ fun IncomeModal(
                                 id = existingIncome?.id ?: "inc-${UUID.randomUUID().toString().take(8)}",
                                 tripId = trip.id,
                                 amount = ((totalReal * 100.0).roundToLong()) / 100.0,
-                                date = selectedDate,
+                                date = FormatUtils.parseFlexibleDateToIso(selectedDate),
                                 description = description.trim().ifEmpty { defaultIncomeDesc },
                                 basePerPerson = if (calculationMethod == "perPerson") {
                                     basePerPersonText.replace(",", ".").toDoubleOrNull()

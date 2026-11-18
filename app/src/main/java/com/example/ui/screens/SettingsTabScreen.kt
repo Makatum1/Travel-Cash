@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.Manifest
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,6 +72,7 @@ import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.EmeraldGreenLight
 import com.example.ui.theme.TravelBlue
+import com.example.util.DailyReminderScheduler
 import com.example.util.UiTexts
 
 @Composable
@@ -77,10 +80,13 @@ fun SettingsTabScreen(
     themeMode: AppThemeMode,
     language: AppLanguage,
     reminderNotificationsEnabled: Boolean,
+    reminderHour: Int = DailyReminderScheduler.DEFAULT_HOUR,
+    reminderMinute: Int = DailyReminderScheduler.DEFAULT_MINUTE,
     trips: List<TripEntity>,
     onThemeModeChange: (AppThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onReminderNotificationsChange: (Boolean) -> Unit,
+    onReminderTimeChange: (Int, Int) -> Unit = { _, _ -> },
     onExportZipClick: (TripEntity?) -> Unit,
     onImportZipClick: () -> Unit
 ) {
@@ -281,17 +287,18 @@ fun SettingsTabScreen(
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                val formattedTime = DailyReminderScheduler.formatTime(reminderHour, reminderMinute)
                                 val reminderSubtitle = if (reminderNotificationsEnabled) {
                                     when (language) {
-                                        AppLanguage.ES -> "Aviso diario a las 21:00 h"
-                                        AppLanguage.EN -> "Notification at 9:00 PM"
-                                        AppLanguage.FR -> "Notification quotidienne à 21h00"
-                                        AppLanguage.IT -> "Notifica giornaliera alle 21:00"
-                                        AppLanguage.ZH -> "每天 21:00 发送提醒通知"
-                                        AppLanguage.NL -> "Dagelijkse melding om 21:00 uur"
-                                        AppLanguage.DE -> "Tägliche Benachrichtigung um 21:00 Uhr"
-                                        AppLanguage.PL -> "Codzienne powiadomienie o 21:00"
-                                        AppLanguage.PT -> "Aviso diário às 21:00 h"
+                                        AppLanguage.ES -> "Aviso diario a las $formattedTime h"
+                                        AppLanguage.EN -> "Daily notification at $formattedTime"
+                                        AppLanguage.FR -> "Notification quotidienne à $formattedTime"
+                                        AppLanguage.IT -> "Notifica giornaliera alle $formattedTime"
+                                        AppLanguage.ZH -> "每天 $formattedTime 发送提醒通知"
+                                        AppLanguage.NL -> "Dagelijkse melding om $formattedTime uur"
+                                        AppLanguage.DE -> "Tägliche Benachrichtigung um $formattedTime Uhr"
+                                        AppLanguage.PL -> "Codzienne powiadomienie o $formattedTime"
+                                        AppLanguage.PT -> "Aviso diário às $formattedTime h"
                                     }
                                 } else {
                                     when (language) {
@@ -327,8 +334,112 @@ fun SettingsTabScreen(
                         )
                     }
 
+                    // Selector de hora del recordatorio (por defecto 21:00, modificable)
+                    val formattedReminderTime = DailyReminderScheduler.formatTime(reminderHour, reminderMinute)
+                    val reminderTimeLabel = when (language) {
+                        AppLanguage.ES -> "Hora del recordatorio"
+                        AppLanguage.EN -> "Reminder time"
+                        AppLanguage.FR -> "Heure du rappel"
+                        AppLanguage.IT -> "Orario del promemoria"
+                        AppLanguage.ZH -> "提醒时间"
+                        AppLanguage.NL -> "Herinneringstijd"
+                        AppLanguage.DE -> "Erinnerungszeit"
+                        AppLanguage.PL -> "Godzina przypomnienia"
+                        AppLanguage.PT -> "Hora do lembrete"
+                    }
+                    val changeTimeLabel = when (language) {
+                        AppLanguage.ES -> "Cambiar"
+                        AppLanguage.EN -> "Change"
+                        AppLanguage.FR -> "Modifier"
+                        AppLanguage.IT -> "Modifica"
+                        AppLanguage.ZH -> "修改"
+                        AppLanguage.NL -> "Wijzigen"
+                        AppLanguage.DE -> "Ändern"
+                        AppLanguage.PL -> "Zmień"
+                        AppLanguage.PT -> "Alterar"
+                    }
+                    Surface(
+                        onClick = {
+                            TimePickerDialog(
+                                context,
+                                { _, selectedHour, selectedMinute ->
+                                    onReminderTimeChange(selectedHour, selectedMinute)
+                                },
+                                reminderHour,
+                                reminderMinute,
+                                true
+                            ).show()
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (reminderNotificationsEnabled) EmeraldGreenDark.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("settings_reminder_time_button")
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = if (reminderNotificationsEnabled) EmeraldGreenDark else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                                Text(
+                                    text = reminderTimeLabel,
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (reminderNotificationsEnabled) EmeraldGreenLight else Color(0xFFE2E8F0)
+                                ) {
+                                    Text(
+                                        text = formattedReminderTime,
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                                        color = if (reminderNotificationsEnabled) EmeraldGreenDark else Color(0xFF475569),
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                                Text(
+                                    text = changeTimeLabel,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = TravelBlue
+                                )
+                            }
+                        }
+                    }
+
+                    val dynamicReminderDesc = when (language) {
+                        AppLanguage.ES -> "Envía una notificación diaria a las $formattedReminderTime para registrar los gastos del día y mantener las cuentas al día."
+                        AppLanguage.EN -> "Sends a daily notification at $formattedReminderTime to record the day's expenses and keep accounts squared."
+                        AppLanguage.FR -> "Envoie une notification quotidienne à $formattedReminderTime pour enregistrer les dépenses de la journée et garder les comptes à jour."
+                        AppLanguage.IT -> "Invia una notifica quotidiana alle $formattedReminderTime per registrare le spese del giorno e tenere i conti in ordine."
+                        AppLanguage.ZH -> "每天 $formattedReminderTime 发送通知，提醒您记录当天的支出，保持账目清晰。"
+                        AppLanguage.NL -> "Stuurt dagelijks om $formattedReminderTime uur een melding om de uitgaven van de dag bij te houden en rekeningen kloppend te houden."
+                        AppLanguage.DE -> "Sendet täglich um $formattedReminderTime Uhr eine Benachrichtigung, um die Ausgaben des Tages einzutragen und die Abrechnung aktuell zu halten."
+                        AppLanguage.PL -> "Wysyła codzienne powiadomienie o godzinie $formattedReminderTime, aby zapisać wydatki z danego dnia i utrzymać finanse pod kontrolą."
+                        AppLanguage.PT -> "Envia uma notificação diária às $formattedReminderTime para registar as despesas do dia e manter as contas em dia."
+                    }
                     Text(
-                        text = texts.dailyReminderDesc,
+                        text = dynamicReminderDesc,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 18.sp

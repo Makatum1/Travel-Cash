@@ -40,6 +40,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -184,6 +185,7 @@ fun AddExpenseModal(
     val currentLang = LocalAppLanguage.current
     val texts = UiTexts.get(currentLang)
     val isEdit = existingExpense != null
+    val isSettlementEdit = existingExpense != null && CategoryCatalog.isDebtSettlementExpense(existingExpense)
 
     val navBottomFromSystem = remember(context, systemNavBarBottomPadding) {
         if (systemNavBarBottomPadding > 0.dp) {
@@ -230,10 +232,11 @@ fun AddExpenseModal(
     val standardNonGeneralNames = remember {
         CategoryCatalog.categories.dropLast(1).map { it.name.lowercase(Locale.ROOT) }.toSet()
     }
-    var customGeneralButtonLabel by remember {
+    var customGeneralButtonLabel by remember(existingExpense?.id) {
         val existingCat = existingExpense?.category
         val initialCustom = if (
             existingCat != null &&
+            !CategoryCatalog.isDebtSettlementCategory(existingCat) &&
             !standardNonGeneralNames.contains(existingCat.lowercase(Locale.ROOT)) &&
             !existingCat.equals("General", ignoreCase = true) &&
             !existingCat.equals("General & Otros", ignoreCase = true)
@@ -247,17 +250,20 @@ fun AddExpenseModal(
     var showRenameGeneralDialog by remember { mutableStateOf(false) }
     var tempGeneralNameInput by remember { mutableStateOf("") }
 
-    var selectedCategory by remember {
+    var selectedCategory by remember(existingExpense?.id) {
         val existingCat = existingExpense?.category
-        val initialCat = if (existingCat.equals("General & Otros", ignoreCase = true)) {
-            "General"
-        } else {
-            existingCat ?: CategoryCatalog.categories.first().name
+        val initialCat = when {
+            isSettlementEdit -> CategoryCatalog.DEBT_SETTLEMENT_CATEGORY
+            existingCat.equals("General & Otros", ignoreCase = true) -> "General"
+            else -> existingCat ?: CategoryCatalog.categories.first().name
         }
         mutableStateOf(initialCat)
     }
-    var selectedDate by remember {
-        mutableStateOf(existingExpense?.date ?: LocalDate.now().toString())
+    var selectedDate by remember(existingExpense?.id, existingExpense?.date) {
+        mutableStateOf(
+            existingExpense?.date?.let { FormatUtils.parseFlexibleDateToIso(it) }
+                ?: LocalDate.now().toString()
+        )
     }
     var prorationDaysText by remember {
         mutableStateOf(existingExpense?.prorationDays?.toString() ?: "")
@@ -482,8 +488,23 @@ fun AddExpenseModal(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    val headerTitle = when {
+                        isSettlementEdit -> when (currentLang) {
+                            AppLanguage.ES -> "Editar Liquidación"
+                            AppLanguage.EN -> "Edit Settlement"
+                            AppLanguage.FR -> "Modifier le règlement"
+                            AppLanguage.IT -> "Modifica liquidazione"
+                            AppLanguage.ZH -> "编辑债务结算"
+                            AppLanguage.NL -> "Vereffening bewerken"
+                            AppLanguage.DE -> "Abrechnung bearbeiten"
+                            AppLanguage.PL -> "Edytuj rozliczenie"
+                            AppLanguage.PT -> "Editar Liquidação"
+                        }
+                        isEdit -> texts.editExpenseTitle
+                        else -> texts.addExpenseTitle
+                    }
                     Text(
-                        text = if (isEdit) texts.editExpenseTitle else texts.addExpenseTitle,
+                        text = headerTitle,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
                         color = Color.White
                     )
@@ -1075,66 +1096,93 @@ fun AddExpenseModal(
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                         color = OceanNavy
                     )
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        CategoryCatalog.categories.forEach { cat ->
-                            val isGeneralButton = cat.name.equals("General", ignoreCase = true)
-                            val displayLabel = if (isGeneralButton) {
-                                if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
-                                    CategoryCatalog.displayName("General", currentLang)
-                                } else {
-                                    customGeneralButtonLabel // Nombre personalizado puesto por el usuario: no se traduce
-                                }
-                            } else {
-                                CategoryCatalog.displayName(cat.name, currentLang)
-                            }
-                            val isSelected = if (isGeneralButton) {
-                                selectedCategory.equals(customGeneralButtonLabel, ignoreCase = true) ||
-                                        selectedCategory.equals("General", ignoreCase = true)
-                            } else {
-                                selectedCategory.equals(cat.name, ignoreCase = true)
-                            }
-
-                            Surface(
-                                onClick = {
-                                    if (isGeneralButton) {
-                                        selectedCategory = customGeneralButtonLabel
-                                        tempGeneralNameInput = if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
-                                            ""
-                                        } else {
-                                            customGeneralButtonLabel
-                                        }
-                                        showRenameGeneralDialog = true
-                                    } else {
-                                        selectedCategory = cat.name
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) cat.color else cat.color.copy(alpha = 0.12f),
-                                border = BorderStroke(
-                                    1.2.dp,
-                                    if (isSelected) cat.color else cat.color.copy(alpha = 0.35f)
-                                )
+                    if (isSettlementEdit) {
+                        val settlementAccent = Color(0xFF0E7490)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = settlementAccent.copy(alpha = 0.14f),
+                            border = BorderStroke(1.2.dp, settlementAccent)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Icon(
+                                    imageVector = Icons.Default.Euro,
+                                    contentDescription = null,
+                                    tint = settlementAccent,
+                                    modifier = Modifier.size(19.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = CategoryCatalog.displayName(CategoryCatalog.DEBT_SETTLEMENT_CATEGORY, currentLang),
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                    color = settlementAccent
+                                )
+                            }
+                        }
+                    } else {
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CategoryCatalog.categories.forEach { cat ->
+                                val isGeneralButton = cat.name.equals("General", ignoreCase = true)
+                                val displayLabel = if (isGeneralButton) {
+                                    if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
+                                        CategoryCatalog.displayName("General", currentLang)
+                                    } else {
+                                        customGeneralButtonLabel // Nombre personalizado puesto por el usuario: no se traduce
+                                    }
+                                } else {
+                                    CategoryCatalog.displayName(cat.name, currentLang)
+                                }
+                                val isSelected = if (isGeneralButton) {
+                                    selectedCategory.equals(customGeneralButtonLabel, ignoreCase = true) ||
+                                            selectedCategory.equals("General", ignoreCase = true)
+                                } else {
+                                    selectedCategory.equals(cat.name, ignoreCase = true)
+                                }
+
+                                Surface(
+                                    onClick = {
+                                        if (isGeneralButton) {
+                                            selectedCategory = customGeneralButtonLabel
+                                            tempGeneralNameInput = if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
+                                                ""
+                                            } else {
+                                                customGeneralButtonLabel
+                                            }
+                                            showRenameGeneralDialog = true
+                                        } else {
+                                            selectedCategory = cat.name
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) cat.color else cat.color.copy(alpha = 0.12f),
+                                    border = BorderStroke(
+                                        1.2.dp,
+                                        if (isSelected) cat.color else cat.color.copy(alpha = 0.35f)
+                                    )
                                 ) {
-                                    Icon(
-                                        imageVector = cat.icon,
-                                        contentDescription = null,
-                                        tint = if (isSelected) Color.White else cat.color,
-                                        modifier = Modifier.size(19.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = displayLabel,
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = if (isSelected) Color.White else OceanNavy
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = cat.icon,
+                                            contentDescription = null,
+                                            tint = if (isSelected) Color.White else cat.color,
+                                            modifier = Modifier.size(19.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = displayLabel,
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                            color = if (isSelected) Color.White else OceanNavy
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1148,7 +1196,7 @@ fun AddExpenseModal(
                         Surface(
                             onClick = {
                                 val d = try {
-                                    LocalDate.parse(selectedDate)
+                                    LocalDate.parse(FormatUtils.parseFlexibleDateToIso(selectedDate))
                                 } catch (e: Exception) {
                                     LocalDate.now()
                                 }
@@ -1183,16 +1231,30 @@ fun AddExpenseModal(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = when (currentLang) {
-                                            AppLanguage.ES -> "Fecha del gasto"
-                                            AppLanguage.EN -> "Expense date"
-                                            AppLanguage.FR -> "Date de la dépense"
-                                            AppLanguage.IT -> "Data della spesa"
-                                            AppLanguage.ZH -> "支出日期"
-                                            AppLanguage.NL -> "Uitgavedatum"
-                                            AppLanguage.DE -> "Ausgabendatum"
-                                            AppLanguage.PL -> "Data wydatku"
-                                            AppLanguage.PT -> "Data da despesa"
+                                        text = if (isSettlementEdit) {
+                                            when (currentLang) {
+                                                AppLanguage.ES -> "Fecha de la liquidación"
+                                                AppLanguage.EN -> "Settlement date"
+                                                AppLanguage.FR -> "Date du règlement"
+                                                AppLanguage.IT -> "Data della liquidazione"
+                                                AppLanguage.ZH -> "结算日期"
+                                                AppLanguage.NL -> "Vereffeningsdatum"
+                                                AppLanguage.DE -> "Abrechnungsdatum"
+                                                AppLanguage.PL -> "Data rozliczenia"
+                                                AppLanguage.PT -> "Data da liquidação"
+                                            }
+                                        } else {
+                                            when (currentLang) {
+                                                AppLanguage.ES -> "Fecha del gasto"
+                                                AppLanguage.EN -> "Expense date"
+                                                AppLanguage.FR -> "Date de la dépense"
+                                                AppLanguage.IT -> "Data della spesa"
+                                                AppLanguage.ZH -> "支出日期"
+                                                AppLanguage.NL -> "Uitgavedatum"
+                                                AppLanguage.DE -> "Ausgabendatum"
+                                                AppLanguage.PL -> "Data wydatku"
+                                                AppLanguage.PT -> "Data da despesa"
+                                            }
                                         },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = Color(0xFF64748B)
@@ -1885,6 +1947,8 @@ fun AddExpenseModal(
                                 if (isRoute && resolvedAddress.isNotEmpty()) resolvedAddress else selectedCategory
                             }
 
+                            val finalCategory = if (isSettlementEdit) CategoryCatalog.DEBT_SETTLEMENT_CATEGORY else selectedCategory
+                            val normalizedDate = FormatUtils.parseFlexibleDateToIso(selectedDate)
                             val newExpense = ExpenseEntity(
                                 id = expId,
                                 tripId = trip.id,
@@ -1892,17 +1956,17 @@ fun AddExpenseModal(
                                 currency = selectedCurrency,
                                 amountInBaseCurrency = amountInBase,
                                 exchangeRate = if (selectedCurrency.equals(trip.baseCurrency, ignoreCase = true)) 1.0 else numericRate,
-                                category = selectedCategory,
-                                date = selectedDate,
+                                category = finalCategory,
+                                date = normalizedDate,
                                 paymentMethod = paymentMethod,
                                 notes = notes.trim(),
-                                latitude = latitudeValue,
-                                longitude = longitudeValue,
+                                latitude = if (isSettlementEdit) null else latitudeValue,
+                                longitude = if (isSettlementEdit) null else longitudeValue,
                                 placeName = resolvedPlaceName,
                                 country = resolvedAddress,
-                                originName = if (isRoute) cleanOrigin else "",
-                                originLatitude = if (isRoute) originLatitudeValue else null,
-                                originLongitude = if (isRoute) originLongitudeValue else null,
+                                originName = if (isRoute && !isSettlementEdit) cleanOrigin else "",
+                                originLatitude = if (isRoute && !isSettlementEdit) originLatitudeValue else null,
+                                originLongitude = if (isRoute && !isSettlementEdit) originLongitudeValue else null,
                                 paidById = paidById,
                                 photos = photos,
                                 splits = finalSplits,
