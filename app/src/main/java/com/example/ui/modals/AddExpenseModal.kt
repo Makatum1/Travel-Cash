@@ -76,6 +76,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -1990,13 +1993,6 @@ fun AddExpenseModal(
             AppLanguage.PL -> "Pozostaw jako Ogólne"
             AppLanguage.PT -> "Manter como Geral"
         }
-        val renameFocusRequester = remember { FocusRequester() }
-        LaunchedEffect(Unit) {
-            delay(120)
-            try {
-                renameFocusRequester.requestFocus()
-            } catch (_: Exception) {}
-        }
         val applyCustomGeneralName = {
             val customName = tempGeneralNameInput.trim().ifEmpty { "General" }
             customGeneralButtonLabel = customName
@@ -2016,6 +2012,25 @@ fun AddExpenseModal(
                 )
             },
             text = {
+                val renameFocusRequester = remember { FocusRequester() }
+                val keyboardController = LocalSoftwareKeyboardController.current
+                val dialogWindowInfo = LocalWindowInfo.current
+                val dialogView = LocalView.current
+                var hasRequestedKeyboard by remember { mutableStateOf(false) }
+
+                LaunchedEffect(dialogWindowInfo.isWindowFocused) {
+                    if (dialogWindowInfo.isWindowFocused && !hasRequestedKeyboard) {
+                        hasRequestedKeyboard = true
+                        delay(80)
+                        try {
+                            renameFocusRequester.requestFocus()
+                            keyboardController?.show()
+                            val imm = dialogView.context.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+                            imm?.showSoftInput(dialogView, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                        } catch (_: Exception) {}
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -496,16 +496,93 @@ fun StatsTabScreen(
                     }
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    val netSpendLabel = when (currentLang) {
-                        AppLanguage.ES -> "Gasto neto"
-                        AppLanguage.EN -> "Net spend"
-                        AppLanguage.FR -> "Dépense nette"
-                        AppLanguage.IT -> "Spesa netta"
-                        AppLanguage.ZH -> "净支出"
-                        AppLanguage.NL -> "Netto uitgaven"
-                        AppLanguage.DE -> "Nettoausgaben"
-                        AppLanguage.PL -> "Wydatek netto"
-                        AppLanguage.PT -> "Gasto líquido"
+                    val paidColLabel = when (currentLang) {
+                        AppLanguage.ES -> "Pagado"
+                        AppLanguage.EN -> "Paid"
+                        AppLanguage.FR -> "Payé"
+                        AppLanguage.IT -> "Pagato"
+                        AppLanguage.ZH -> "已支付"
+                        AppLanguage.NL -> "Betaald"
+                        AppLanguage.DE -> "Bezahlt"
+                        AppLanguage.PL -> "Zapłacono"
+                        AppLanguage.PT -> "Pago"
+                    }
+                    val assumedColLabel = when (currentLang) {
+                        AppLanguage.ES -> "Asumido"
+                        AppLanguage.EN -> "Assumed"
+                        AppLanguage.FR -> "Assumé"
+                        AppLanguage.IT -> "Assunto"
+                        AppLanguage.ZH -> "应分摊"
+                        AppLanguage.NL -> "Aandeel"
+                        AppLanguage.DE -> "Anteil"
+                        AppLanguage.PL -> "Udział"
+                        AppLanguage.PT -> "Assumido"
+                    }
+                    val reserveColLabel = when (currentLang) {
+                        AppLanguage.ES -> "Reserva"
+                        AppLanguage.EN -> "Credit"
+                        AppLanguage.FR -> "Réserve"
+                        AppLanguage.IT -> "Riserva"
+                        AppLanguage.ZH -> "结余"
+                        AppLanguage.NL -> "Tegoed"
+                        AppLanguage.DE -> "Guthaben"
+                        AppLanguage.PL -> "Nadpłata"
+                        AppLanguage.PT -> "Reserva"
+                    }
+                    val debtColLabel = when (currentLang) {
+                        AppLanguage.ES -> "Debe"
+                        AppLanguage.EN -> "Owes"
+                        AppLanguage.FR -> "Doit"
+                        AppLanguage.IT -> "Deve"
+                        AppLanguage.ZH -> "欠款"
+                        AppLanguage.NL -> "Schuld"
+                        AppLanguage.DE -> "Schuldet"
+                        AppLanguage.PL -> "Dług"
+                        AppLanguage.PT -> "Deve"
+                    }
+                    val balanceColLabel = when (currentLang) {
+                        AppLanguage.ES -> "Balance"
+                        AppLanguage.EN -> "Balance"
+                        AppLanguage.FR -> "Solde"
+                        AppLanguage.IT -> "Bilancio"
+                        AppLanguage.ZH -> "差额"
+                        AppLanguage.NL -> "Saldo"
+                        AppLanguage.DE -> "Saldo"
+                        AppLanguage.PL -> "Bilans"
+                        AppLanguage.PT -> "Balanço"
+                    }
+                    val settledBadgeLabel = when (currentLang) {
+                        AppLanguage.ES -> "Al día"
+                        AppLanguage.EN -> "Settled"
+                        AppLanguage.FR -> "À jour"
+                        AppLanguage.IT -> "In pari"
+                        AppLanguage.ZH -> "已结清"
+                        AppLanguage.NL -> "Voldaan"
+                        AppLanguage.DE -> "Ausgeglichen"
+                        AppLanguage.PL -> "Rozliczony"
+                        AppLanguage.PT -> "Em dia"
+                    }
+                    val inFavorSuffix = when (currentLang) {
+                        AppLanguage.ES -> "a favor"
+                        AppLanguage.EN -> "credit"
+                        AppLanguage.FR -> "en faveur"
+                        AppLanguage.IT -> "a favore"
+                        AppLanguage.ZH -> "结余"
+                        AppLanguage.NL -> "tegoed"
+                        AppLanguage.DE -> "Guthaben"
+                        AppLanguage.PL -> "na plus"
+                        AppLanguage.PT -> "a favor"
+                    }
+                    val owesSuffix = when (currentLang) {
+                        AppLanguage.ES -> "debe"
+                        AppLanguage.EN -> "owes"
+                        AppLanguage.FR -> "doit"
+                        AppLanguage.IT -> "deve"
+                        AppLanguage.ZH -> "欠款"
+                        AppLanguage.NL -> "schuld"
+                        AppLanguage.DE -> "schuldet"
+                        AppLanguage.PL -> "dług"
+                        AppLanguage.PT -> "deve"
                     }
                     val paidDirectlyLabel = when (currentLang) {
                         AppLanguage.ES -> "Gastos pagados directamente"
@@ -562,28 +639,6 @@ fun StatsTabScreen(
                         AppLanguage.PL -> "Otrzymano z kasy"
                         AppLanguage.PT -> "Recebido do fundo"
                     }
-                    val diffVsAvgLabel = when (currentLang) {
-                        AppLanguage.ES -> "Diferencia vs media"
-                        AppLanguage.EN -> "Diff. vs average"
-                        AppLanguage.FR -> "Écart vs moyenne"
-                        AppLanguage.IT -> "Diff. vs media"
-                        AppLanguage.ZH -> "与人均差额"
-                        AppLanguage.NL -> "Verschil t.o.v. gem."
-                        AppLanguage.DE -> "Diff. zum Ø"
-                        AppLanguage.PL -> "Różnica vs śr."
-                        AppLanguage.PT -> "Diferença vs média"
-                    }
-                    val equalBadgeLabel = when (currentLang) {
-                        AppLanguage.ES -> "= Media"
-                        AppLanguage.EN -> "= Avg"
-                        AppLanguage.FR -> "= Moy."
-                        AppLanguage.IT -> "= Media"
-                        AppLanguage.ZH -> "= 均值"
-                        AppLanguage.NL -> "= Gem."
-                        AppLanguage.DE -> "= Ø"
-                        AppLanguage.PL -> "= Śr."
-                        AppLanguage.PT -> "= Média"
-                    }
 
                     val summaries = netSpendReport.participantSummaries
                     summaries.forEachIndexed { idx, summary ->
@@ -592,21 +647,30 @@ fun StatsTabScreen(
                         val pct = if (totalSpent > 0) (summary.netSpend / totalSpent) * 100.0 else 0.0
                         val isExpanded = expandedPersonId == person.id
 
-                        val diff = summary.differenceFromAverage
-                        val diffChipText = if (summary.isBalancedWithAverage) {
-                            equalBadgeLabel
-                        } else {
-                            val sign = if (diff > 0) "+" else "-"
-                            "$sign${FormatUtils.formatCurrency(abs(diff), trip.baseCurrency, currentLang.locale)}"
+                        val balance = summary.balance
+                        val balanceChipText = when {
+                            summary.isBalancedWithAssumed -> settledBadgeLabel
+                            balance > 0 -> "+${FormatUtils.formatCurrency(balance, trip.baseCurrency, currentLang.locale)} $inFavorSuffix"
+                            else -> "-${FormatUtils.formatCurrency(abs(balance), trip.baseCurrency, currentLang.locale)} $owesSuffix"
                         }
-                        val diffChipBg = when {
-                            summary.isBalancedWithAverage -> Color(0xFFECFDF5)
-                            diff > 0 -> Color(0xFFEFF6FF)
+                        val balanceValueSigned = when {
+                            summary.isBalancedWithAssumed -> FormatUtils.formatCurrency(0.0, trip.baseCurrency, currentLang.locale)
+                            balance > 0 -> "+${FormatUtils.formatCurrency(balance, trip.baseCurrency, currentLang.locale)}"
+                            else -> "-${FormatUtils.formatCurrency(abs(balance), trip.baseCurrency, currentLang.locale)}"
+                        }
+                        val balanceColTitle = when {
+                            summary.isBalancedWithAssumed -> balanceColLabel
+                            balance > 0 -> reserveColLabel
+                            else -> debtColLabel
+                        }
+                        val balanceChipBg = when {
+                            summary.isBalancedWithAssumed -> Color(0xFFECFDF5)
+                            balance > 0 -> Color(0xFFECFDF5)
                             else -> Color(0xFFFEF2F2)
                         }
-                        val diffChipColor = when {
-                            summary.isBalancedWithAverage -> EmeraldGreenDark
-                            diff > 0 -> TravelBlue
+                        val balanceChipColor = when {
+                            summary.isBalancedWithAssumed -> EmeraldGreenDark
+                            balance > 0 -> EmeraldGreenDark
                             else -> CoralRed
                         }
 
@@ -687,22 +751,10 @@ fun StatsTabScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        val movementCount = summary.entries.size
-                                        val pctFmt = String.format(currentLang.locale, "%.1f", pct)
-                                        val movementsText = when (currentLang) {
-                                            AppLanguage.ES -> "${if (movementCount == 1) "1 movimiento" else "$movementCount movimientos"} · $pctFmt% del total"
-                                            AppLanguage.EN -> "${if (movementCount == 1) "1 movement" else "$movementCount movements"} · $pctFmt% of total"
-                                            AppLanguage.FR -> "${if (movementCount == 1) "1 mouvement" else "$movementCount mouvements"} · $pctFmt% du total"
-                                            AppLanguage.IT -> "${if (movementCount == 1) "1 movimento" else "$movementCount movimenti"} · $pctFmt% del totale"
-                                            AppLanguage.ZH -> "$movementCount 条记录 · 占总额 $pctFmt%"
-                                            AppLanguage.NL -> "${if (movementCount == 1) "1 transactie" else "$movementCount transacties"} · $pctFmt% van totaal"
-                                            AppLanguage.DE -> "${if (movementCount == 1) "1 Buchung" else "$movementCount Buchungen"} · $pctFmt% gesamt"
-                                            AppLanguage.PL -> "${if (movementCount == 1) "1 operacja" else "$movementCount operacji"} · $pctFmt% całości"
-                                            AppLanguage.PT -> "${if (movementCount == 1) "1 movimento" else "$movementCount movimentos"} · $pctFmt% do total"
-                                        }
+                                        val assumedFormatted = FormatUtils.formatCurrency(summary.assumedSpend, trip.baseCurrency, currentLang.locale)
                                         Text(
-                                            text = movementsText,
-                                            style = MaterialTheme.typography.labelSmall,
+                                            text = "$assumedColLabel: $assumedFormatted",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                             color = Color(0xFF64748B),
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
@@ -711,12 +763,12 @@ fun StatsTabScreen(
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Surface(
                                             shape = RoundedCornerShape(6.dp),
-                                            color = diffChipBg
+                                            color = balanceChipBg
                                         ) {
                                             Text(
-                                                text = diffChipText,
+                                                text = balanceChipText,
                                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
-                                                color = diffChipColor,
+                                                color = balanceChipColor,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -724,7 +776,7 @@ fun StatsTabScreen(
                                 }
                             }
 
-                            // Desglose completo desplegable: resumen del cálculo neto + lista detallada de movimientos
+                            // Desglose completo desplegable: Pagado, Asumido, Balance/Reserva + movimientos detallados
                             AnimatedVisibility(visible = isExpanded) {
                                 Surface(
                                     modifier = Modifier
@@ -736,9 +788,9 @@ fun StatsTabScreen(
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(10.dp),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        // Mini resumen del cálculo del gasto neto
+                                        // Tarjeta clara con los 3 valores clave: Pagado, Asumido y Reserva/Balance
                                         Surface(
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(8.dp),
@@ -746,58 +798,109 @@ fun StatsTabScreen(
                                             border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                                         ) {
                                             Column(
-                                                modifier = Modifier.padding(8.dp),
-                                                verticalArrangement = Arrangement.spacedBy(3.dp)
+                                                modifier = Modifier.padding(10.dp),
+                                                verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                NetSpendBreakdownRow(
-                                                    label = paidDirectlyLabel,
-                                                    value = "+${FormatUtils.formatCurrency(summary.realExpensesPaid, trip.baseCurrency, currentLang.locale)}",
-                                                    valueColor = OceanNavy
-                                                )
-                                                if (summary.transfersSent > 0.004) {
-                                                    NetSpendBreakdownRow(
-                                                        label = transfersSentLabel,
-                                                        value = "+${FormatUtils.formatCurrency(summary.transfersSent, trip.baseCurrency, currentLang.locale)}",
-                                                        valueColor = TravelBlue
-                                                    )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.weight(1f),
+                                                        horizontalAlignment = Alignment.Start
+                                                    ) {
+                                                        Text(
+                                                            text = paidColLabel,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Color(0xFF64748B)
+                                                        )
+                                                        Text(
+                                                            text = FormatUtils.formatCurrency(summary.netSpend, trip.baseCurrency, currentLang.locale),
+                                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                                            color = OceanNavy,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                    Column(
+                                                        modifier = Modifier.weight(1f),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                    ) {
+                                                        Text(
+                                                            text = assumedColLabel,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Color(0xFF64748B)
+                                                        )
+                                                        Text(
+                                                            text = FormatUtils.formatCurrency(summary.assumedSpend, trip.baseCurrency, currentLang.locale),
+                                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                                            color = TravelBlue,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
+                                                    Column(
+                                                        modifier = Modifier.weight(1f),
+                                                        horizontalAlignment = Alignment.End
+                                                    ) {
+                                                        Text(
+                                                            text = balanceColTitle,
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Color(0xFF64748B)
+                                                        )
+                                                        Text(
+                                                            text = balanceValueSigned,
+                                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Black),
+                                                            color = balanceChipColor,
+                                                            maxLines = 1,
+                                                            overflow = TextOverflow.Ellipsis
+                                                        )
+                                                    }
                                                 }
-                                                if (summary.potContributions > 0.004) {
-                                                    NetSpendBreakdownRow(
-                                                        label = potContribSummaryLabel,
-                                                        value = "+${FormatUtils.formatCurrency(summary.potContributions, trip.baseCurrency, currentLang.locale)}",
-                                                        valueColor = Color(0xFF4F46E5)
-                                                    )
+
+                                                val hasAdjustments = summary.transfersSent > 0.004 ||
+                                                        summary.transfersReceived > 0.004 ||
+                                                        summary.potContributions > 0.004 ||
+                                                        summary.potReceived > 0.004
+
+                                                if (hasAdjustments) {
+                                                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                                                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                                        NetSpendBreakdownRow(
+                                                            label = paidDirectlyLabel,
+                                                            value = "+${FormatUtils.formatCurrency(summary.realExpensesPaid, trip.baseCurrency, currentLang.locale)}",
+                                                            valueColor = OceanNavy
+                                                        )
+                                                        if (summary.transfersSent > 0.004) {
+                                                            NetSpendBreakdownRow(
+                                                                label = transfersSentLabel,
+                                                                value = "+${FormatUtils.formatCurrency(summary.transfersSent, trip.baseCurrency, currentLang.locale)}",
+                                                                valueColor = TravelBlue
+                                                            )
+                                                        }
+                                                        if (summary.potContributions > 0.004) {
+                                                            NetSpendBreakdownRow(
+                                                                label = potContribSummaryLabel,
+                                                                value = "+${FormatUtils.formatCurrency(summary.potContributions, trip.baseCurrency, currentLang.locale)}",
+                                                                valueColor = Color(0xFF4F46E5)
+                                                            )
+                                                        }
+                                                        if (summary.transfersReceived > 0.004) {
+                                                            NetSpendBreakdownRow(
+                                                                label = transfersReceivedLabel,
+                                                                value = "-${FormatUtils.formatCurrency(summary.transfersReceived, trip.baseCurrency, currentLang.locale)}",
+                                                                valueColor = EmeraldGreenDark
+                                                            )
+                                                        }
+                                                        if (summary.potReceived > 0.004) {
+                                                            NetSpendBreakdownRow(
+                                                                label = potRecvSummaryLabel,
+                                                                value = "-${FormatUtils.formatCurrency(summary.potReceived, trip.baseCurrency, currentLang.locale)}",
+                                                                valueColor = EmeraldGreenDark
+                                                            )
+                                                        }
+                                                    }
                                                 }
-                                                if (summary.transfersReceived > 0.004) {
-                                                    NetSpendBreakdownRow(
-                                                        label = transfersReceivedLabel,
-                                                        value = "-${FormatUtils.formatCurrency(summary.transfersReceived, trip.baseCurrency, currentLang.locale)}",
-                                                        valueColor = EmeraldGreenDark
-                                                    )
-                                                }
-                                                if (summary.potReceived > 0.004) {
-                                                    NetSpendBreakdownRow(
-                                                        label = potRecvSummaryLabel,
-                                                        value = "-${FormatUtils.formatCurrency(summary.potReceived, trip.baseCurrency, currentLang.locale)}",
-                                                        valueColor = EmeraldGreenDark
-                                                    )
-                                                }
-                                                HorizontalDivider(
-                                                    modifier = Modifier.padding(vertical = 2.dp),
-                                                    color = Color(0xFFE2E8F0)
-                                                )
-                                                NetSpendBreakdownRow(
-                                                    label = netSpendLabel,
-                                                    value = FormatUtils.formatCurrency(summary.netSpend, trip.baseCurrency, currentLang.locale),
-                                                    valueColor = OceanNavy,
-                                                    isBold = true
-                                                )
-                                                NetSpendBreakdownRow(
-                                                    label = diffVsAvgLabel,
-                                                    value = diffChipText,
-                                                    valueColor = diffChipColor,
-                                                    isBold = true
-                                                )
                                             }
                                         }
 

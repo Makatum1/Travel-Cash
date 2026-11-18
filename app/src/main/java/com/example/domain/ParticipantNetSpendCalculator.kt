@@ -134,12 +134,17 @@ data class ParticipantNetSpendSummary(
     val transfersReceived: Double,
     val potContributions: Double,
     val potReceived: Double,
-    val netSpend: Double,
+    val netSpend: Double,                  // Pagado (desembolso neto real de su bolsillo)
+    val assumedSpend: Double,              // Asumido (consumo real según reglas de reparto de los gastos)
+    val balance: Double,                   // Balance / Reserva = Pagado - Asumido (+ a favor/reserva, - debe)
     val differenceFromAverage: Double,
     val entries: List<ParticipantLedgerEntry>
 ) {
     val isBalancedWithAverage: Boolean
         get() = abs(differenceFromAverage) <= 0.015
+
+    val isBalancedWithAssumed: Boolean
+        get() = abs(balance) <= 0.015
 }
 
 data class TripNetSpendReport(
@@ -412,8 +417,22 @@ object ParticipantNetSpendCalculator {
                     )
                 }
 
-            // Gasto neto = Gastos pagados + Liquidaciones enviadas + Aportaciones al bote - Liquidaciones recibidas - Recibido del bote
+            // F) Gasto asumido según las reglas exactas de reparto (splits) de cada gasto real del viaje
+            val assumedRaw = realExpenses.sumOf { exp ->
+                if (exp.splits.isNotEmpty()) {
+                    exp.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
+                } else if (participants.isNotEmpty()) {
+                    exp.amountInBaseCurrency / participants.size
+                } else {
+                    0.0
+                }
+            }
+            val assumedSpend = round2(assumedRaw)
+
+            // Pagado (desembolso neto real de su bolsillo) = Gastos pagados + Liquidaciones enviadas + Aportaciones al bote - Liquidaciones recibidas - Recibido del bote
             val netSpend = round2(paidDirectly + sentTotal + potContribTotal - receivedTotal - potRecvTotal)
+            // Balance / Reserva = Pagado - Asumido (+ saldo a favor / reserva para futuras deudas, - deuda pendiente)
+            val balance = round2(netSpend - assumedSpend)
             val diffFromAvg = round2(netSpend - equalShareAverage)
 
             val sortedEntries = entries.sortedByDescending { FormatUtils.parseFlexibleDateToIso(it.date) }
@@ -426,6 +445,8 @@ object ParticipantNetSpendCalculator {
                 potContributions = round2(potContribTotal),
                 potReceived = round2(potRecvTotal),
                 netSpend = netSpend,
+                assumedSpend = assumedSpend,
+                balance = balance,
                 differenceFromAverage = diffFromAvg,
                 entries = sortedEntries
             )

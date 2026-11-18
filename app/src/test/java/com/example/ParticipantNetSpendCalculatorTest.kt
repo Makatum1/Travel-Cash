@@ -379,4 +379,70 @@ class ParticipantNetSpendCalculatorTest {
             assertEquals(expectedHotelCat, unnamedExpenseEntry.displayLabel(lang))
         }
     }
+
+    @Test
+    fun paidAssumedAndReserveBalance_respectsCustomSplitsInsteadOfSimpleAverage() {
+        // Ejemplo real del usuario:
+        // Total real del viaje = 700 € (media simple sería 350 €, pero el reparto es desigual: Pepe asume 296 €, Juan asume 404 €)
+        // Pepe entrega 500 € al administrador (Juan) / bote -> Pagado = 500 €, Asumido = 296 €, Reserva/Balance = +204 € a favor
+        val tripExpense = ExpenseEntity(
+            id = "e-custom-split",
+            tripId = "t1",
+            amount = 700.0,
+            currency = "EUR",
+            amountInBaseCurrency = 700.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-06-15",
+            paymentMethod = "Tarjeta",
+            notes = "Paquete viaje",
+            placeName = "Agencia",
+            paidById = juan.id,
+            splits = listOf(
+                ExpenseSplit("sc1", "e-custom-split", pepe.id, 296.0, 42.29),
+                ExpenseSplit("sc2", "e-custom-split", juan.id, 404.0, 57.71)
+            )
+        )
+
+        val pepePaymentToAdmin = ExpenseEntity(
+            id = "settle-500",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-06-16",
+            paymentMethod = "Transferencia",
+            notes = "Entrega al administrador",
+            placeName = "Liquidación de deuda: Pepe → Juan",
+            paidById = pepe.id,
+            splits = listOf(
+                ExpenseSplit("sc3", "settle-500", juan.id, 500.0, 100.0)
+            )
+        )
+
+        val report = ParticipantNetSpendCalculator.calculate(
+            participants = listOf(pepe, juan),
+            expenses = listOf(tripExpense, pepePaymentToAdmin),
+            incomes = emptyList()
+        )
+
+        assertEquals(700.0, report.realTotalSpent, 0.01)
+
+        val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
+        val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
+
+        // Pepe: Pagado = 500 €, Asumido = 296 € (respetando el split exacto, NO 350 €), Reserva = +204 €
+        assertEquals(500.0, pepeSummary.netSpend, 0.01)
+        assertEquals(296.0, pepeSummary.assumedSpend, 0.01)
+        assertEquals(204.0, pepeSummary.balance, 0.01)
+        assertEquals(pepeSummary.netSpend - pepeSummary.assumedSpend, pepeSummary.balance, 0.01)
+
+        // Juan: Pagado = 700 - 500 = 200 €, Asumido = 404 €, Balance = -204 € (debe 204 €)
+        assertEquals(200.0, juanSummary.netSpend, 0.01)
+        assertEquals(404.0, juanSummary.assumedSpend, 0.01)
+        assertEquals(-204.0, juanSummary.balance, 0.01)
+        assertEquals(juanSummary.netSpend - juanSummary.assumedSpend, juanSummary.balance, 0.01)
+    }
 }
