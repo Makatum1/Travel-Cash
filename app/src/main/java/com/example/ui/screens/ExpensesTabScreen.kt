@@ -174,8 +174,8 @@ fun ExpensesTabScreen(
 
                 matchesCategory && matchesDate && matchesQuery
             }.sortedWith(
-                compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
-                    .thenBy { it.createdAt }
+                compareByDescending<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                    .thenByDescending { it.createdAt }
             )
         }
     }
@@ -216,8 +216,8 @@ fun ExpensesTabScreen(
 
                 matchesDate && matchesQuery
             }.sortedWith(
-                compareBy<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
-                    .thenBy { it.createdAt }
+                compareByDescending<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                    .thenByDescending { it.createdAt }
             )
         }
     }
@@ -556,6 +556,22 @@ fun ExpensesTabScreen(
                     }
                 }
             } else {
+                // Registro único agrupado de Liquidaciones: primero, debajo de los filtros y encima de cualquier fecha
+                if (showGroupedSettlementsCard) {
+                    item(key = "grouped_settlements_card") {
+                        GroupedSettlementsCard(
+                            title = settlementsLabel,
+                            settlements = filteredSettlements,
+                            participantMap = participantMap,
+                            baseCurrency = trip.baseCurrency,
+                            currentLang = currentLang,
+                            isExpanded = settlementsExpanded,
+                            onToggleExpand = { settlementsExpanded = !settlementsExpanded },
+                            onSettlementClick = onExpenseClick
+                        )
+                    }
+                }
+
                 groupedByDate.forEach { (dateIso, dayExpenses) ->
                     val dayTotal = dayExpenses.sumOf { it.amountInBaseCurrency }
                     item(key = "header-$dateIso") {
@@ -578,22 +594,6 @@ fun ExpensesTabScreen(
                             },
                             currentLang = currentLang,
                             onClick = { onExpenseClick(expense) }
-                        )
-                    }
-                }
-
-                // Registro único agrupado de Liquidaciones (desplegable para ver y editar cada una)
-                if (showGroupedSettlementsCard) {
-                    item(key = "grouped_settlements_card") {
-                        GroupedSettlementsCard(
-                            title = settlementsLabel,
-                            settlements = filteredSettlements,
-                            participantMap = participantMap,
-                            baseCurrency = trip.baseCurrency,
-                            currentLang = currentLang,
-                            isExpanded = settlementsExpanded,
-                            onToggleExpand = { settlementsExpanded = !settlementsExpanded },
-                            onSettlementClick = onExpenseClick
                         )
                     }
                 }

@@ -95,6 +95,8 @@ fun StatsTabScreen(
         FormatUtils.calculateTripDays(trip.startDate, trip.endDate)
     }
     val avgPerDay = if (tripDays > 0) totalSpent / tripDays else 0.0
+    val totalPerPerson = if (participants.isNotEmpty()) totalSpent / participants.size else 0.0
+    val avgPerDayPerPerson = if (participants.isNotEmpty() && tripDays > 0) avgPerDay / participants.size else 0.0
 
     val byPersonAndCategory = remember(participants, expenses) {
         ParticipantNetSpendCalculator.calculateByParticipantAndCategory(
@@ -139,49 +141,116 @@ fun StatsTabScreen(
             topHeader()
         }
 
-        // TARJETAS RESUMEN SUPERIORES (Gasto Total y Media por Día)
+        // TARJETAS RESUMEN SUPERIORES (Gasto Total, Media por Día, Gasto por Persona y Media día/persona)
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val realExpCount = netSpendReport.realExpenseCount
-                val expCountSubtitle = when (currentLang) {
-                    AppLanguage.ES -> "$realExpCount gastos registrados"
-                    AppLanguage.EN -> "$realExpCount expenses recorded"
-                    AppLanguage.FR -> "$realExpCount dépenses enregistrées"
-                    AppLanguage.IT -> "$realExpCount spese registrate"
-                    AppLanguage.ZH -> "已记录 $realExpCount 笔支出"
-                    AppLanguage.NL -> "$realExpCount geregistreerde uitgaven"
-                    AppLanguage.DE -> "$realExpCount erfasste Ausgaben"
-                    AppLanguage.PL -> "$realExpCount zarejestrowanych wydatków"
-                    AppLanguage.PT -> "$realExpCount despesas registadas"
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val realExpCount = netSpendReport.realExpenseCount
+                    val expCountSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "$realExpCount gastos registrados"
+                        AppLanguage.EN -> "$realExpCount expenses recorded"
+                        AppLanguage.FR -> "$realExpCount dépenses enregistrées"
+                        AppLanguage.IT -> "$realExpCount spese registrate"
+                        AppLanguage.ZH -> "已记录 $realExpCount 笔支出"
+                        AppLanguage.NL -> "$realExpCount geregistreerde uitgaven"
+                        AppLanguage.DE -> "$realExpCount erfasste Ausgaben"
+                        AppLanguage.PL -> "$realExpCount zarejestrowanych wydatków"
+                        AppLanguage.PT -> "$realExpCount despesas registadas"
+                    }
+                    SummaryStatCard(
+                        modifier = Modifier.weight(1f),
+                        title = texts.totalSpentTitle,
+                        value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
+                        subtitle = expCountSubtitle,
+                        accentColor = TravelBlue
+                    )
+                    val daysSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "En $tripDays días de viaje"
+                        AppLanguage.EN -> "Over $tripDays trip days"
+                        AppLanguage.FR -> "Sur $tripDays jours de voyage"
+                        AppLanguage.IT -> "In $tripDays giorni di viaggio"
+                        AppLanguage.ZH -> "在 $tripDays 天的行程中"
+                        AppLanguage.NL -> "Over $tripDays reisdagen"
+                        AppLanguage.DE -> "Über $tripDays Reisetage"
+                        AppLanguage.PL -> "W ciągu $tripDays dni podróży"
+                        AppLanguage.PT -> "Em $tripDays dias de viagem"
+                    }
+                    SummaryStatCard(
+                        modifier = Modifier.weight(1f),
+                        title = texts.avgPerDayTitle,
+                        value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency, currentLang.locale),
+                        subtitle = daysSubtitle,
+                        accentColor = EmeraldGreenDark
+                    )
                 }
-                SummaryStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = texts.totalSpentTitle,
-                    value = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
-                    subtitle = expCountSubtitle,
-                    accentColor = TravelBlue
-                )
-                val daysSubtitle = when (currentLang) {
-                    AppLanguage.ES -> "En $tripDays días de viaje"
-                    AppLanguage.EN -> "Over $tripDays trip days"
-                    AppLanguage.FR -> "Sur $tripDays jours de voyage"
-                    AppLanguage.IT -> "In $tripDays giorni di viaggio"
-                    AppLanguage.ZH -> "在 $tripDays 天的行程中"
-                    AppLanguage.NL -> "Over $tripDays reisdagen"
-                    AppLanguage.DE -> "Über $tripDays Reisetage"
-                    AppLanguage.PL -> "W ciągu $tripDays dni podróży"
-                    AppLanguage.PT -> "Em $tripDays dias de viagem"
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val totalPerPersonTitle = when (currentLang) {
+                        AppLanguage.ES -> "Gasto por persona"
+                        AppLanguage.EN -> "Spend per person"
+                        AppLanguage.FR -> "Dépense par personne"
+                        AppLanguage.IT -> "Spesa per persona"
+                        AppLanguage.ZH -> "每人总支出"
+                        AppLanguage.NL -> "Uitgave per persoon"
+                        AppLanguage.DE -> "Ausgaben pro Person"
+                        AppLanguage.PL -> "Wydatek na osobę"
+                        AppLanguage.PT -> "Despesa por pessoa"
+                    }
+                    val totalPerPersonSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "Total en todo el viaje (${participants.size} pers.)"
+                        AppLanguage.EN -> "Total across trip (${participants.size} pers.)"
+                        AppLanguage.FR -> "Total sur tout le voyage (${participants.size} pers.)"
+                        AppLanguage.IT -> "Totale dell'intero viaggio (${participants.size} pers.)"
+                        AppLanguage.ZH -> "整个行程总计（${participants.size} 人）"
+                        AppLanguage.NL -> "Totaal voor hele reis (${participants.size} pers.)"
+                        AppLanguage.DE -> "Gesamt für die Reise (${participants.size} Pers.)"
+                        AppLanguage.PL -> "Łącznie w podróży (${participants.size} os.)"
+                        AppLanguage.PT -> "Total em toda a viagem (${participants.size} pess.)"
+                    }
+                    SummaryStatCard(
+                        modifier = Modifier.weight(1f),
+                        title = totalPerPersonTitle,
+                        value = FormatUtils.formatCurrency(totalPerPerson, trip.baseCurrency, currentLang.locale),
+                        subtitle = totalPerPersonSubtitle,
+                        accentColor = Color(0xFF6366F1)
+                    )
+
+                    val avgPerDayPerPersonTitle = when (currentLang) {
+                        AppLanguage.ES -> "Media día/persona"
+                        AppLanguage.EN -> "Avg day/person"
+                        AppLanguage.FR -> "Moy. jour/personne"
+                        AppLanguage.IT -> "Media giorno/persona"
+                        AppLanguage.ZH -> "日均/每人"
+                        AppLanguage.NL -> "Gem. dag/persoon"
+                        AppLanguage.DE -> "Schnitt Tag/Person"
+                        AppLanguage.PL -> "Śr. dzień/osobę"
+                        AppLanguage.PT -> "Média dia/pessoa"
+                    }
+                    val avgPerDayPerPersonSubtitle = when (currentLang) {
+                        AppLanguage.ES -> "$tripDays días · ${participants.size} participantes"
+                        AppLanguage.EN -> "$tripDays days · ${participants.size} participants"
+                        AppLanguage.FR -> "$tripDays jours · ${participants.size} participants"
+                        AppLanguage.IT -> "$tripDays giorni · ${participants.size} partecipanti"
+                        AppLanguage.ZH -> "$tripDays 天 · ${participants.size} 位参与者"
+                        AppLanguage.NL -> "$tripDays dagen · ${participants.size} deelnemers"
+                        AppLanguage.DE -> "$tripDays Tage · ${participants.size} Teilnehmer"
+                        AppLanguage.PL -> "$tripDays dni · ${participants.size} uczestników"
+                        AppLanguage.PT -> "$tripDays dias · ${participants.size} participantes"
+                    }
+                    SummaryStatCard(
+                        modifier = Modifier.weight(1f),
+                        title = avgPerDayPerPersonTitle,
+                        value = FormatUtils.formatCurrency(avgPerDayPerPerson, trip.baseCurrency, currentLang.locale),
+                        subtitle = avgPerDayPerPersonSubtitle,
+                        accentColor = Color(0xFFF59E0B)
+                    )
                 }
-                SummaryStatCard(
-                    modifier = Modifier.weight(1f),
-                    title = texts.avgPerDayTitle,
-                    value = FormatUtils.formatCurrency(avgPerDay, trip.baseCurrency, currentLang.locale),
-                    subtitle = daysSubtitle,
-                    accentColor = EmeraldGreenDark
-                )
             }
         }
 

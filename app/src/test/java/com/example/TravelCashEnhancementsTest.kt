@@ -286,4 +286,31 @@ class TravelCashEnhancementsTest {
         assertTrue(anaBreakdown.categories.none { CategoryCatalog.isDebtSettlementCategory(it.categoryName) })
         assertTrue(luisBreakdown.categories.none { CategoryCatalog.isDebtSettlementCategory(it.categoryName) })
     }
+
+    @Test
+    fun expensesList_ordersMostRecentDateFirstDescending() {
+        val older = ExpenseEntity(
+            id = "e-old",
+            tripId = "t1",
+            amount = 15.0,
+            currency = "EUR",
+            amountInBaseCurrency = 15.0,
+            exchangeRate = 1.0,
+            category = "General",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Día 1",
+            paidById = "p1",
+            createdAt = 1000L
+        )
+        val middle = older.copy(id = "e-mid", date = "2026-07-05", createdAt = 2000L)
+        val newest = older.copy(id = "e-new", date = "2026-07-10", createdAt = 3000L)
+
+        val sortedDescending = listOf(older, newest, middle).sortedWith(
+            compareByDescending<ExpenseEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+                .thenByDescending { it.createdAt }
+        )
+
+        assertEquals(listOf("e-new", "e-mid", "e-old"), sortedDescending.map { it.id })
+    }
 }
