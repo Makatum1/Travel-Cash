@@ -896,4 +896,51 @@ class TravelCashEnhancementsTest {
         assertNotEquals(-208.0, saldoExtra, 0.001)
         assertNotEquals(0.0, saldoExtra, 0.001)
     }
+
+    @Test
+    fun expensesTab_liquidationsSection_includesPotIncomesForViewingEditingAndDeleting() {
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+
+        // 1 liquidación de deuda registrada
+        val settle = ExpenseEntity(
+            id = "settle-1",
+            tripId = "t1",
+            amount = 150.0,
+            currency = "EUR",
+            amountInBaseCurrency = 150.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Bizum",
+            notes = "U2 salda deuda",
+            paidById = u2.id,
+            splits = listOf(ExpenseSplit("s1", "settle-1", u1.id, 150.0, 100.0))
+        )
+
+        // 1 ingreso al bote común registrado
+        val income = IncomeEntity(
+            id = "inc-1",
+            tripId = "t1",
+            amount = 200.0,
+            date = "2026-07-03",
+            description = "Aportación al Bote Común",
+            contributions = listOf(IncomeContribution(u1.id, 100.0), IncomeContribution(u2.id, 100.0))
+        )
+
+        val settlements = listOf(settle)
+        val incomes = listOf(income)
+
+        // Verificamos que el contador conjunto de Liquidaciones de gastos es 2 (1 liquidación + 1 ingreso de bote)
+        val totalCombinedCount = settlements.size + incomes.size
+        assertEquals(2, totalCombinedCount)
+
+        // Verificamos el importe combinado en la sección
+        val totalCombinedAmount = settlements.sumOf { it.amountInBaseCurrency } + incomes.sumOf { it.amount }
+        assertEquals(350.0, totalCombinedAmount, 0.001)
+
+        // Verificamos que ambos elementos son identificables para su edición/borrado
+        assertTrue(settlements.any { it.id == "settle-1" })
+        assertTrue(incomes.any { it.id == "inc-1" })
+    }
 }

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -69,11 +70,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
+import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.PaymentMethodCatalog
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
 import com.example.ui.theme.TravelBlue
@@ -87,6 +90,7 @@ fun ExpensesTabScreen(
     trip: TripEntity,
     participants: List<ParticipantEntity>,
     expenses: List<ExpenseEntity>,
+    incomes: List<IncomeEntity> = emptyList(),
     searchQuery: String,
     selectedDateFilter: String?,
     selectedCategoryFilter: String?,
@@ -96,6 +100,7 @@ fun ExpensesTabScreen(
     onClearAllFilters: () -> Unit,
     onAddExpenseClick: () -> Unit,
     onExpenseClick: (ExpenseEntity) -> Unit,
+    onIncomeClick: ((IncomeEntity) -> Unit)? = null,
     topHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -222,6 +227,41 @@ fun ExpensesTabScreen(
         }
     }
 
+    val filteredIncomes = remember(
+        incomes,
+        searchQuery,
+        normalizedDateFilter,
+        selectedCategoryFilter,
+        isSettlementsFilterSelected
+    ) {
+        if (selectedCategoryFilter != null && !isSettlementsFilterSelected) {
+            emptyList()
+        } else {
+            val q = searchQuery.trim().lowercase(Locale.ROOT)
+            incomes.filter { inc ->
+                val matchesDate = normalizedDateFilter == null ||
+                    FormatUtils.parseFlexibleDateToIso(inc.date) == normalizedDateFilter
+
+                val formattedDateShort = FormatUtils.formatShortDate(inc.date, locale).lowercase(Locale.ROOT)
+                val contribNames = inc.contributions
+                    .mapNotNull { participantMap[it.participantId]?.name }
+                    .joinToString(" ")
+
+                val matchesQuery = q.isEmpty() ||
+                    inc.description.lowercase(Locale.ROOT).contains(q) ||
+                    inc.date.lowercase(Locale.ROOT).contains(q) ||
+                    formattedDateShort.contains(q) ||
+                    contribNames.lowercase(Locale.ROOT).contains(q) ||
+                    "bote".contains(q) ||
+                    "ingreso".contains(q)
+
+                matchesDate && matchesQuery
+            }.sortedWith(
+                compareByDescending<IncomeEntity> { FormatUtils.parseFlexibleDateToIso(it.date) }
+            )
+        }
+    }
+
     var settlementsExpanded by remember(selectedCategoryFilter) {
         mutableStateOf(isSettlementsFilterSelected)
     }
@@ -231,7 +271,7 @@ fun ExpensesTabScreen(
     }
 
     val showGroupedSettlementsCard = (selectedCategoryFilter == null || isSettlementsFilterSelected) &&
-        filteredSettlements.isNotEmpty()
+        (filteredSettlements.isNotEmpty() || filteredIncomes.isNotEmpty())
     val hasAnyVisibleRecords = filteredExpenses.isNotEmpty() || showGroupedSettlementsCard
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -498,8 +538,9 @@ fun ExpensesTabScreen(
                                 tint = if (isSettlementsFilterSelected) Color.White else settlementChipColor,
                                 modifier = Modifier.size(12.dp)
                             )
+                            val totalSettlementsAndIncomes = settlementExpenses.size + incomes.size
                             Text(
-                                text = "$settlementsLabel (${settlementExpenses.size})",
+                                text = "$settlementsLabel ($totalSettlementsAndIncomes)",
                                 fontSize = 11.sp,
                                 fontWeight = if (isSettlementsFilterSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSettlementsFilterSelected) Color.White else Color(0xFF334155)
@@ -562,12 +603,14 @@ fun ExpensesTabScreen(
                         GroupedSettlementsCard(
                             title = settlementsLabel,
                             settlements = filteredSettlements,
+                            incomes = filteredIncomes,
                             participantMap = participantMap,
                             baseCurrency = trip.baseCurrency,
                             currentLang = currentLang,
                             isExpanded = settlementsExpanded,
                             onToggleExpand = { settlementsExpanded = !settlementsExpanded },
-                            onSettlementClick = onExpenseClick
+                            onSettlementClick = onExpenseClick,
+                            onIncomeClick = onIncomeClick
                         )
                     }
                 }
@@ -895,29 +938,51 @@ private fun ExpenseItemCard(
 private fun GroupedSettlementsCard(
     title: String,
     settlements: List<ExpenseEntity>,
+    incomes: List<IncomeEntity> = emptyList(),
     participantMap: Map<String, ParticipantEntity>,
     baseCurrency: String,
     currentLang: AppLanguage,
     isExpanded: Boolean,
     onToggleExpand: () -> Unit,
-    onSettlementClick: (ExpenseEntity) -> Unit
+    onSettlementClick: (ExpenseEntity) -> Unit,
+    onIncomeClick: ((IncomeEntity) -> Unit)? = null
 ) {
     val texts = UiTexts.get(currentLang)
     val locale = currentLang.locale
     val accentColor = Color(0xFF0E7490)
-    val totalSettled = settlements.sumOf { it.amountInBaseCurrency }
-    val count = settlements.size
+    val totalSettled = settlements.sumOf { it.amountInBaseCurrency } + incomes.sumOf { it.amount }
+    val count = settlements.size + incomes.size
 
     val countLabel = when (currentLang) {
-        AppLanguage.ES -> if (count == 1) "1 liquidación · Pulsa para ver y editar" else "$count liquidaciones · Pulsa para ver y editar"
-        AppLanguage.EN -> if (count == 1) "1 settlement · Tap to view & edit" else "$count settlements · Tap to view & edit"
-        AppLanguage.FR -> if (count == 1) "1 règlement · Appuyer pour voir et modifier" else "$count règlements · Appuyer pour voir et modifier"
-        AppLanguage.IT -> if (count == 1) "1 liquidazione · Tocca per vedere e modificare" else "$count liquidazioni · Tocca per vedere e modificare"
-        AppLanguage.ZH -> "$count 笔结算 · 点击查看并编辑"
-        AppLanguage.NL -> if (count == 1) "1 vereffening · Tik om te bekijken en bewerken" else "$count vereffeningen · Tik om te bekijken en bewerken"
-        AppLanguage.DE -> if (count == 1) "1 Abrechnung · Tippen zum Ansehen & Bearbeiten" else "$count Abrechnungen · Tippen zum Ansehen & Bearbeiten"
-        AppLanguage.PL -> if (count == 1) "1 rozliczenie · Dotknij, aby zobaczyć i edytować" else "$count rozliczeń · Dotknij, aby zobaczyć i edytować"
-        AppLanguage.PT -> if (count == 1) "1 liquidação · Tocar para ver e editar" else "$count liquidações · Tocar para ver e editar"
+        AppLanguage.ES -> if (count == 1) "1 movimiento · Pulsa para ver y editar" else "$count liquidaciones e ingresos · Pulsa para ver y editar"
+        AppLanguage.EN -> if (count == 1) "1 transaction · Tap to view & edit" else "$count settlements & pot deposits · Tap to view & edit"
+        AppLanguage.FR -> if (count == 1) "1 mouvement · Appuyer pour voir et modifier" else "$count règlements et versements · Appuyer pour voir et modifier"
+        AppLanguage.IT -> if (count == 1) "1 movimento · Tocca per vedere e modificare" else "$count liquidazioni e versamenti · Tocca per vedere e modificare"
+        AppLanguage.ZH -> "$count 笔结算与公账注入 · 点击查看并编辑"
+        AppLanguage.NL -> if (count == 1) "1 transactie · Tik om te bekijken en bewerken" else "$count vereffeningen en potinleg · Tik om te bekijken en bewerken"
+        AppLanguage.DE -> if (count == 1) "1 Buchung · Tippen zum Ansehen & Bearbeiten" else "$count Abrechnungen & Kassen-Einzahlungen · Tippen zum Ansehen & Bearbeiten"
+        AppLanguage.PL -> if (count == 1) "1 operacja · Dotknij, aby zobaczyć i edytować" else "$count rozliczeń i wpłat · Dotknij, aby zobaczyć i edytować"
+        AppLanguage.PT -> if (count == 1) "1 movimento · Tocar para ver e editar" else "$count liquidações e depósitos · Tocar para ver e editar"
+    }
+
+    val unifiedEntries = remember(settlements, incomes) {
+        val list = mutableListOf<Any>()
+        list.addAll(settlements)
+        list.addAll(incomes)
+        list.sortedWith(
+            compareByDescending<Any> {
+                when (it) {
+                    is ExpenseEntity -> FormatUtils.parseFlexibleDateToIso(it.date)
+                    is IncomeEntity -> FormatUtils.parseFlexibleDateToIso(it.date)
+                    else -> ""
+                }
+            }.thenByDescending {
+                when (it) {
+                    is ExpenseEntity -> it.createdAt
+                    else -> 0L
+                }
+            }
+        )
     }
 
     Card(
@@ -994,7 +1059,7 @@ private fun GroupedSettlementsCard(
                 }
             }
 
-            // Desplegable con todas las liquidaciones individuales editables
+            // Desplegable con todas las liquidaciones e ingresos individuales editables
             AnimatedVisibility(visible = isExpanded) {
                 Column(
                     modifier = Modifier
@@ -1003,77 +1068,204 @@ private fun GroupedSettlementsCard(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    settlements.forEachIndexed { idx, settlement ->
-                        val payerName = if (settlement.paidById == DebtCalculator.BOTE_COMUN_ID) {
-                            texts.commonPotName
-                        } else {
-                            participantMap[settlement.paidById]?.name ?: texts.defaultTravelerName
-                        }
-                        val recipientNames = settlement.splits
-                            .filter { it.amount > 0.004 }
-                            .mapNotNull { participantMap[it.participantId]?.name }
-                            .joinToString(", ")
-                        val routeSubtitle = if (recipientNames.isNotBlank()) {
-                            "$payerName → $recipientNames"
-                        } else {
-                            payerName
-                        }
-                        val translatedMethod = PaymentMethodCatalog.displayName(settlement.paymentMethod, currentLang)
+                    unifiedEntries.forEachIndexed { idx, entry ->
+                        if (entry is ExpenseEntity) {
+                            val settlement = entry
+                            val payerName = if (settlement.paidById == DebtCalculator.BOTE_COMUN_ID) {
+                                texts.commonPotName
+                            } else {
+                                participantMap[settlement.paidById]?.name ?: texts.defaultTravelerName
+                            }
+                            val recipientNames = settlement.splits
+                                .filter { it.amount > 0.004 }
+                                .mapNotNull { participantMap[it.participantId]?.name }
+                                .joinToString(", ")
+                            val routeSubtitle = if (recipientNames.isNotBlank()) {
+                                "$payerName → $recipientNames"
+                            } else {
+                                payerName
+                            }
+                            val translatedMethod = PaymentMethodCatalog.displayName(settlement.paymentMethod, currentLang)
 
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable { onSettlementClick(settlement) }
-                                .testTag("settlement_item_${settlement.id}"),
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                        ) {
-                            Row(
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 10.dp, vertical = 9.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onSettlementClick(settlement) }
+                                    .testTag("settlement_item_${settlement.id}"),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = settlement.placeName.ifBlank { routeSubtitle },
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                        color = OceanNavy,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "📅 ${FormatUtils.formatShortDate(settlement.date, locale)} · $routeSubtitle · $translatedMethod",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFF64748B),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 9.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = settlement.placeName.ifBlank { routeSubtitle },
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                            color = OceanNavy,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "📅 ${FormatUtils.formatShortDate(settlement.date, locale)} · $routeSubtitle · $translatedMethod",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF64748B),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = FormatUtils.formatCurrency(settlement.amountInBaseCurrency, baseCurrency, locale),
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = accentColor
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            tint = TravelBlue,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
+                            }
+                        } else if (entry is IncomeEntity) {
+                            val income = entry
+                            val contributorsDesc = income.contributions
+                                .filter { it.amount > 0.004 }
+                                .mapNotNull { participantMap[it.participantId]?.name }
+                                .joinToString(", ")
+                            val poteTitle = income.description.ifBlank {
+                                when (currentLang) {
+                                    AppLanguage.ES -> "Ingreso en Bote Común"
+                                    AppLanguage.EN -> "Common Pot Deposit"
+                                    AppLanguage.FR -> "Versement Cagnotte Commune"
+                                    AppLanguage.IT -> "Versamento Cassa Comune"
+                                    AppLanguage.ZH -> "公账注入"
+                                    AppLanguage.NL -> "Inleg in Gemeenschappelijke Pot"
+                                    AppLanguage.DE -> "Gemeinschaftskasse-Einzahlung"
+                                    AppLanguage.PL -> "Wpłata do wspólnej kasy"
+                                    AppLanguage.PT -> "Depósito no Fundo Comum"
+                                }
+                            }
+                            val potSubtitle = if (contributorsDesc.isNotBlank()) {
+                                "📅 ${FormatUtils.formatShortDate(income.date, locale)} · ${texts.commonPotName} ($contributorsDesc)"
+                            } else {
+                                "📅 ${FormatUtils.formatShortDate(income.date, locale)} · ${texts.commonPotName}"
+                            }
 
-                                Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { onIncomeClick?.invoke(income) }
+                                    .testTag("income_item_${income.id}"),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFD1FAE5))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 9.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFFD1FAE5)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Savings,
+                                                contentDescription = poteTitle,
+                                                tint = EmeraldGreenDark,
+                                                modifier = Modifier.size(17.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = poteTitle,
+                                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                                    color = OceanNavy,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFD1FAE5)
+                                                ) {
+                                                    Text(
+                                                        text = when (currentLang) {
+                                                            AppLanguage.ES -> "Bote"
+                                                            AppLanguage.EN -> "Pot"
+                                                            AppLanguage.FR -> "Cagnotte"
+                                                            AppLanguage.IT -> "Cassa"
+                                                            AppLanguage.ZH -> "公账"
+                                                            AppLanguage.NL -> "Pot"
+                                                            AppLanguage.DE -> "Kasse"
+                                                            AppLanguage.PL -> "Kasa"
+                                                            AppLanguage.PT -> "Fundo"
+                                                        },
+                                                        style = MaterialTheme.typography.labelSmall.copy(
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 9.sp
+                                                        ),
+                                                        color = EmeraldGreenDark,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = potSubtitle,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF64748B),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
 
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = FormatUtils.formatCurrency(settlement.amountInBaseCurrency, baseCurrency, locale),
-                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
-                                        color = accentColor
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = null,
-                                        tint = TravelBlue,
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "+${FormatUtils.formatCurrency(income.amount, baseCurrency, locale)}",
+                                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = EmeraldGreenDark
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            tint = EmeraldGreenDark,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        if (idx < settlements.lastIndex) {
+                        if (idx < unifiedEntries.lastIndex) {
                             HorizontalDivider(color = Color(0xFFE2E8F0).copy(alpha = 0.5f))
                         }
                     }

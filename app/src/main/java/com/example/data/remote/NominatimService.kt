@@ -44,6 +44,7 @@ object NominatimService {
      * complementado con la API de OpenStreetMap Nominatim con prioridad por cercanía GPS,
      * devolviendo comercios, direcciones, restaurantes y puntos de interés equivalentes a Google Maps.
      */
+    @Suppress("DEPRECATION")
     suspend fun searchPlacesByProximity(
         query: String,
         userLat: Double?,

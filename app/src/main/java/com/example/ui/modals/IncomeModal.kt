@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -96,6 +98,7 @@ fun IncomeModal(
     existingIncome: IncomeEntity?,
     systemNavBarBottomPadding: Dp = 0.dp,
     onSaveIncome: (IncomeEntity, Boolean) -> Unit,
+    onDeleteIncome: ((String) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1023,6 +1026,23 @@ fun IncomeModal(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (existingIncome != null && onDeleteIncome != null) {
+                        OutlinedButton(
+                            onClick = {
+                                onDeleteIncome(existingIncome.id)
+                                onDismiss()
+                            },
+                            modifier = Modifier.height(48.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFEF4444)),
+                            border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(17.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(texts.deleteBtn, maxLines = 1)
+                        }
+                    }
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier

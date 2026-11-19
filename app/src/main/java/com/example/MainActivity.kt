@@ -809,6 +809,7 @@ fun TravelCashApp(
                                 trip = activeTrip,
                                 participants = uiState.activeParticipants,
                                 expenses = uiState.activeExpenses,
+                                incomes = uiState.activeIncomes,
                                 searchQuery = searchQuery,
                                 selectedDateFilter = selectedDateFilter,
                                 selectedCategoryFilter = selectedCategoryFilter,
@@ -823,6 +824,10 @@ fun TravelCashApp(
                                 onExpenseClick = { exp ->
                                     editingExpense = exp
                                     showAddOrEditExpenseModal = true
+                                },
+                                onIncomeClick = { inc ->
+                                    editingIncome = inc
+                                    showIncomeModal = true
                                 },
                                 topHeader = activeTripHeaderContent
                             )
@@ -1317,6 +1322,7 @@ fun TravelCashApp(
             existingIncome = editingIncome,
             systemNavBarBottomPadding = systemNavBarsBottomPadding,
             onSaveIncome = viewModel::saveIncome,
+            onDeleteIncome = viewModel::deleteIncome,
             onDismiss = {
                 showIncomeModal = false
                 editingIncome = null
