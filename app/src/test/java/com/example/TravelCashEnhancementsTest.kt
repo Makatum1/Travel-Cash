@@ -625,4 +625,95 @@ class TravelCashEnhancementsTest {
         // Ni la liquidación de 300€ ni los botes personales alteran el saldo del bote común (210€)
         assertEquals(210.0, availableBote, 0.001)
     }
+
+    @Test
+    fun extraBalance_exactFormula_matchesValidationScenario() {
+        // Ejemplo de validación del requerimiento:
+        // Gastos totales del viaje: 1000€.
+        // Pagos directos de los usuarios (saldados de su bolsillo): 400€.
+        // Dinero ingresado al bote: 600€.
+        // Resultado esperado: 600 - 1000 + 400 = 0€. (El bote está perfectamente cuadrado).
+        // Si ingresan 200€ más al bote (800€): 800 - 1000 + 400 = 200€.
+        // Si ingresan 1000€ al bote: 1000 - 1000 + 400 = 400€.
+
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+
+        // 1. Gasto directo pagado por U1 de su bolsillo: 400€
+        val expDirect = ExpenseEntity(
+            id = "exp-direct-400",
+            tripId = "t1",
+            amount = 400.0,
+            currency = "EUR",
+            amountInBaseCurrency = 400.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Hotel pagado por U1",
+            paidById = u1.id
+        )
+
+        // 2. Gastos pagados desde el bote común (o a cubrir por el bote): 600€
+        val expBote = ExpenseEntity(
+            id = "exp-bote-600",
+            tripId = "t1",
+            amount = 600.0,
+            currency = "EUR",
+            amountInBaseCurrency = 600.0,
+            exchangeRate = 1.0,
+            category = "Restaurante",
+            date = "2026-07-02",
+            paymentMethod = "Bote Común",
+            notes = "Cena de grupo",
+            paidById = DebtCalculator.BOTE_COMUN_ID
+        )
+
+        // 3. Liquidación entre usuarios con exceso (pago de más): NO debe alterar esta fórmula
+        val settleExcess = ExpenseEntity(
+            id = "settle-excess-500",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "Liquidación personal con exceso",
+            paidById = u2.id
+        )
+
+        val expenses = listOf(expDirect, expBote, settleExcess)
+
+        // Total gastos reales del viaje (sin liquidaciones) = 1000€
+        val totalGastos = expenses
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+            .sumOf { it.amountInBaseCurrency }
+        assertEquals(1000.0, totalGastos, 0.001)
+
+        // Pagos directos de los usuarios (de su bolsillo, sin bote ni liquidaciones) = 400€
+        val totalPagadoDirecto = expenses.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                exp.paidById.isNotBlank() &&
+                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
+                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+        }.sumOf { it.amountInBaseCurrency }
+        assertEquals(400.0, totalPagadoDirecto, 0.001)
+
+        // Caso base: 600€ ingresados al bote
+        var totalBoteIncome = 600.0
+        var saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
+        assertEquals(0.0, saldoExtraCaja, 0.001) // 600 - 1000 + 400 = 0€
+
+        // Si se añaden 200€ más al bote (800€ total ingresado al bote):
+        totalBoteIncome = 800.0
+        saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
+        assertEquals(200.0, saldoExtraCaja, 0.001) // 800 - 1000 + 400 = 200€
+
+        // Si ingresan 1000€ al bote:
+        totalBoteIncome = 1000.0
+        saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
+        assertEquals(400.0, saldoExtraCaja, 0.001) // 1000 - 1000 + 400 = 400€
+    }
 }
