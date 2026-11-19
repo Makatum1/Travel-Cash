@@ -787,19 +787,13 @@ fun ActiveTripHeaderAndBudgetCard(
                                     ),
                                     color = Color(0xFF475569)
                                 )
-                                val posAdjustment = kotlin.math.abs(personalAdjustment)
-                                val formattedAdjustment = if (posAdjustment > 0.004) {
-                                    "+${FormatUtils.formatCurrency(posAdjustment, trip.baseCurrency, currentLang.locale)}"
-                                } else {
-                                    FormatUtils.formatCurrency(0.0, trip.baseCurrency, currentLang.locale)
-                                }
                                 Text(
-                                    text = formattedAdjustment,
+                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 11.sp
                                     ),
-                                    color = EmeraldGreenDark,
+                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -1039,19 +1033,13 @@ fun ActiveTripHeaderAndBudgetCard(
                                     ),
                                     color = Color(0xFF475569)
                                 )
-                                val posAdjustment = kotlin.math.abs(personalAdjustment)
-                                val formattedAdjustment = if (posAdjustment > 0.004) {
-                                    "+${FormatUtils.formatCurrency(posAdjustment, trip.baseCurrency, currentLang.locale)}"
-                                } else {
-                                    FormatUtils.formatCurrency(0.0, trip.baseCurrency, currentLang.locale)
-                                }
                                 Text(
-                                    text = formattedAdjustment,
+                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 10.5.sp
                                     ),
-                                    color = EmeraldGreenDark,
+                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
