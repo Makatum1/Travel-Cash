@@ -366,6 +366,12 @@ class TravelCashEnhancementsTest {
         val u2Balance2 = res2.participantBalances.first { it.participantId == "u2" }
         val u2Summary2 = netReport2.participantSummaries.first { it.participant.id == "u2" }
 
+        // Usuario 1 ha recuperado los 296€ adelantados, no tiene gasto asumido ni saldo negativo (en paz)
+        assertEquals(296.0, u1Balance2.totalExpensesPaid, 0.01)
+        assertEquals(0.0, u1Balance2.totalExpensesOwed, 0.01)
+        assertEquals(296.0, u1Balance2.totalDebtSettlementsReceived, 0.01)
+        assertEquals(0.0, u1Balance2.netBalance, 0.01)
+
         // El desembolso de Usuario 2 es 500€, su gasto asumido es 296€ y su balance a favor es +204€
         assertEquals(500.0, u2Balance2.totalExpensesPaid, 0.01)
         assertEquals(296.0, u2Balance2.totalExpensesOwed, 0.01)

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -1034,19 +1035,21 @@ private fun SettlementTransactionCard(
                                     )
                                 }
                                 HorizontalDivider(color = Color(0xFFCBD5E1))
-                                val labelFinal = if (sb.netBalance >= 0) {
+                                val isFinalPos = sb.netBalance > 0.009
+                                val isFinalNeg = sb.netBalance < -0.009
+                                val labelFinal = if (isFinalPos) {
                                     when (currentLang) {
-                                        AppLanguage.ES -> "Saldo neto a percibir:"
-                                        AppLanguage.EN -> "Net balance to receive:"
-                                        AppLanguage.FR -> "Solde net à percevoir :"
-                                        AppLanguage.IT -> "Saldo netto da ricevere:"
-                                        AppLanguage.ZH -> "应收净余额："
-                                        AppLanguage.NL -> "Te ontvangen nettosaldo:"
-                                        AppLanguage.DE -> "Zu erhaltender Nettosaldo:"
-                                        AppLanguage.PL -> "Saldo netto do odbioru:"
-                                        AppLanguage.PT -> "Saldo líquido a receber:"
+                                        AppLanguage.ES -> "Saldo a favor (bote personal):"
+                                        AppLanguage.EN -> "Credit balance (personal pot):"
+                                        AppLanguage.FR -> "Solde créditeur (cagnotte pers.) :"
+                                        AppLanguage.IT -> "Saldo a favore (cassa pers.):"
+                                        AppLanguage.ZH -> "贷方结余（个人备用金）："
+                                        AppLanguage.NL -> "Tegoed (persoonlijke pot):"
+                                        AppLanguage.DE -> "Guthaben (persönliche Kasse):"
+                                        AppLanguage.PL -> "Saldo dodatnie (własna kasa):"
+                                        AppLanguage.PT -> "Saldo a favor (fundo pessoal):"
                                     }
-                                } else {
+                                } else if (isFinalNeg) {
                                     when (currentLang) {
                                         AppLanguage.ES -> "Deuda neta pendiente:"
                                         AppLanguage.EN -> "Pending net debt:"
@@ -1058,11 +1061,37 @@ private fun SettlementTransactionCard(
                                         AppLanguage.PL -> "Zaległy dług netto:"
                                         AppLanguage.PT -> "Dívida líquida pendente:"
                                     }
+                                } else {
+                                    when (currentLang) {
+                                        AppLanguage.ES -> "Balance final:"
+                                        AppLanguage.EN -> "Final balance:"
+                                        AppLanguage.FR -> "Solde final :"
+                                        AppLanguage.IT -> "Saldo finale:"
+                                        AppLanguage.ZH -> "最终结算："
+                                        AppLanguage.NL -> "Eindsituatie:"
+                                        AppLanguage.DE -> "Endstand:"
+                                        AppLanguage.PL -> "Bilans końcowy:"
+                                        AppLanguage.PT -> "Saldo final:"
+                                    }
                                 }
                                 MathRow(
                                     label = labelFinal,
-                                    value = FormatUtils.formatCurrency(abs(sb.netBalance), baseCurrency, currentLang.locale),
-                                    valueColor = if (sb.netBalance >= 0) EmeraldGreenDark else CoralRedDark,
+                                    value = if (!isFinalPos && !isFinalNeg) {
+                                        FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale) + " (" + when (currentLang) {
+                                            AppLanguage.ES -> "En paz"
+                                            AppLanguage.EN -> "Settled up"
+                                            AppLanguage.FR -> "En règle"
+                                            AppLanguage.IT -> "In pari"
+                                            AppLanguage.ZH -> "已平"
+                                            AppLanguage.NL -> "Kwijt"
+                                            AppLanguage.DE -> "Ausgeglichen"
+                                            AppLanguage.PL -> "Rozliczony"
+                                            AppLanguage.PT -> "Em dia"
+                                        } + ")"
+                                    } else {
+                                        FormatUtils.formatCurrency(abs(sb.netBalance), baseCurrency, currentLang.locale)
+                                    },
+                                    valueColor = if (isFinalPos) EmeraldGreenDark else if (isFinalNeg) CoralRedDark else Color(0xFF64748B),
                                     isBold = true
                                 )
                             }
@@ -1211,8 +1240,6 @@ private fun ParticipantBalanceInteractiveCard(
     onIncomeClick: (IncomeEntity) -> Unit,
     onClick: () -> Unit
 ) {
-    val isPositive = balance.netBalance >= -0.004
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1283,20 +1310,27 @@ private fun ParticipantBalanceInteractiveCard(
                                 }
                             },
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isPositive) EmeraldGreenDark else CoralRedDark
+                            color = if (balance.netBalance > 0.009) EmeraldGreenDark else if (balance.netBalance < -0.009) CoralRedDark else Color(0xFF64748B)
                         )
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val isPos = balance.netBalance > 0.009
+                    val isNeg = balance.netBalance < -0.009
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (isPositive) EmeraldGreenLight else CoralRedLight
+                        color = if (isPos) EmeraldGreenLight else if (isNeg) CoralRedLight else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (isPos) EmeraldGreen.copy(alpha = 0.5f) else if (isNeg) CoralRed.copy(alpha = 0.5f) else Color(0xFFCBD5E1))
                     ) {
                         Text(
-                            text = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
+                            text = if (!isPos && !isNeg) {
+                                FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale)
+                            } else {
+                                FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
+                            },
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
-                            color = if (isPositive) EmeraldGreenDark else CoralRedDark,
+                            color = if (isPos) EmeraldGreenDark else if (isNeg) CoralRedDark else Color(0xFF64748B),
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
@@ -1358,6 +1392,23 @@ private fun ParticipantBalanceInteractiveCard(
                         value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
                         valueColor = EmeraldGreenDark
                     )
+                    if (balance.totalDebtSettlementsReceived > 0.009) {
+                        MathRow(
+                            label = when (currentLang) {
+                                AppLanguage.ES -> "Cobrado por liquidaciones de deudas:"
+                                AppLanguage.EN -> "Collected from debt settlements:"
+                                AppLanguage.FR -> "Perçu par règlements de dettes :"
+                                AppLanguage.IT -> "Incassato da liquidazioni debiti:"
+                                AppLanguage.ZH -> "已收债务结算款："
+                                AppLanguage.NL -> "Geïncasseerd uit schuldaflossingen:"
+                                AppLanguage.DE -> "Aus Schuldenausgleich erhalten:"
+                                AppLanguage.PL -> "Pobrane ze spłat długów:"
+                                AppLanguage.PT -> "Cobrado por liquidações de dívidas:"
+                            },
+                            value = "-${FormatUtils.formatCurrency(balance.totalDebtSettlementsReceived, baseCurrency, currentLang.locale)}",
+                            valueColor = EmeraldGreenDark
+                        )
+                    }
                     if (balance.totalDebtDiscountCompensated > 0.009) {
                         MathRow(
                             label = when (currentLang) {
@@ -1391,20 +1442,36 @@ private fun ParticipantBalanceInteractiveCard(
                         valueColor = CoralRedDark
                     )
                     HorizontalDivider(color = Color(0xFFE2E8F0))
+                    val isPosBalance = balance.netBalance > 0.009
+                    val isNegBalance = balance.netBalance < -0.009
                     MathRow(
                         label = when (currentLang) {
-                            AppLanguage.ES -> if (isPositive) "Saldo a favor (bote personal):" else "Deuda pendiente:"
-                            AppLanguage.EN -> if (isPositive) "Credit balance (personal pot):" else "Pending debt:"
-                            AppLanguage.FR -> if (isPositive) "Solde créditeur (cagnotte pers.) :" else "Dette en attente :"
-                            AppLanguage.IT -> if (isPositive) "Saldo a favore (cassa pers.):" else "Debito in sospeso:"
-                            AppLanguage.ZH -> if (isPositive) "贷方结余（个人备用金）：" else "待还债务："
-                            AppLanguage.NL -> if (isPositive) "Tegoed (persoonlijke pot):" else "Openstaande schuld:"
-                            AppLanguage.DE -> if (isPositive) "Guthaben (persönliche Kasse):" else "Ausstehende Schuld:"
-                            AppLanguage.PL -> if (isPositive) "Saldo dodatnie (własna kasa):" else "Zaległy dług:"
-                            AppLanguage.PT -> if (isPositive) "Saldo a favor (fundo pessoal):" else "Dívida pendente:"
+                            AppLanguage.ES -> if (isPosBalance) "Saldo a favor (bote personal):" else if (isNegBalance) "Deuda pendiente:" else "Balance final:"
+                            AppLanguage.EN -> if (isPosBalance) "Credit balance (personal pot):" else if (isNegBalance) "Pending debt:" else "Final balance:"
+                            AppLanguage.FR -> if (isPosBalance) "Solde créditeur (cagnotte pers.) :" else if (isNegBalance) "Dette en attente :" else "Solde final :"
+                            AppLanguage.IT -> if (isPosBalance) "Saldo a favore (cassa pers.):" else if (isNegBalance) "Debito in sospeso:" else "Saldo finale:"
+                            AppLanguage.ZH -> if (isPosBalance) "贷方结余（个人备用金）：" else if (isNegBalance) "待还债务：" else "最终结算："
+                            AppLanguage.NL -> if (isPosBalance) "Tegoed (persoonlijke pot):" else if (isNegBalance) "Openstaande schuld:" else "Eindsituatie:"
+                            AppLanguage.DE -> if (isPosBalance) "Guthaben (persönliche Kasse):" else if (isNegBalance) "Ausstehende Schuld:" else "Endstand:"
+                            AppLanguage.PL -> if (isPosBalance) "Saldo dodatnie (własna kasa):" else if (isNegBalance) "Zaległy dług:" else "Bilans końcowy:"
+                            AppLanguage.PT -> if (isPosBalance) "Saldo a favor (fundo pessoal):" else if (isNegBalance) "Dívida pendente:" else "Saldo final:"
                         },
-                        value = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
-                        valueColor = if (isPositive) EmeraldGreenDark else CoralRedDark,
+                        value = if (!isPosBalance && !isNegBalance) {
+                            FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale) + " (" + when (currentLang) {
+                                AppLanguage.ES -> "En paz"
+                                AppLanguage.EN -> "Settled up"
+                                AppLanguage.FR -> "En règle"
+                                AppLanguage.IT -> "In pari"
+                                AppLanguage.ZH -> "已平"
+                                AppLanguage.NL -> "Kwijt"
+                                AppLanguage.DE -> "Ausgeglichen"
+                                AppLanguage.PL -> "Rozliczony"
+                                AppLanguage.PT -> "Em dia"
+                            } + ")"
+                        } else {
+                            FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
+                        },
+                        valueColor = if (isPosBalance) EmeraldGreenDark else if (isNegBalance) CoralRedDark else Color(0xFF64748B),
                         isBold = true
                     )
 
@@ -1478,6 +1545,7 @@ private fun ParticipantBalanceInteractiveCard(
                         when (rawItem) {
                             is ExpenseEntity -> {
                                 val exp = rawItem
+                                val isSettlement = CategoryCatalog.isDebtSettlementExpense(exp)
                                 val paidThis = exp.paidById == balance.participantId
                                 val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
                                 val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
@@ -1497,13 +1565,32 @@ private fun ParticipantBalanceInteractiveCard(
                                     )
                                     Text(
                                         text = buildString {
-                                            if (paidThis) {
-                                                append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
+                                            if (isSettlement) {
+                                                if (paidThis) {
+                                                    append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}")
+                                                } else {
+                                                    val recLabel = when (currentLang) {
+                                                        AppLanguage.ES -> "Cobró"
+                                                        AppLanguage.EN -> "Received"
+                                                        AppLanguage.FR -> "Reçu"
+                                                        AppLanguage.IT -> "Ricevuto"
+                                                        AppLanguage.ZH -> "收款"
+                                                        AppLanguage.NL -> "Ontvangen"
+                                                        AppLanguage.DE -> "Erhalten"
+                                                        AppLanguage.PL -> "Otrzymano"
+                                                        AppLanguage.PT -> "Recebeu"
+                                                    }
+                                                    append("$recLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}")
+                                                }
+                                            } else {
+                                                if (paidThis) {
+                                                    append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
+                                                }
+                                                append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
                                             }
-                                            append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
                                         },
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                        color = if (paidThis) TravelBlue else Color(0xFF64748B)
+                                        color = if (paidThis) TravelBlue else if (isSettlement) EmeraldGreenDark else Color(0xFF64748B)
                                     )
                                 }
                             }
@@ -1591,14 +1678,25 @@ fun SettleDebtsModal(
     var expandedPayerDropdown by remember { mutableStateOf(false) }
     var expandedPayeeDropdown by remember { mutableStateOf(false) }
 
-    val cashLabel = PaymentMethodCatalog.displayName("Efectivo", currentLang)
-    val bizumLabel = PaymentMethodCatalog.displayName("Bizum / Transferencia", currentLang)
-    val cardLabel = PaymentMethodCatalog.displayName("Tarjeta", currentLang)
-
-    val paymentMethods = remember(currentLang) {
-        listOf(cashLabel, bizumLabel, cardLabel)
+    val navBottomFromSystem = remember {
+        val activity = context as? android.app.Activity
+        val decorView = activity?.window?.decorView
+        val insets = if (decorView != null) androidx.core.view.ViewCompat.getRootWindowInsets(decorView) else null
+        val bottomPx = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+        if (bottomPx > 0) {
+            (bottomPx / context.resources.displayMetrics.density).dp
+        } else {
+            0.dp
+        }
     }
-    var selectedPaymentMethod by remember(currentLang) { mutableStateOf(cashLabel) }
+
+    val bottomSpacing = if (navBottomFromSystem >= 36.dp) {
+        navBottomFromSystem + 36.dp
+    } else {
+        maxOf(52.dp, navBottomFromSystem + 32.dp)
+    }
+
+    var selectedPaymentMethod by remember { mutableStateOf("Efectivo") }
 
     val settlementDateLabel = when (currentLang) {
         AppLanguage.ES -> "Fecha de la liquidación"
@@ -1619,40 +1717,35 @@ fun SettleDebtsModal(
             decorFitsSystemWindows = false
         )
     ) {
-        Box(
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            contentAlignment = Alignment.Center
+                .padding(horizontal = 10.dp)
+                .padding(top = 10.dp, bottom = bottomSpacing)
+                .imePadding(),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.92f),
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                // Cabecera del modal con botón de Cerrar (y Volver si hay deuda seleccionada)
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Cabecera del modal limpia y sin botones superpuestos
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(OceanNavy)
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            imageVector = if (isManualSettlement) Icons.Default.Add else Icons.Default.Check,
                             contentDescription = null,
-                            tint = Color.White
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -1681,71 +1774,25 @@ fun SettleDebtsModal(
                                     AppLanguage.PT -> "Liquidar Dívidas"
                                 }
                             },
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                            color = Color.White
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .background(Color.White.copy(alpha = 0.22f), CircleShape)
                     ) {
-                        if (selectedDebt != null || isManualSettlement) {
-                            Button(
-                                onClick = {
-                                    selectedDebt = null
-                                    isManualSettlement = false
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color.White.copy(alpha = 0.22f),
-                                    contentColor = Color.White
-                                ),
-                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = when (currentLang) {
-                                        AppLanguage.ES -> "Volver"
-                                        AppLanguage.EN -> "Back"
-                                        AppLanguage.FR -> "Retour"
-                                        AppLanguage.IT -> "Indietro"
-                                        AppLanguage.ZH -> "返回"
-                                        AppLanguage.NL -> "Terug"
-                                        AppLanguage.DE -> "Zurück"
-                                        AppLanguage.PL -> "Wstecz"
-                                        AppLanguage.PT -> "Voltar"
-                                    },
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                        }
-
-                        Button(
-                            onClick = onDismiss,
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.White.copy(alpha = 0.22f),
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = null,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = texts.closeBtn,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = texts.closeBtn,
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.White
+                        )
                     }
                 }
 
@@ -2216,14 +2263,16 @@ fun SettleDebtsModal(
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF475569)
                         )
+                        // Fila 1: Efectivo, Tarjeta, Bizum
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            paymentMethods.forEach { method ->
-                                val isSelected = selectedPaymentMethod == method
+                            listOf("Efectivo", "Tarjeta", "Bizum").forEach { rawMethod ->
+                                val isSelected = selectedPaymentMethod == rawMethod
+                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
                                 Button(
-                                    onClick = { selectedPaymentMethod = method },
+                                    onClick = { selectedPaymentMethod = rawMethod },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
@@ -2231,10 +2280,40 @@ fun SettleDebtsModal(
                                     ),
                                     border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
                                     modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
                                 ) {
                                     Text(
-                                        text = method,
+                                        text = display,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        ),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                        // Fila 2: Transferencia, Bote Común
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("Transferencia", "Bote Común").forEach { rawMethod ->
+                                val isSelected = selectedPaymentMethod == rawMethod
+                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
+                                Button(
+                                    onClick = { selectedPaymentMethod = rawMethod },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
+                                        contentColor = if (isSelected) Color.White else Color(0xFF334155)
+                                    ),
+                                    border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = display,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         ),
@@ -2482,14 +2561,16 @@ fun SettleDebtsModal(
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF475569)
                         )
+                        // Fila 1: Efectivo, Tarjeta, Bizum
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            paymentMethods.forEach { method ->
-                                val isSelected = selectedPaymentMethod == method
+                            listOf("Efectivo", "Tarjeta", "Bizum").forEach { rawMethod ->
+                                val isSelected = selectedPaymentMethod == rawMethod
+                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
                                 Button(
-                                    onClick = { selectedPaymentMethod = method },
+                                    onClick = { selectedPaymentMethod = rawMethod },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
@@ -2497,10 +2578,40 @@ fun SettleDebtsModal(
                                     ),
                                     border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
                                     modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
                                 ) {
                                     Text(
-                                        text = method,
+                                        text = display,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                        ),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                        // Fila 2: Transferencia, Bote Común
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf("Transferencia", "Bote Común").forEach { rawMethod ->
+                                val isSelected = selectedPaymentMethod == rawMethod
+                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
+                                Button(
+                                    onClick = { selectedPaymentMethod = rawMethod },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
+                                        contentColor = if (isSelected) Color.White else Color(0xFF334155)
+                                    ),
+                                    border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = display,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         ),
@@ -2539,8 +2650,8 @@ fun SettleDebtsModal(
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                             contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
+                                .weight(0.38f)
+                                .height(50.dp)
                                 .testTag("settle_debts_back_button")
                         ) {
                             Icon(
@@ -2612,10 +2723,10 @@ fun SettleDebtsModal(
                                 disabledContainerColor = Color(0xFFCBD5E1),
                                 disabledContentColor = Color(0xFF94A3B8)
                             ),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
                             modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
+                                .weight(0.62f)
+                                .height(50.dp)
                                 .testTag("confirm_settlement_button")
                         ) {
                             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -2624,16 +2735,17 @@ fun SettleDebtsModal(
                                 text = when (currentLang) {
                                     AppLanguage.ES -> "Confirmar Liquidación"
                                     AppLanguage.EN -> "Confirm Settlement"
-                                    AppLanguage.FR -> "Confirmer le règlement"
-                                    AppLanguage.IT -> "Conferma liquidazione"
+                                    AppLanguage.FR -> "Confirmer"
+                                    AppLanguage.IT -> "Conferma"
                                     AppLanguage.ZH -> "确认结清"
-                                    AppLanguage.NL -> "Vereffening bevestigen"
-                                    AppLanguage.DE -> "Abrechnung bestätigen"
-                                    AppLanguage.PL -> "Potwierdź rozliczenie"
-                                    AppLanguage.PT -> "Confirmar Liquidação"
+                                    AppLanguage.NL -> "Bevestigen"
+                                    AppLanguage.DE -> "Bestätigen"
+                                    AppLanguage.PL -> "Potwierdź"
+                                    AppLanguage.PT -> "Confirmar"
                                 },
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                maxLines = 1
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                textAlign = TextAlign.Center
                             )
                         }
                     } else {
@@ -2647,7 +2759,7 @@ fun SettleDebtsModal(
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp)
+                                .height(50.dp)
                                 .testTag("settle_debts_close_button")
                         ) {
                             Icon(
@@ -2668,5 +2780,4 @@ fun SettleDebtsModal(
             }
         }
     }
-}
 }

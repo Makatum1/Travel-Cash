@@ -439,10 +439,10 @@ class ParticipantNetSpendCalculatorTest {
         assertEquals(204.0, pepeSummary.balance, 0.01)
         assertEquals(pepeSummary.netSpend - pepeSummary.assumedSpend, pepeSummary.balance, 0.01)
 
-        // Juan: Pagado = 700 - 500 = 200 €, Asumido = 404 €, Balance = -204 € (debe 204 €)
-        assertEquals(200.0, juanSummary.netSpend, 0.01)
+        // Juan: Pagado = 700 - 296 = 404 € (recupera los 296 € de Pepe, los 204 € de exceso son bote personal de Pepe sin crear gasto a Juan), Asumido = 404 €, Balance = 0 € (en paz)
+        assertEquals(404.0, juanSummary.netSpend, 0.01)
         assertEquals(404.0, juanSummary.assumedSpend, 0.01)
-        assertEquals(-204.0, juanSummary.balance, 0.01)
+        assertEquals(0.0, juanSummary.balance, 0.01)
         assertEquals(juanSummary.netSpend - juanSummary.assumedSpend, juanSummary.balance, 0.01)
     }
 }
