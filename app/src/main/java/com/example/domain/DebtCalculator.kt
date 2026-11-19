@@ -90,10 +90,20 @@ object DebtCalculator {
         for (exp in realExpenses) {
             val payerId = exp.paidById
             if (payerId.isNotBlank() && !exp.paymentMethod.equals("Bote Común", ignoreCase = true)) {
-                for (split in exp.splits) {
-                    if (split.participantId != payerId) {
-                        val key = Pair(payerId, split.participantId)
-                        realCostPaidByAforB[key] = (realCostPaidByAforB[key] ?: 0.0) + split.amount
+                if (exp.splits.isNotEmpty()) {
+                    for (split in exp.splits) {
+                        if (split.participantId != payerId) {
+                            val key = Pair(payerId, split.participantId)
+                            realCostPaidByAforB[key] = (realCostPaidByAforB[key] ?: 0.0) + split.amount
+                        }
+                    }
+                } else if (participants.isNotEmpty()) {
+                    val equalShare = exp.amountInBaseCurrency / participants.size
+                    for (p in participants) {
+                        if (p.id != payerId) {
+                            val key = Pair(payerId, p.id)
+                            realCostPaidByAforB[key] = (realCostPaidByAforB[key] ?: 0.0) + equalShare
+                        }
                     }
                 }
             }
@@ -146,7 +156,7 @@ object DebtCalculator {
             // 4. Lo que le tocaba asumir a cada uno: SÓLO gastos reales del viaje
             val realOwed = realExpenses.sumOf { expense ->
                 val splitForPerson = expense.splits.find { it.participantId == participant.id }
-                splitForPerson?.amount ?: 0.0
+                splitForPerson?.amount ?: if (expense.splits.isEmpty() && participants.isNotEmpty()) (expense.amountInBaseCurrency / participants.size) else 0.0
             }
 
             // 5. Bote Común aportado y compensado
@@ -187,18 +197,21 @@ object DebtCalculator {
         // PASO 1: Compensación desde el Bote Común a participantes acreedores
         val creditorRemaining = mutableMapOf<String, Double>()
         balances.forEach { b ->
-            if (b.netBalance > 0.009) {
-                creditorRemaining[b.participantId] = b.netBalance
+            val realPaid = realExpenses.filter {
+                it.paidById == b.participantId && !it.paymentMethod.equals("Bote Común", ignoreCase = true)
+            }.sumOf { it.amountInBaseCurrency }
+            val creditoPorGastos = max(0.0, (realPaid - b.totalDebtSettlementsReceived - b.totalDebtDiscountCompensated) - b.totalExpensesOwed)
+            val eligible = min(max(0.0, b.netBalance), creditoPorGastos)
+            if (eligible > 0.009) {
+                creditorRemaining[b.participantId] = eligible
             }
         }
 
         for (b in balances) {
             if (availableBote <= 0.009) break
-            val creditoPorGastos = max(0.0, (b.totalExpensesPaid - b.totalDebtSettlementsReceived - b.totalDebtDiscountCompensated) - b.totalExpensesOwed)
             val currentCreditorNeed = creditorRemaining[b.participantId] ?: 0.0
-            val eligibleFromBote = min(creditoPorGastos, currentCreditorNeed)
-            if (eligibleFromBote > 0.009) {
-                val transferAmount = round2(min(availableBote, eligibleFromBote))
+            if (currentCreditorNeed > 0.009) {
+                val transferAmount = round2(min(availableBote, currentCreditorNeed))
                 if (transferAmount > 0.009) {
                     transactions.add(
                         DebtTransaction(
@@ -216,29 +229,46 @@ object DebtCalculator {
             }
         }
 
-        // PASO 2: Deudas reales pendientes entre participantes
-        for (pA in participants) {
-            for (pB in participants) {
-                if (pA.id == pB.id) continue
-                val costAforB = realCostPaidByAforB[Pair(pA.id, pB.id)] ?: 0.0
-                val costBforA = realCostPaidByAforB[Pair(pB.id, pA.id)] ?: 0.0
-                val realDebtBtoA = max(0.0, costAforB - costBforA)
-                val sentBtoA = settlementsSentFromBtoA[Pair(pB.id, pA.id)] ?: 0.0
+        // PASO 2: Deudas entre participantes cruzando deudores (netBalance < 0) con acreedores
+        val debtors = balances
+            .filter { it.netBalance < -0.009 }
+            .map { it.participantId to abs(it.netBalance) }
+            .toMutableList()
 
-                val remainingDebt = round2(max(0.0, realDebtBtoA - sentBtoA))
-                if (remainingDebt > 0.009) {
-                    transactions.add(
-                        DebtTransaction(
-                            fromParticipantId = pB.id,
-                            fromName = pB.name,
-                            toParticipantId = pA.id,
-                            toName = pA.name,
-                            amount = remainingDebt,
-                            isFromBote = false
-                        )
+        val creditors = balances
+            .filter { (creditorRemaining[it.participantId] ?: 0.0) > 0.009 }
+            .map { it.participantId to (creditorRemaining[it.participantId] ?: 0.0) }
+            .toMutableList()
+
+        var dIdx = 0
+        var cIdx = 0
+        while (dIdx < debtors.size && cIdx < creditors.size) {
+            val (debtorId, debtAmt) = debtors[dIdx]
+            val (creditorId, credAmt) = creditors[cIdx]
+
+            val settled = round2(min(debtAmt, credAmt))
+            if (settled > 0.009) {
+                val debtorName = balances.find { it.participantId == debtorId }?.participantName ?: "Participante"
+                val creditorName = balances.find { it.participantId == creditorId }?.participantName ?: "Participante"
+                transactions.add(
+                    DebtTransaction(
+                        fromParticipantId = debtorId,
+                        fromName = debtorName,
+                        toParticipantId = creditorId,
+                        toName = creditorName,
+                        amount = settled,
+                        isFromBote = false
                     )
-                }
+                )
             }
+
+            val newDebt = debtAmt - settled
+            val newCred = credAmt - settled
+            debtors[dIdx] = debtorId to newDebt
+            creditors[cIdx] = creditorId to newCred
+
+            if (newDebt <= 0.009) dIdx++
+            if (newCred <= 0.009) cIdx++
         }
 
         return DebtCalculationResult(
