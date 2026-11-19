@@ -141,6 +141,8 @@ data class TravelCashUiState(
     val totalSpent: Double = 0.0,
     val totalIncome: Double = 0.0,
     val extraBalance: Double = 0.0,
+    val availableBote: Double = 0.0,
+    val personalAdjustment: Double = 0.0,
     val isInitialized: Boolean = false
 )
 
@@ -260,12 +262,23 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
             .sumOf { it.amountInBaseCurrency }
         val inc = activeIncs.sumOf { it.amount }
-        // Saldo Extra: Calculado como Ingresos Totales - Gastado Total (o Presupuesto - Gastado + Ingresos si hay presupuesto fijo)
-        val extra = if (resolvedActiveTrip?.budget != null && resolvedActiveTrip.budget > 0.0) {
-            resolvedActiveTrip.budget - spent + inc
-        } else {
-            inc - spent
-        }
+
+        val availableBote = debtResult.availableBote
+
+        // Identificar al pagador principal / administrador que adelanta los gastos del viaje
+        val mainPayerId = activeExps
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) && it.paidById != DebtCalculator.BOTE_COMUN_ID && !it.paymentMethod.equals("Bote Común", ignoreCase = true) }
+            .groupBy { it.paidById }
+            .maxByOrNull { it.value.sumOf { e -> e.amountInBaseCurrency } }?.key
+            ?: activeParts.firstOrNull()?.id
+
+        // Ajuste personal de los demás participantes (sus botes personales / saldos a favor menos deudas pendientes)
+        val personalAdjustment = activeParts
+            .filter { it.id != mainPayerId }
+            .sumOf { p -> debtResult.participantBalances.find { it.participantId == p.id }?.netBalance ?: 0.0 }
+
+        // Saldo extra: Bote disponible + ajuste neto personal
+        val extra = availableBote + personalAdjustment
 
         TravelCashUiState(
             trips = trips,
@@ -281,6 +294,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             totalSpent = spent,
             totalIncome = inc,
             extraBalance = extra,
+            availableBote = availableBote,
+            personalAdjustment = personalAdjustment,
             isInitialized = true
         )
     }.stateIn(

@@ -12,8 +12,11 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -421,6 +424,8 @@ fun ActiveTripHeaderAndBudgetCard(
     totalSpent: Double,
     totalIncome: Double,
     extraBalance: Double,
+    availableBote: Double = 0.0,
+    personalAdjustment: Double = 0.0,
     onTripIconClick: () -> Unit,
     onExportCsvClick: () -> Unit = {},
     onExportPdfClick: () -> Unit = {},
@@ -484,6 +489,28 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.DE -> "EXTRAGUTHABEN"
         AppLanguage.PL -> "DODATKOWE SALDO"
         AppLanguage.PT -> "SALDO EXTRA"
+    }
+    val boteLabel = when (currentLang) {
+        AppLanguage.ES -> "Bote:"
+        AppLanguage.EN -> "Pot:"
+        AppLanguage.FR -> "Cagnotte :"
+        AppLanguage.IT -> "Cassa:"
+        AppLanguage.ZH -> "公账："
+        AppLanguage.NL -> "Pot:"
+        AppLanguage.DE -> "Kasse:"
+        AppLanguage.PL -> "Kasa:"
+        AppLanguage.PT -> "Fundo:"
+    }
+    val adjustmentLabel = when (currentLang) {
+        AppLanguage.ES -> "Ajuste:"
+        AppLanguage.EN -> "Ajuste:"
+        AppLanguage.FR -> "Ajustement :"
+        AppLanguage.IT -> "Rettifica:"
+        AppLanguage.ZH -> "调整："
+        AppLanguage.NL -> "Aanpassing:"
+        AppLanguage.DE -> "Anpassung:"
+        AppLanguage.PL -> "Korekta:"
+        AppLanguage.PT -> "Ajuste:"
     }
     val spentTitle = when (currentLang) {
         AppLanguage.ES -> "Gastado"
@@ -553,7 +580,7 @@ fun ActiveTripHeaderAndBudgetCard(
         }
     }
 
-    val isPositive = extraBalance >= -0.004
+    val isPositive = personalAdjustment >= -0.004 || availableBote > 0.009
     val extraBg = if (isPositive) EmeraldGreenLight else CoralRedLight
     val extraBorder = if (isPositive) EmeraldGreen else CoralRed
     val extraText = if (isPositive) Color(0xFF065F46) else Color(0xFF991B1B)
@@ -652,7 +679,9 @@ fun ActiveTripHeaderAndBudgetCard(
                 // =========================================================================
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -663,10 +692,13 @@ fun ActiveTripHeaderAndBudgetCard(
                         color = EmeraldGreen,
                         modifier = Modifier
                             .weight(1f)
+                            .fillMaxHeight()
                             .testTag("pill_add_bote_button")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
@@ -674,14 +706,18 @@ fun ActiveTripHeaderAndBudgetCard(
                                 imageVector = Icons.Default.Savings,
                                 contentDescription = potIncomeLabel,
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = potIncomeLabel,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                ),
                                 color = Color.White,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -689,14 +725,18 @@ fun ActiveTripHeaderAndBudgetCard(
                     // Tarjeta SALDO EXTRA
                     Surface(
                         modifier = Modifier
-                            .weight(1.15f)
+                            .weight(1.3f)
+                            .fillMaxHeight()
                             .testTag("extra_balance_card"),
                         shape = RoundedCornerShape(10.dp),
                         color = extraBg,
                         border = BorderStroke(1.2.dp, extraBorder)
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = extraBalanceTitle,
@@ -707,17 +747,57 @@ fun ActiveTripHeaderAndBudgetCard(
                                 ),
                                 color = extraText
                             )
-                            Spacer(modifier = Modifier.height(1.dp))
-                            Text(
-                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 14.sp
-                                ),
-                                color = extraText,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            // Línea 1: Bote
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = boteLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 10.5.sp
+                                    ),
+                                    color = Color(0xFF475569)
+                                )
+                                Text(
+                                    text = FormatUtils.formatCurrency(availableBote, trip.baseCurrency, currentLang.locale),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    ),
+                                    color = Color(0xFF0F172A),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            // Línea 2: Ajuste
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = adjustmentLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 10.5.sp
+                                    ),
+                                    color = Color(0xFF475569)
+                                )
+                                Text(
+                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    ),
+                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -821,19 +901,26 @@ fun ActiveTripHeaderAndBudgetCard(
                 Spacer(modifier = Modifier.height(5.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Caja 1: Gastado
                     Surface(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                         shape = RoundedCornerShape(10.dp),
                         color = Color(0xFFF8FAFC),
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 5.dp),
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = spentTitle,
@@ -843,7 +930,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
                                 text = FormatUtils.formatCurrency(totalSpent, trip.baseCurrency, currentLang.locale),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.5.sp),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
                                 color = OceanNavy,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -853,13 +940,18 @@ fun ActiveTripHeaderAndBudgetCard(
 
                     // Caja 2: Ingresos (Bote)
                     Surface(
-                        modifier = Modifier.weight(1.05f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                         shape = RoundedCornerShape(10.dp),
                         color = Color(0xFFF0FDF4),
                         border = BorderStroke(1.dp, Color(0xFFBBF7D0))
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 5.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 6.dp, vertical = 5.dp),
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = incomeTitle,
@@ -869,7 +961,7 @@ fun ActiveTripHeaderAndBudgetCard(
                             Spacer(modifier = Modifier.height(1.dp))
                             Text(
                                 text = "+${FormatUtils.formatCurrency(totalIncome, trip.baseCurrency, currentLang.locale)}",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.5.sp),
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 12.sp),
                                 color = EmeraldGreenDark,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -880,7 +972,8 @@ fun ActiveTripHeaderAndBudgetCard(
                     // Caja 3: SALDO EXTRA
                     Surface(
                         modifier = Modifier
-                            .weight(1.25f)
+                            .weight(1.35f)
+                            .fillMaxHeight()
                             .testTag("extra_balance_card"),
                         shape = RoundedCornerShape(12.dp),
                         color = extraBg,
@@ -888,28 +981,69 @@ fun ActiveTripHeaderAndBudgetCard(
                         shadowElevation = 2.dp
                     ) {
                         Column(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 7.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = extraBalanceTitle,
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 9.5.sp,
+                                    fontSize = 9.sp,
                                     letterSpacing = 0.2.sp
                                 ),
                                 color = extraText
                             )
                             Spacer(modifier = Modifier.height(1.dp))
-                            Text(
-                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 14.sp
-                                ),
-                                color = extraText,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = boteLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 10.sp
+                                    ),
+                                    color = Color(0xFF475569)
+                                )
+                                Text(
+                                    text = FormatUtils.formatCurrency(availableBote, trip.baseCurrency, currentLang.locale),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.5.sp
+                                    ),
+                                    color = Color(0xFF0F172A),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = adjustmentLabel,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 10.sp
+                                    ),
+                                    color = Color(0xFF475569)
+                                )
+                                Text(
+                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.5.sp
+                                    ),
+                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }

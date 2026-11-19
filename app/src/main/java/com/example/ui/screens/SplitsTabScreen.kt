@@ -1374,24 +1374,26 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.PL -> "Zapłacono z własnej kieszeni:"
                             AppLanguage.PT -> "Pago do seu próprio bolso:"
                         },
-                        value = "+${FormatUtils.formatCurrency(balance.totalExpensesPaid, baseCurrency, currentLang.locale)}",
+                        value = "-${FormatUtils.formatCurrency(balance.totalExpensesPaid, baseCurrency, currentLang.locale)}",
                         valueColor = TravelBlue
                     )
-                    MathRow(
-                        label = when (currentLang) {
-                            AppLanguage.ES -> "Dinero puesto en el bote (se descuenta):"
-                            AppLanguage.EN -> "Money put into pot (deducted):"
-                            AppLanguage.FR -> "Argent versé dans la cagnotte (déduit) :"
-                            AppLanguage.IT -> "Denaro versato nella cassa (dedotto):"
-                            AppLanguage.ZH -> "投入基金的金额（已扣除）："
-                            AppLanguage.NL -> "Geld in de pot gestopt (in mindering):"
-                            AppLanguage.DE -> "In die Kasse eingezahlt (abgezogen):"
-                            AppLanguage.PL -> "Pieniądze wpłacone do kasy (odliczone):"
-                            AppLanguage.PT -> "Dinheiro colocado no fundo (desconta-se):"
-                        },
-                        value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
-                        valueColor = EmeraldGreenDark
-                    )
+                    if (balance.totalBoteContributed > 0.009) {
+                        MathRow(
+                            label = when (currentLang) {
+                                AppLanguage.ES -> "Dinero puesto en el bote (se descuenta):"
+                                AppLanguage.EN -> "Money put into pot (deducted):"
+                                AppLanguage.FR -> "Argent versé dans la cagnotte (déduit) :"
+                                AppLanguage.IT -> "Denaro versato nella cassa (dedotto):"
+                                AppLanguage.ZH -> "投入基金的金额（已扣除）："
+                                AppLanguage.NL -> "Geld in de pot gestopt (in mindering):"
+                                AppLanguage.DE -> "In die Kasse eingezahlt (abgezogen):"
+                                AppLanguage.PL -> "Pieniądze wpłacone do kasy (odliczone):"
+                                AppLanguage.PT -> "Dinheiro colocado no fundo (desconta-se):"
+                            },
+                            value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
+                            valueColor = EmeraldGreenDark
+                        )
+                    }
                     if (balance.totalDebtSettlementsReceived > 0.009) {
                         MathRow(
                             label = when (currentLang) {
@@ -1405,7 +1407,7 @@ private fun ParticipantBalanceInteractiveCard(
                                 AppLanguage.PL -> "Pobrane ze spłat długów:"
                                 AppLanguage.PT -> "Cobrado por liquidações de dívidas:"
                             },
-                            value = "-${FormatUtils.formatCurrency(balance.totalDebtSettlementsReceived, baseCurrency, currentLang.locale)}",
+                            value = "+${FormatUtils.formatCurrency(balance.totalDebtSettlementsReceived, baseCurrency, currentLang.locale)}",
                             valueColor = EmeraldGreenDark
                         )
                     }

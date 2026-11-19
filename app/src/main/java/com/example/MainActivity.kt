@@ -753,6 +753,8 @@ fun TravelCashApp(
                         totalSpent = uiState.totalSpent,
                         totalIncome = uiState.totalIncome,
                         extraBalance = uiState.extraBalance,
+                        availableBote = uiState.availableBote,
+                        personalAdjustment = uiState.personalAdjustment,
                         onTripIconClick = {
                             tripForIconPhotoDialog = activeTrip
                         },
