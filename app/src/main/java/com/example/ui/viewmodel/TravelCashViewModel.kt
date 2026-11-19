@@ -263,17 +263,36 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             .sumOf { it.amountInBaseCurrency }
         val inc = activeIncs.sumOf { it.amount }
 
-        val availableBote = debtResult.availableBote
+        // Bote Común: aportaciones de los usuarios menos gastos pagados directamente del bote
+        val totalBoteCollected = activeIncs.sumOf { it.amount }
+        val totalSpentFromBote = activeExps.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                (exp.paidById == DebtCalculator.BOTE_COMUN_ID || exp.paymentMethod.equals("Bote Común", ignoreCase = true))
+        }.sumOf { it.amountInBaseCurrency }
+        val availableBote = totalBoteCollected - totalSpentFromBote
 
-        // Ajuste dentro de Saldo Extra:
-        // Cuenta progresiva basada en los gastos totales del viaje en negativo (-spent)
-        // más la suma de las partes proporcionales (gastos asumidos) de los usuarios.
-        // Las liquidaciones / pagos a cuenta no afectan a esta resta.
-        val totalAssumedByParticipants = debtResult.participantBalances.sumOf { it.totalExpensesOwed }
-        val personalAdjustment = -spent + totalAssumedByParticipants
+        // Gastos directos y pagos de los usuarios (excluyendo liquidaciones de deudas y gastos del bote común)
+        val directExpenses = activeExps.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
+                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+        }
+        val totalDirectExpenses = directExpenses.sumOf { it.amountInBaseCurrency }
+        // Pagos realizados por los usuarios para saldar sus gastos (asumiendo que quien paga, salda su gasto):
+        val directPaymentsByUser = directExpenses
+            .filter { it.paidById.isNotBlank() }
+            .sumOf { it.amountInBaseCurrency }
+        val personalAdjustment = directPaymentsByUser - totalDirectExpenses
 
-        // Saldo extra: Bote disponible + ajuste
+        // Saldo extra de la caja del viaje: Bote Común como eje central + ajuste de gastos cubiertos
+        // Totalmente independiente y libre de botes personales o deudas entre usuarios
         val extra = availableBote + personalAdjustment
+
+        android.util.Log.d(
+            "TravelCashViewModel",
+            "SaldoExtra [Caja del viaje]: availableBote=$availableBote (recaudado=$totalBoteCollected, gastadoBote=$totalSpentFromBote), " +
+                "gastosDirectos=$totalDirectExpenses, pagosDirectos=$directPaymentsByUser, ajuste=$personalAdjustment, saldoExtra=$extra"
+        )
 
         TravelCashUiState(
             trips = trips,

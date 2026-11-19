@@ -3,6 +3,8 @@ package com.example
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.ExpenseSplit
+import com.example.data.model.IncomeContribution
+import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
@@ -440,5 +442,187 @@ class TravelCashEnhancementsTest {
         val u4Owed = 21.0
         val adjustmentWithU4 = personalAdjustment + u4Owed
         assertEquals(-101.0, adjustmentWithU4, 0.001)
+    }
+
+    @Test
+    fun extraBalance_scenarioWithoutCommonPot_onlyExpensesAndDirectPayments_ignoresPersonalPot() {
+        // Escenario 1: Sin Bote Común (solo gastos y pagos directos de usuarios)
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val participants = listOf(u1, u2)
+
+        // Dos gastos pagados de bolsillo por los usuarios:
+        val exp1 = ExpenseEntity(
+            id = "e1",
+            tripId = "t1",
+            amount = 100.0,
+            currency = "EUR",
+            amountInBaseCurrency = 100.0,
+            exchangeRate = 1.0,
+            category = "Comida",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Cena U1",
+            paidById = u1.id
+        )
+        val exp2 = ExpenseEntity(
+            id = "e2",
+            tripId = "t1",
+            amount = 50.0,
+            currency = "EUR",
+            amountInBaseCurrency = 50.0,
+            exchangeRate = 1.0,
+            category = "Transporte",
+            date = "2026-07-02",
+            paymentMethod = "Efectivo",
+            notes = "Taxi U2",
+            paidById = u2.id
+        )
+
+        // Liquidación con pago en exceso entre usuarios (U2 debía 25€ y entrega 500€ -> exceso/bote personal)
+        val settle = ExpenseEntity(
+            id = "settle-1",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "Liquidación con exceso",
+            paidById = u2.id
+        )
+
+        val expenses = listOf(exp1, exp2, settle)
+        val incomes = emptyList<IncomeEntity>() // Sin bote común
+
+        // Bote común = 0
+        val totalBoteCollected = incomes.sumOf { it.amount }
+        val totalSpentFromBote = expenses.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                (exp.paidById == DebtCalculator.BOTE_COMUN_ID || exp.paymentMethod.equals("Bote Común", ignoreCase = true))
+        }.sumOf { it.amountInBaseCurrency }
+        val availableBote = totalBoteCollected - totalSpentFromBote
+        assertEquals(0.0, availableBote, 0.001)
+
+        // Gastos directos y pagos de usuarios (quien paga salda su gasto):
+        val directExpenses = expenses.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
+                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+        }
+        val totalDirectExpenses = directExpenses.sumOf { it.amountInBaseCurrency }
+        val directPaymentsByUser = directExpenses.filter { it.paidById.isNotBlank() }.sumOf { it.amountInBaseCurrency }
+
+        assertEquals(150.0, totalDirectExpenses, 0.001)
+        assertEquals(150.0, directPaymentsByUser, 0.001)
+
+        val personalAdjustment = directPaymentsByUser - totalDirectExpenses
+        assertEquals(0.0, personalAdjustment, 0.001)
+
+        val extra = availableBote + personalAdjustment
+        assertEquals(0.0, extra, 0.001)
+
+        // La liquidación de 500€ NO entra en el Saldo Extra ni lo altera
+        assertTrue(expenses.filter { CategoryCatalog.isDebtSettlementExpense(it) }.isNotEmpty())
+    }
+
+    @Test
+    fun extraBalance_scenarioWithCommonPot_contributionsAndBoteExpenses_ignoresPersonalPot() {
+        // Escenario 2: Con Bote Común (aportaciones al bote y gastos desde el bote)
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Usuario 3", "#F59E0B")
+
+        // Aportaciones al bote común: 300€
+        val incomes = listOf(
+            IncomeEntity(
+                id = "inc-1",
+                tripId = "t1",
+                amount = 300.0,
+                description = "Fondo común",
+                date = "2026-07-01",
+                contributions = listOf(
+                    IncomeContribution(u1.id, 100.0),
+                    IncomeContribution(u2.id, 100.0),
+                    IncomeContribution(u3.id, 100.0)
+                )
+            )
+        )
+
+        // Gasto pagado desde el bote común: 90€
+        val expFromBote = ExpenseEntity(
+            id = "exp-bote",
+            tripId = "t1",
+            amount = 90.0,
+            currency = "EUR",
+            amountInBaseCurrency = 90.0,
+            exchangeRate = 1.0,
+            category = "Supermercado",
+            date = "2026-07-02",
+            paymentMethod = "Bote Común",
+            notes = "Compra comida común",
+            paidById = DebtCalculator.BOTE_COMUN_ID
+        )
+
+        // Gasto directo pagado de bolsillo por U1: 40€
+        val expDirect = ExpenseEntity(
+            id = "exp-direct",
+            tripId = "t1",
+            amount = 40.0,
+            currency = "EUR",
+            amountInBaseCurrency = 40.0,
+            exchangeRate = 1.0,
+            category = "Transporte",
+            date = "2026-07-02",
+            paymentMethod = "Tarjeta",
+            notes = "Metro pagado por U1",
+            paidById = u1.id
+        )
+
+        // Liquidación entre usuarios con exceso / bote personal: U3 transfiere 300€ a U1
+        val settle = ExpenseEntity(
+            id = "settle-u3",
+            tripId = "t1",
+            amount = 300.0,
+            currency = "EUR",
+            amountInBaseCurrency = 300.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "Liquidación U3 a U1",
+            paidById = u3.id
+        )
+
+        val expenses = listOf(expFromBote, expDirect, settle)
+
+        // Bote Común: aportaciones (300€) - gastado con bote (90€) = 210€
+        val totalBoteCollected = incomes.sumOf { it.amount }
+        val totalSpentFromBote = expenses.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                (exp.paidById == DebtCalculator.BOTE_COMUN_ID || exp.paymentMethod.equals("Bote Común", ignoreCase = true))
+        }.sumOf { it.amountInBaseCurrency }
+        val availableBote = totalBoteCollected - totalSpentFromBote
+        assertEquals(210.0, availableBote, 0.001)
+
+        // Gasto directo pagado por U1: 40€ cubierto por 40€ pagado por U1
+        val directExpenses = expenses.filter { exp ->
+            !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
+                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+        }
+        val totalDirectExpenses = directExpenses.sumOf { it.amountInBaseCurrency }
+        val directPaymentsByUser = directExpenses.filter { it.paidById.isNotBlank() }.sumOf { it.amountInBaseCurrency }
+        val personalAdjustment = directPaymentsByUser - totalDirectExpenses
+        assertEquals(0.0, personalAdjustment, 0.001)
+
+        // Saldo extra de la caja = 210€ del bote común + 0€ directo = 210€
+        val extra = availableBote + personalAdjustment
+        assertEquals(210.0, extra, 0.001)
+
+        // Ni la liquidación de 300€ ni los botes personales alteran el saldo del bote común (210€)
+        assertEquals(210.0, availableBote, 0.001)
     }
 }
