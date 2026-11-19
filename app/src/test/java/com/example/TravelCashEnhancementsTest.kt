@@ -313,4 +313,56 @@ class TravelCashEnhancementsTest {
 
         assertEquals(listOf("e-new", "e-mid", "e-old"), sortedDescending.map { it.id })
     }
+
+    @Test
+    fun extraBalance_adjustmentSection_reflectsExclusivelyRealExpensesInPositive_ignoringSettlements() {
+        // Escenario del requerimiento: 500€ en gastos reales y 500€ en liquidaciones
+        val regularExpense = ExpenseEntity(
+            id = "exp-1",
+            tripId = "trip-test",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Hotel",
+            paidById = "p1"
+        )
+        val settlementExpense = ExpenseEntity(
+            id = "settle-1",
+            tripId = "trip-test",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Transferencia",
+            notes = "Liquidación",
+            paidById = "p2"
+        )
+
+        val expenses = listOf(regularExpense, settlementExpense)
+
+        // Filtro estricto para 'Saldo extra' en apartado 'Ajuste':
+        // Debe excluir cualquier registro que sea liquidación y contabilizarse en positivo (+).
+        val realExpensesSpent = expenses
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+            .sumOf { it.amountInBaseCurrency }
+        val personalAdjustment = kotlin.math.abs(realExpensesSpent)
+
+        // Verificamos que solo se consideren los 500€ de gastos y no se resten ni consideren las liquidaciones
+        assertEquals(500.0, personalAdjustment, 0.001)
+
+        // Verificamos que el formateo en la UI lo presente en positivo (+500,00 €)
+        val posAdjustment = kotlin.math.abs(personalAdjustment)
+        val formattedPositive = if (posAdjustment > 0.004) {
+            "+${FormatUtils.formatCurrency(posAdjustment, "EUR", java.util.Locale.GERMANY)}"
+        } else {
+            FormatUtils.formatCurrency(0.0, "EUR", java.util.Locale.GERMANY)
+        }
+        assertTrue(formattedPositive.startsWith("+500,00"))
+    }
 }

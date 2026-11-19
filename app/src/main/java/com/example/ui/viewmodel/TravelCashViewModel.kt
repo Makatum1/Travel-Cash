@@ -264,15 +264,22 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         val inc = activeIncs.sumOf { it.amount }
 
         val availableBote = debtResult.availableBote
-        val settled = activeExps
-            .filter { CategoryCatalog.isDebtSettlementExpense(it) }
+
+        // Apartado 'Ajuste' dentro de Saldo Extra:
+        // Refleja exclusivamente el total gastado en gastos reales (excluyendo cualquier liquidación),
+        // contabilizándose la parte correspondiente a cubrir esos gastos como un valor positivo (+).
+        val realExpensesSpent = activeExps
+            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
             .sumOf { it.amountInBaseCurrency }
+        val personalAdjustment = kotlin.math.abs(realExpensesSpent)
 
-        // Ajuste = gastos - lo saldado
-        val personalAdjustment = spent - settled
-
-        // Saldo extra: Bote disponible + ajuste (gastos - lo saldado)
+        // Saldo extra: Bote disponible + ajuste (gastos reales en positivo)
         val extra = availableBote + personalAdjustment
+
+        android.util.Log.d(
+            "TravelCashViewModel",
+            "Saldo extra [Ajuste]: gastosReales=$realExpensesSpent, ajustePositivo=$personalAdjustment, disponibleBote=$availableBote, saldoExtraTotal=$extra"
+        )
 
         TravelCashUiState(
             trips = trips,
