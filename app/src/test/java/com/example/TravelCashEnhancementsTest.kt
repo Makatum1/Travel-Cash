@@ -713,4 +713,98 @@ class TravelCashEnhancementsTest {
         assertEquals(154.0, u2Net.balance, 0.01)
         assertEquals(-46.0, u3Net.balance, 0.01)
     }
+
+    @Test
+    fun testAccountingCashFlow_and_otherUsersExcess_scenario() {
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1 (Admin)", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Usuario 3", "#F59E0B")
+        val participants = listOf(u1, u2, u3)
+
+        // Escenario: El Usuario 1 paga gastos donde a U2 le corresponden 296€ y a U3 296€.
+        val exp1 = ExpenseEntity(
+            id = "exp-1",
+            tripId = "t1",
+            amount = 888.0,
+            currency = "EUR",
+            amountInBaseCurrency = 888.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Hotel pagado por U1",
+            paidById = u1.id,
+            splits = listOf(
+                ExpenseSplit("s1", "exp-1", u1.id, 296.0, 33.33),
+                ExpenseSplit("s2", "exp-1", u2.id, 296.0, 33.33),
+                ExpenseSplit("s3", "exp-1", u3.id, 296.0, 33.34)
+            )
+        )
+
+        // El Usuario 2 debe 296€ pero entrega 500€.
+        val settleU2 = ExpenseEntity(
+            id = "settle-u2",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Transferencia",
+            notes = "Liquidación U2 a U1",
+            paidById = u2.id,
+            splits = listOf(ExpenseSplit("su2", "settle-u2", u1.id, 500.0, 100.0))
+        )
+
+        // El Usuario 3 debe 296€ pero entrega 300€.
+        val settleU3 = ExpenseEntity(
+            id = "settle-u3",
+            tripId = "t1",
+            amount = 300.0,
+            currency = "EUR",
+            amountInBaseCurrency = 300.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "Liquidación U3 a U1",
+            paidById = u3.id,
+            splits = listOf(ExpenseSplit("su3", "settle-u3", u1.id, 300.0, 100.0))
+        )
+
+        val result = DebtCalculator.calculateDebtBalances(
+            participants,
+            listOf(exp1, settleU2, settleU3),
+            emptyList()
+        )
+
+        val u1Bal = result.participantBalances.first { it.participantId == u1.id }
+        val u2Bal = result.participantBalances.first { it.participantId == u2.id }
+        val u3Bal = result.participantBalances.first { it.participantId == u3.id }
+
+        // Verificaciones contables exactas:
+        assertEquals(888.0, u1Bal.totalExpensesPaid, 0.01) // U1 pagó de su bolsillo
+        assertEquals(500.0, u2Bal.totalExpensesPaid, 0.01) // U2 pagó 500€
+        assertEquals(300.0, u3Bal.totalExpensesPaid, 0.01) // U3 pagó 300€
+
+        // Gastos asumidos:
+        assertEquals(296.0, u1Bal.totalExpensesOwed, 0.01)
+        assertEquals(296.0, u2Bal.totalExpensesOwed, 0.01)
+        assertEquals(296.0, u3Bal.totalExpensesOwed, 0.01)
+
+        // Flujo de caja: cobrosLiquidaciones - pagosGastos
+        assertEquals(800.0 - 888.0, u1Bal.cashFlowBalance, 0.01)
+        assertEquals(0.0 - 500.0, u2Bal.cashFlowBalance, 0.01)
+        assertEquals(0.0 - 300.0, u3Bal.cashFlowBalance, 0.01)
+
+        // Excesos de liquidaciones individuales (Bote personal):
+        assertEquals(0.0, u1Bal.personalPotExcess, 0.01)
+        assertEquals(204.0, u2Bal.personalPotExcess, 0.01) // 500 - 296 = 204€
+        assertEquals(4.0, u3Bal.personalPotExcess, 0.01)   // 300 - 296 = 4€
+
+        // Saldo acumulado de otros usuarios para U1 (204 + 4 = 208€):
+        assertEquals(208.0, u1Bal.otherUsersExcess, 0.01)
+        assertEquals(208.0, result.totalSettlementExcess, 0.01)
+    }
 }

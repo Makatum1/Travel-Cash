@@ -1088,10 +1088,28 @@ private fun SettlementTransactionCard(
                                             AppLanguage.PL -> "Rozliczony"
                                             AppLanguage.PT -> "Em dia"
                                         } + ")"
+                                    } else if (isFinalPos) {
+                                        "-${FormatUtils.formatCurrency(sb.netBalance, baseCurrency, currentLang.locale)}"
                                     } else {
-                                        FormatUtils.formatCurrency(abs(sb.netBalance), baseCurrency, currentLang.locale)
+                                        FormatUtils.formatSignedCurrency(sb.netBalance, baseCurrency, currentLang.locale)
                                     },
                                     valueColor = if (isFinalPos) EmeraldGreenDark else if (isFinalNeg) CoralRedDark else Color(0xFF64748B),
+                                    isBold = true
+                                )
+                                MathRow(
+                                    label = when (currentLang) {
+                                        AppLanguage.ES -> "Saldo de otros usuarios:"
+                                        AppLanguage.EN -> "Balance of other users:"
+                                        AppLanguage.FR -> "Solde des autres utilisateurs :"
+                                        AppLanguage.IT -> "Saldo di altri utenti:"
+                                        AppLanguage.ZH -> "其他用户余额："
+                                        AppLanguage.NL -> "Saldo van andere gebruikers:"
+                                        AppLanguage.DE -> "Saldo anderer Benutzer:"
+                                        AppLanguage.PL -> "Saldo innych użytkowników:"
+                                        AppLanguage.PT -> "Saldo de outros utilizadores:"
+                                    },
+                                    value = "+${FormatUtils.formatCurrency(sb.otherUsersExcess, baseCurrency, currentLang.locale)}",
+                                    valueColor = if (sb.otherUsersExcess > 0.009) EmeraldGreenDark else Color(0xFF64748B),
                                     isBold = true
                                 )
                             }
@@ -1326,6 +1344,8 @@ private fun ParticipantBalanceInteractiveCard(
                         Text(
                             text = if (!isPos && !isNeg) {
                                 FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale)
+                            } else if (isPos) {
+                                "-${FormatUtils.formatCurrency(balance.netBalance, baseCurrency, currentLang.locale)}"
                             } else {
                                 FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
                             },
@@ -1470,10 +1490,28 @@ private fun ParticipantBalanceInteractiveCard(
                                 AppLanguage.PL -> "Rozliczony"
                                 AppLanguage.PT -> "Em dia"
                             } + ")"
+                        } else if (isPosBalance) {
+                            "-${FormatUtils.formatCurrency(balance.netBalance, baseCurrency, currentLang.locale)}"
                         } else {
                             FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
                         },
                         valueColor = if (isPosBalance) EmeraldGreenDark else if (isNegBalance) CoralRedDark else Color(0xFF64748B),
+                        isBold = true
+                    )
+                    MathRow(
+                        label = when (currentLang) {
+                            AppLanguage.ES -> "Saldo de otros usuarios:"
+                            AppLanguage.EN -> "Balance of other users:"
+                            AppLanguage.FR -> "Solde des autres utilisateurs :"
+                            AppLanguage.IT -> "Saldo di altri utenti:"
+                            AppLanguage.ZH -> "其他用户余额："
+                            AppLanguage.NL -> "Saldo van andere gebruikers:"
+                            AppLanguage.DE -> "Saldo anderer Benutzer:"
+                            AppLanguage.PL -> "Saldo innych użytkowników:"
+                            AppLanguage.PT -> "Saldo de outros utilizadores:"
+                        },
+                        value = "+${FormatUtils.formatCurrency(balance.otherUsersExcess, baseCurrency, currentLang.locale)}",
+                        valueColor = if (balance.otherUsersExcess > 0.009) EmeraldGreenDark else Color(0xFF64748B),
                         isBold = true
                     )
 
@@ -2636,6 +2674,7 @@ fun SettleDebtsModal(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFFF8FAFC))
+                        .navigationBarsPadding()
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2652,9 +2691,9 @@ fun SettleDebtsModal(
                                 contentColor = OceanNavy
                             ),
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             modifier = Modifier
-                                .weight(0.35f)
+                                .weight(1f)
                                 .height(48.dp)
                                 .testTag("settle_debts_back_button")
                         ) {
@@ -2692,7 +2731,7 @@ fun SettleDebtsModal(
                                         val payer = participants.find { it.id == manualPayerId }
                                         val payee = participants.find { it.id == manualPayeeId }
                                         if (payer != null && payee != null) {
-                                            val tx = DebtTransaction(
+                                             val tx = DebtTransaction(
                                                 fromParticipantId = payer.id,
                                                 fromName = payer.name,
                                                 toParticipantId = payee.id,
@@ -2729,7 +2768,7 @@ fun SettleDebtsModal(
                             ),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             modifier = Modifier
-                                .weight(0.65f)
+                                .weight(1f)
                                 .height(48.dp)
                                 .testTag("confirm_settlement_button")
                         ) {

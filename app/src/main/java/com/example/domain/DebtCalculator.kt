@@ -20,7 +20,10 @@ data class ParticipantBalance(
     val totalDebtDiscountCompensated: Double, // Descuentos aplicados al poner bote porque se le debía dinero
     val totalDebtSettlementsSent: Double = 0.0,     // Total enviado en liquidaciones a otros
     val totalDebtSettlementsReceived: Double = 0.0, // Total recibido que saldó deudas reales adelantadas
-    val netBalance: Double                    // Balance neto
+    val netBalance: Double,                   // Balance neto
+    val personalPotExcess: Double = 0.0,      // Exceso generado por liquidaciones (bote personal por pago de más)
+    val otherUsersExcess: Double = 0.0,       // Saldo acumulado de otros usuarios (suma de excesos de liquidaciones de los demás)
+    val cashFlowBalance: Double = 0.0         // Flujo de caja: cobrosLiquidaciones - pagosGastos
 )
 
 data class DebtTransaction(
@@ -37,7 +40,8 @@ data class DebtCalculationResult(
     val transactions: List<DebtTransaction>,
     val totalBoteCollected: Double,
     val totalSpentFromBoteDirectly: Double,
-    val availableBote: Double
+    val availableBote: Double,
+    val totalSettlementExcess: Double = 0.0
 )
 
 object DebtCalculator {
@@ -125,6 +129,7 @@ object DebtCalculator {
         }
 
         val debtReimbursedToHolder = mutableMapOf<Pair<String, String>, Double>()
+        val personalPotExcessByParticipant = mutableMapOf<String, Double>()
 
         for (pA in participants) {
             for (pB in participants) {
@@ -135,10 +140,16 @@ object DebtCalculator {
 
                 val sentBtoA = settlementsSentFromBtoA[Pair(pB.id, pA.id)] ?: 0.0
                 val settled = min(sentBtoA, realDebtBtoA)
+                val excess = max(0.0, sentBtoA - realDebtBtoA)
 
                 debtReimbursedToHolder[Pair(pB.id, pA.id)] = round2(settled)
+                if (excess > 0.009) {
+                    personalPotExcessByParticipant[pB.id] = (personalPotExcessByParticipant[pB.id] ?: 0.0) + excess
+                }
             }
         }
+
+        val totalSettlementExcess = round2(personalPotExcessByParticipant.values.sum())
 
         val balances = participants.map { participant ->
             // 1. Gastos reales que pagó de su propio bolsillo (excluyendo Bote Común)
@@ -154,6 +165,13 @@ object DebtCalculator {
             // 3. Liquidaciones recibidas que saldaron gastos adelantados para otros (reembolsos)
             val debtReimbursementsReceived = participants.filter { it.id != participant.id }.sumOf { other ->
                 debtReimbursedToHolder[Pair(other.id, participant.id)] ?: 0.0
+            }
+
+            // Total recaudado en liquidaciones recibidas (flujo de caja entrante)
+            val settlementsReceivedTotal = settlementExpenses.filter {
+                !isFromBote(it) && it.splits.any { s -> s.participantId == participant.id }
+            }.sumOf { exp ->
+                exp.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
             }
 
             // 4. Lo que le tocaba asumir a cada uno: SÓLO gastos reales del viaje pagados por personas
@@ -189,8 +207,21 @@ object DebtCalculator {
             // Total desembolsado físicamente de su bolsillo en gastos reales y liquidaciones
             val totalPaid = realPaidOutOfPocket + settlementsSent
 
+            // Flujo de caja: cobrosLiquidaciones - pagosGastos
+            val cashFlow = settlementsReceivedTotal - totalPaid
+
+            // Exceso propio en liquidaciones (bote personal por pago de más)
+            val personalExcess = round2(personalPotExcessByParticipant[participant.id] ?: 0.0)
+
+            // Saldo de otros usuarios: suma de botes personales por exceso de los demás participantes
+            val otherExcess = round2(participants.filter { it.id != participant.id }.sumOf { personalPotExcessByParticipant[it.id] ?: 0.0 })
+
             // Balance neto
             val net = (totalPaid - debtReimbursementsReceived - debtDiscountCompensated + debtDiscountCoveredByMe) - realOwed
+
+            runCatching {
+                android.util.Log.d("DebtCalculator", "User: ${participant.name}, Pagado: -$totalPaid, Cobrado: +$settlementsReceivedTotal, Flujo: $cashFlow, Net: $net, PersonalExcess: $personalExcess, OtherUsersExcess: $otherExcess")
+            }
 
             ParticipantBalance(
                 participantId = participant.id,
@@ -203,7 +234,10 @@ object DebtCalculator {
                 totalDebtDiscountCompensated = round2(debtDiscountCompensated),
                 totalDebtSettlementsSent = round2(settlementsSent),
                 totalDebtSettlementsReceived = round2(debtReimbursementsReceived),
-                netBalance = round2(net)
+                netBalance = round2(net),
+                personalPotExcess = personalExcess,
+                otherUsersExcess = otherExcess,
+                cashFlowBalance = round2(cashFlow)
             )
         }
 
@@ -268,7 +302,8 @@ object DebtCalculator {
             transactions = transactions,
             totalBoteCollected = round2(totalBoteCollected),
             totalSpentFromBoteDirectly = round2(totalSpentFromBoteDirectly),
-            availableBote = round2(max(0.0, totalBoteCollected - totalSpentFromBoteDirectly))
+            availableBote = round2(max(0.0, totalBoteCollected - totalSpentFromBoteDirectly)),
+            totalSettlementExcess = totalSettlementExcess
         )
     }
 

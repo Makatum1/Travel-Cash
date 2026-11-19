@@ -272,10 +272,10 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             .maxByOrNull { it.value.sumOf { e -> e.amountInBaseCurrency } }?.key
             ?: activeParts.firstOrNull()?.id
 
-        // Ajuste personal de los demás participantes (sus botes personales / saldos a favor menos deudas pendientes)
-        val personalAdjustment = activeParts
-            .filter { it.id != mainPayerId }
-            .sumOf { p -> debtResult.participantBalances.find { it.participantId == p.id }?.netBalance ?: 0.0 }
+        // Ajuste personal: Excesos de liquidaciones de los demás usuarios (botes personales)
+        val personalAdjustment = debtResult.participantBalances
+            .find { it.participantId == mainPayerId }?.otherUsersExcess
+            ?: debtResult.totalSettlementExcess
 
         // Saldo extra: Bote disponible + ajuste neto personal
         val extra = availableBote + personalAdjustment
