@@ -264,20 +264,14 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         val inc = activeIncs.sumOf { it.amount }
 
         val availableBote = debtResult.availableBote
+        val settled = activeExps
+            .filter { CategoryCatalog.isDebtSettlementExpense(it) }
+            .sumOf { it.amountInBaseCurrency }
 
-        // Identificar al pagador principal / administrador que adelanta los gastos del viaje
-        val mainPayerId = activeExps
-            .filter { !CategoryCatalog.isDebtSettlementExpense(it) && it.paidById != DebtCalculator.BOTE_COMUN_ID && !it.paymentMethod.equals("Bote Común", ignoreCase = true) }
-            .groupBy { it.paidById }
-            .maxByOrNull { it.value.sumOf { e -> e.amountInBaseCurrency } }?.key
-            ?: activeParts.firstOrNull()?.id
+        // Ajuste = gastos - lo saldado
+        val personalAdjustment = spent - settled
 
-        // Ajuste personal: Excesos de liquidaciones de los demás usuarios (botes personales)
-        val personalAdjustment = debtResult.participantBalances
-            .find { it.participantId == mainPayerId }?.otherUsersExcess
-            ?: debtResult.totalSettlementExcess
-
-        // Saldo extra: Bote disponible + ajuste neto personal
+        // Saldo extra: Bote disponible + ajuste (gastos - lo saldado)
         val extra = availableBote + personalAdjustment
 
         TravelCashUiState(

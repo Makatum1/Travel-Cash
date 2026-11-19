@@ -503,7 +503,7 @@ fun ActiveTripHeaderAndBudgetCard(
     }
     val adjustmentLabel = when (currentLang) {
         AppLanguage.ES -> "Ajuste:"
-        AppLanguage.EN -> "Ajuste:"
+        AppLanguage.EN -> "Adjustment:"
         AppLanguage.FR -> "Ajustement :"
         AppLanguage.IT -> "Rettifica:"
         AppLanguage.ZH -> "调整："

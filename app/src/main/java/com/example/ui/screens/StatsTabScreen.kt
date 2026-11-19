@@ -492,137 +492,6 @@ fun StatsTabScreen(
             }
         }
 
-        // SECCIÓN BOTE COMÚN DEL VIAJE (SI SE HA CREADO O TIENE MOVIMIENTOS)
-        if (netSpendReport.totalPotCollected > 0.004 || netSpendReport.totalRealSpentFromPot > 0.004) {
-            item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("stats_common_pot_card"),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(EmeraldGreenDark.copy(alpha = 0.14f)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = "🐷", fontSize = 18.sp)
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = texts.commonPotName,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                        color = OceanNavy
-                                    )
-                                    val potSubtitle = when (currentLang) {
-                                        AppLanguage.ES -> "Fondo común del grupo"
-                                        AppLanguage.EN -> "Group common fund"
-                                        AppLanguage.FR -> "Fonds commun du groupe"
-                                        AppLanguage.IT -> "Fondo comune del gruppo"
-                                        AppLanguage.ZH -> "团队公共基金"
-                                        AppLanguage.NL -> "Gezamenlijk groepsfonds"
-                                        AppLanguage.DE -> "Gemeinsame Gruppenkasse"
-                                        AppLanguage.PL -> "Wspólny fundusz grupy"
-                                        AppLanguage.PT -> "Fundo comum do grupo"
-                                    }
-                                    Text(
-                                        text = potSubtitle,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = Color(0xFF64748B)
-                                    )
-                                }
-                            }
-
-                            Column(horizontalAlignment = Alignment.End) {
-                                val remainingLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Saldo restante"
-                                    AppLanguage.EN -> "Remaining balance"
-                                    AppLanguage.FR -> "Solde restant"
-                                    AppLanguage.IT -> "Saldo residuo"
-                                    AppLanguage.ZH -> "剩余余额"
-                                    AppLanguage.NL -> "Resterend saldo"
-                                    AppLanguage.DE -> "Verbleibender Saldo"
-                                    AppLanguage.PL -> "Pozostałe saldo"
-                                    AppLanguage.PT -> "Saldo restante"
-                                }
-                                Text(
-                                    text = remainingLabel,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF64748B)
-                                )
-                                Text(
-                                    text = FormatUtils.formatCurrency(netSpendReport.commonPotBalance, trip.baseCurrency, currentLang.locale),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black),
-                                    color = if (netSpendReport.commonPotBalance >= 0) EmeraldGreenDark else CoralRed
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-                        HorizontalDivider(color = Color(0xFFF1F5F9))
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                val contributedLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Total aportado"
-                                    AppLanguage.EN -> "Total contributed"
-                                    AppLanguage.FR -> "Total contribué"
-                                    AppLanguage.IT -> "Totale versato"
-                                    AppLanguage.ZH -> "存入总额"
-                                    AppLanguage.NL -> "Totaal ingelegd"
-                                    AppLanguage.DE -> "Gesamteinzahlung"
-                                    AppLanguage.PL -> "Łącznie wpłacono"
-                                    AppLanguage.PT -> "Total contribuído"
-                                }
-                                Text(text = contributedLabel, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
-                                Text(
-                                    text = "+${FormatUtils.formatCurrency(netSpendReport.totalPotCollected, trip.baseCurrency, currentLang.locale)}",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = OceanNavy
-                                )
-                            }
-                            Column(horizontalAlignment = Alignment.End) {
-                                val spentLabel = when (currentLang) {
-                                    AppLanguage.ES -> "Gastado del bote"
-                                    AppLanguage.EN -> "Spent from pot"
-                                    AppLanguage.FR -> "Dépensé de la cagnotte"
-                                    AppLanguage.IT -> "Speso dalla cassa"
-                                    AppLanguage.ZH -> "公账支出"
-                                    AppLanguage.NL -> "Uitgegeven uit pot"
-                                    AppLanguage.DE -> "Aus Kasse ausgegeben"
-                                    AppLanguage.PL -> "Wydano z kasy"
-                                    AppLanguage.PT -> "Gasto do fundo"
-                                }
-                                Text(text = spentLabel, style = MaterialTheme.typography.labelSmall, color = Color(0xFF64748B))
-                                Text(
-                                    text = "-${FormatUtils.formatCurrency(netSpendReport.totalRealSpentFromPot, trip.baseCurrency, currentLang.locale)}",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = CoralRed
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         // SECCIÓN 2: GASTOS POR PARTICIPANTE (GASTO NETO REAL, AJUSTES Y DESGLOSE INTERACTIVO)
         item {
             Card(
@@ -685,15 +554,15 @@ fun StatsTabScreen(
                         AppLanguage.PT -> "Assumido"
                     }
                     val reserveColLabel = when (currentLang) {
-                        AppLanguage.ES -> "Saldo extra"
-                        AppLanguage.EN -> "Extra balance"
-                        AppLanguage.FR -> "Solde extra"
-                        AppLanguage.IT -> "Saldo extra"
-                        AppLanguage.ZH -> "额外结余"
-                        AppLanguage.NL -> "Extra saldo"
-                        AppLanguage.DE -> "Zusatzguthaben"
-                        AppLanguage.PL -> "Dodatkowe saldo"
-                        AppLanguage.PT -> "Saldo extra"
+                        AppLanguage.ES -> "Reserva"
+                        AppLanguage.EN -> "Credit"
+                        AppLanguage.FR -> "Réserve"
+                        AppLanguage.IT -> "Riserva"
+                        AppLanguage.ZH -> "结余"
+                        AppLanguage.NL -> "Tegoed"
+                        AppLanguage.DE -> "Guthaben"
+                        AppLanguage.PL -> "Nadpłata"
+                        AppLanguage.PT -> "Reserva"
                     }
                     val debtColLabel = when (currentLang) {
                         AppLanguage.ES -> "Debe"
@@ -729,15 +598,15 @@ fun StatsTabScreen(
                         AppLanguage.PT -> "Em dia"
                     }
                     val inFavorSuffix = when (currentLang) {
-                        AppLanguage.ES -> "saldo extra"
-                        AppLanguage.EN -> "extra balance"
-                        AppLanguage.FR -> "solde extra"
-                        AppLanguage.IT -> "saldo extra"
-                        AppLanguage.ZH -> "额外结余"
-                        AppLanguage.NL -> "extra saldo"
-                        AppLanguage.DE -> "Zusatzguthaben"
-                        AppLanguage.PL -> "dodatkowe saldo"
-                        AppLanguage.PT -> "saldo extra"
+                        AppLanguage.ES -> "a favor"
+                        AppLanguage.EN -> "credit"
+                        AppLanguage.FR -> "en faveur"
+                        AppLanguage.IT -> "a favore"
+                        AppLanguage.ZH -> "结余"
+                        AppLanguage.NL -> "tegoed"
+                        AppLanguage.DE -> "Guthaben"
+                        AppLanguage.PL -> "na plus"
+                        AppLanguage.PT -> "a favor"
                     }
                     val owesSuffix = when (currentLang) {
                         AppLanguage.ES -> "debe"

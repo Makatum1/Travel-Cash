@@ -11,17 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1035,21 +1032,19 @@ private fun SettlementTransactionCard(
                                     )
                                 }
                                 HorizontalDivider(color = Color(0xFFCBD5E1))
-                                val isFinalPos = sb.netBalance > 0.009
-                                val isFinalNeg = sb.netBalance < -0.009
-                                val labelFinal = if (isFinalPos) {
+                                val labelFinal = if (sb.netBalance >= 0) {
                                     when (currentLang) {
-                                        AppLanguage.ES -> "Saldo a favor (bote personal):"
-                                        AppLanguage.EN -> "Credit balance (personal pot):"
-                                        AppLanguage.FR -> "Solde créditeur (cagnotte pers.) :"
-                                        AppLanguage.IT -> "Saldo a favore (cassa pers.):"
-                                        AppLanguage.ZH -> "贷方结余（个人备用金）："
-                                        AppLanguage.NL -> "Tegoed (persoonlijke pot):"
-                                        AppLanguage.DE -> "Guthaben (persönliche Kasse):"
-                                        AppLanguage.PL -> "Saldo dodatnie (własna kasa):"
-                                        AppLanguage.PT -> "Saldo a favor (fundo pessoal):"
+                                        AppLanguage.ES -> "Saldo neto a percibir:"
+                                        AppLanguage.EN -> "Net balance to receive:"
+                                        AppLanguage.FR -> "Solde net à percevoir :"
+                                        AppLanguage.IT -> "Saldo netto da ricevere:"
+                                        AppLanguage.ZH -> "应收净余额："
+                                        AppLanguage.NL -> "Te ontvangen nettosaldo:"
+                                        AppLanguage.DE -> "Zu erhaltender Nettosaldo:"
+                                        AppLanguage.PL -> "Saldo netto do odbioru:"
+                                        AppLanguage.PT -> "Saldo líquido a receber:"
                                     }
-                                } else if (isFinalNeg) {
+                                } else {
                                     when (currentLang) {
                                         AppLanguage.ES -> "Deuda neta pendiente:"
                                         AppLanguage.EN -> "Pending net debt:"
@@ -1061,55 +1056,11 @@ private fun SettlementTransactionCard(
                                         AppLanguage.PL -> "Zaległy dług netto:"
                                         AppLanguage.PT -> "Dívida líquida pendente:"
                                     }
-                                } else {
-                                    when (currentLang) {
-                                        AppLanguage.ES -> "Balance final:"
-                                        AppLanguage.EN -> "Final balance:"
-                                        AppLanguage.FR -> "Solde final :"
-                                        AppLanguage.IT -> "Saldo finale:"
-                                        AppLanguage.ZH -> "最终结算："
-                                        AppLanguage.NL -> "Eindsituatie:"
-                                        AppLanguage.DE -> "Endstand:"
-                                        AppLanguage.PL -> "Bilans końcowy:"
-                                        AppLanguage.PT -> "Saldo final:"
-                                    }
                                 }
                                 MathRow(
                                     label = labelFinal,
-                                    value = if (!isFinalPos && !isFinalNeg) {
-                                        FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale) + " (" + when (currentLang) {
-                                            AppLanguage.ES -> "En paz"
-                                            AppLanguage.EN -> "Settled up"
-                                            AppLanguage.FR -> "En règle"
-                                            AppLanguage.IT -> "In pari"
-                                            AppLanguage.ZH -> "已平"
-                                            AppLanguage.NL -> "Kwijt"
-                                            AppLanguage.DE -> "Ausgeglichen"
-                                            AppLanguage.PL -> "Rozliczony"
-                                            AppLanguage.PT -> "Em dia"
-                                        } + ")"
-                                    } else if (isFinalPos) {
-                                        "-${FormatUtils.formatCurrency(sb.netBalance, baseCurrency, currentLang.locale)}"
-                                    } else {
-                                        FormatUtils.formatSignedCurrency(sb.netBalance, baseCurrency, currentLang.locale)
-                                    },
-                                    valueColor = if (isFinalPos) EmeraldGreenDark else if (isFinalNeg) CoralRedDark else Color(0xFF64748B),
-                                    isBold = true
-                                )
-                                MathRow(
-                                    label = when (currentLang) {
-                                        AppLanguage.ES -> "Saldo de otros usuarios:"
-                                        AppLanguage.EN -> "Balance of other users:"
-                                        AppLanguage.FR -> "Solde des autres utilisateurs :"
-                                        AppLanguage.IT -> "Saldo di altri utenti:"
-                                        AppLanguage.ZH -> "其他用户余额："
-                                        AppLanguage.NL -> "Saldo van andere gebruikers:"
-                                        AppLanguage.DE -> "Saldo anderer Benutzer:"
-                                        AppLanguage.PL -> "Saldo innych użytkowników:"
-                                        AppLanguage.PT -> "Saldo de outros utilizadores:"
-                                    },
-                                    value = "+${FormatUtils.formatCurrency(sb.otherUsersExcess, baseCurrency, currentLang.locale)}",
-                                    valueColor = if (sb.otherUsersExcess > 0.009) EmeraldGreenDark else Color(0xFF64748B),
+                                    value = FormatUtils.formatCurrency(abs(sb.netBalance), baseCurrency, currentLang.locale),
+                                    valueColor = if (sb.netBalance >= 0) EmeraldGreenDark else CoralRedDark,
                                     isBold = true
                                 )
                             }
@@ -1258,6 +1209,8 @@ private fun ParticipantBalanceInteractiveCard(
     onIncomeClick: (IncomeEntity) -> Unit,
     onClick: () -> Unit
 ) {
+    val isPositive = balance.netBalance >= -0.004
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -1292,15 +1245,15 @@ private fun ParticipantBalanceInteractiveCard(
                         Text(
                             text = if (balance.netBalance > 0.009) {
                                 when (currentLang) {
-                                    AppLanguage.ES -> "Saldo a favor (bote personal)"
-                                    AppLanguage.EN -> "Credit balance (personal pot)"
-                                    AppLanguage.FR -> "Solde créditeur (cagnotte pers.)"
-                                    AppLanguage.IT -> "Saldo a favore (cassa pers.)"
-                                    AppLanguage.ZH -> "贷方结余（个人备用金）"
-                                    AppLanguage.NL -> "Tegoed (persoonlijke pot)"
-                                    AppLanguage.DE -> "Guthaben (persönliche Kasse)"
-                                    AppLanguage.PL -> "Saldo dodatnie (własna kasa)"
-                                    AppLanguage.PT -> "Saldo a favor (fundo pessoal)"
+                                    AppLanguage.ES -> "A percibir (se le debe)"
+                                    AppLanguage.EN -> "To receive (owed)"
+                                    AppLanguage.FR -> "À percevoir (on lui doit)"
+                                    AppLanguage.IT -> "Da ricevere (credito)"
+                                    AppLanguage.ZH -> "应收（待还）"
+                                    AppLanguage.NL -> "Te ontvangen (tegoed)"
+                                    AppLanguage.DE -> "Zu erhalten (Guthaben)"
+                                    AppLanguage.PL -> "Do odbioru (należność)"
+                                    AppLanguage.PT -> "A receber (a haver)"
                                 }
                             } else if (balance.netBalance < -0.009) {
                                 when (currentLang) {
@@ -1328,29 +1281,20 @@ private fun ParticipantBalanceInteractiveCard(
                                 }
                             },
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (balance.netBalance > 0.009) EmeraldGreenDark else if (balance.netBalance < -0.009) CoralRedDark else Color(0xFF64748B)
+                            color = if (isPositive) EmeraldGreenDark else CoralRedDark
                         )
                     }
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val isPos = balance.netBalance > 0.009
-                    val isNeg = balance.netBalance < -0.009
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (isPos) EmeraldGreenLight else if (isNeg) CoralRedLight else Color(0xFFF1F5F9),
-                        border = BorderStroke(1.dp, if (isPos) EmeraldGreen.copy(alpha = 0.5f) else if (isNeg) CoralRed.copy(alpha = 0.5f) else Color(0xFFCBD5E1))
+                        color = if (isPositive) EmeraldGreenLight else CoralRedLight
                     ) {
                         Text(
-                            text = if (!isPos && !isNeg) {
-                                FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale)
-                            } else if (isPos) {
-                                "-${FormatUtils.formatCurrency(balance.netBalance, baseCurrency, currentLang.locale)}"
-                            } else {
-                                FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
-                            },
+                            text = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
-                            color = if (isPos) EmeraldGreenDark else if (isNeg) CoralRedDark else Color(0xFF64748B),
+                            color = if (isPositive) EmeraldGreenDark else CoralRedDark,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
@@ -1394,43 +1338,24 @@ private fun ParticipantBalanceInteractiveCard(
                             AppLanguage.PL -> "Zapłacono z własnej kieszeni:"
                             AppLanguage.PT -> "Pago do seu próprio bolso:"
                         },
-                        value = "-${FormatUtils.formatCurrency(balance.totalExpensesPaid, baseCurrency, currentLang.locale)}",
+                        value = "+${FormatUtils.formatCurrency(balance.totalExpensesPaid, baseCurrency, currentLang.locale)}",
                         valueColor = TravelBlue
                     )
-                    if (balance.totalBoteContributed > 0.009) {
-                        MathRow(
-                            label = when (currentLang) {
-                                AppLanguage.ES -> "Dinero puesto en el bote (se descuenta):"
-                                AppLanguage.EN -> "Money put into pot (deducted):"
-                                AppLanguage.FR -> "Argent versé dans la cagnotte (déduit) :"
-                                AppLanguage.IT -> "Denaro versato nella cassa (dedotto):"
-                                AppLanguage.ZH -> "投入基金的金额（已扣除）："
-                                AppLanguage.NL -> "Geld in de pot gestopt (in mindering):"
-                                AppLanguage.DE -> "In die Kasse eingezahlt (abgezogen):"
-                                AppLanguage.PL -> "Pieniądze wpłacone do kasy (odliczone):"
-                                AppLanguage.PT -> "Dinheiro colocado no fundo (desconta-se):"
-                            },
-                            value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
-                            valueColor = EmeraldGreenDark
-                        )
-                    }
-                    if (balance.totalDebtSettlementsReceived > 0.009) {
-                        MathRow(
-                            label = when (currentLang) {
-                                AppLanguage.ES -> "Cobrado por liquidaciones de deudas:"
-                                AppLanguage.EN -> "Collected from debt settlements:"
-                                AppLanguage.FR -> "Perçu par règlements de dettes :"
-                                AppLanguage.IT -> "Incassato da liquidazioni debiti:"
-                                AppLanguage.ZH -> "已收债务结算款："
-                                AppLanguage.NL -> "Geïncasseerd uit schuldaflossingen:"
-                                AppLanguage.DE -> "Aus Schuldenausgleich erhalten:"
-                                AppLanguage.PL -> "Pobrane ze spłat długów:"
-                                AppLanguage.PT -> "Cobrado por liquidações de dívidas:"
-                            },
-                            value = "+${FormatUtils.formatCurrency(balance.totalDebtSettlementsReceived, baseCurrency, currentLang.locale)}",
-                            valueColor = EmeraldGreenDark
-                        )
-                    }
+                    MathRow(
+                        label = when (currentLang) {
+                            AppLanguage.ES -> "Dinero puesto en el bote (se descuenta):"
+                            AppLanguage.EN -> "Money put into pot (deducted):"
+                            AppLanguage.FR -> "Argent versé dans la cagnotte (déduit) :"
+                            AppLanguage.IT -> "Denaro versato nella cassa (dedotto):"
+                            AppLanguage.ZH -> "投入基金的金额（已扣除）："
+                            AppLanguage.NL -> "Geld in de pot gestopt (in mindering):"
+                            AppLanguage.DE -> "In die Kasse eingezahlt (abgezogen):"
+                            AppLanguage.PL -> "Pieniądze wpłacone do kasy (odliczone):"
+                            AppLanguage.PT -> "Dinheiro colocado no fundo (desconta-se):"
+                        },
+                        value = "+${FormatUtils.formatCurrency(balance.totalBoteContributed, baseCurrency, currentLang.locale)}",
+                        valueColor = EmeraldGreenDark
+                    )
                     if (balance.totalDebtDiscountCompensated > 0.009) {
                         MathRow(
                             label = when (currentLang) {
@@ -1464,54 +1389,20 @@ private fun ParticipantBalanceInteractiveCard(
                         valueColor = CoralRedDark
                     )
                     HorizontalDivider(color = Color(0xFFE2E8F0))
-                    val isPosBalance = balance.netBalance > 0.009
-                    val isNegBalance = balance.netBalance < -0.009
                     MathRow(
                         label = when (currentLang) {
-                            AppLanguage.ES -> if (isPosBalance) "Saldo a favor (bote personal):" else if (isNegBalance) "Deuda pendiente:" else "Balance final:"
-                            AppLanguage.EN -> if (isPosBalance) "Credit balance (personal pot):" else if (isNegBalance) "Pending debt:" else "Final balance:"
-                            AppLanguage.FR -> if (isPosBalance) "Solde créditeur (cagnotte pers.) :" else if (isNegBalance) "Dette en attente :" else "Solde final :"
-                            AppLanguage.IT -> if (isPosBalance) "Saldo a favore (cassa pers.):" else if (isNegBalance) "Debito in sospeso:" else "Saldo finale:"
-                            AppLanguage.ZH -> if (isPosBalance) "贷方结余（个人备用金）：" else if (isNegBalance) "待还债务：" else "最终结算："
-                            AppLanguage.NL -> if (isPosBalance) "Tegoed (persoonlijke pot):" else if (isNegBalance) "Openstaande schuld:" else "Eindsituatie:"
-                            AppLanguage.DE -> if (isPosBalance) "Guthaben (persönliche Kasse):" else if (isNegBalance) "Ausstehende Schuld:" else "Endstand:"
-                            AppLanguage.PL -> if (isPosBalance) "Saldo dodatnie (własna kasa):" else if (isNegBalance) "Zaległy dług:" else "Bilans końcowy:"
-                            AppLanguage.PT -> if (isPosBalance) "Saldo a favor (fundo pessoal):" else if (isNegBalance) "Dívida pendente:" else "Saldo final:"
+                            AppLanguage.ES -> "Fórmula Balance Neto:"
+                            AppLanguage.EN -> "Net Balance Formula:"
+                            AppLanguage.FR -> "Formule du solde net :"
+                            AppLanguage.IT -> "Formula saldo netto:"
+                            AppLanguage.ZH -> "净余额公式："
+                            AppLanguage.NL -> "Formule nettosaldo:"
+                            AppLanguage.DE -> "Nettosaldo-Formel:"
+                            AppLanguage.PL -> "Wzór salda netto:"
+                            AppLanguage.PT -> "Fórmula Saldo Líquido:"
                         },
-                        value = if (!isPosBalance && !isNegBalance) {
-                            FormatUtils.formatCurrency(0.0, baseCurrency, currentLang.locale) + " (" + when (currentLang) {
-                                AppLanguage.ES -> "En paz"
-                                AppLanguage.EN -> "Settled up"
-                                AppLanguage.FR -> "En règle"
-                                AppLanguage.IT -> "In pari"
-                                AppLanguage.ZH -> "已平"
-                                AppLanguage.NL -> "Kwijt"
-                                AppLanguage.DE -> "Ausgeglichen"
-                                AppLanguage.PL -> "Rozliczony"
-                                AppLanguage.PT -> "Em dia"
-                            } + ")"
-                        } else if (isPosBalance) {
-                            "-${FormatUtils.formatCurrency(balance.netBalance, baseCurrency, currentLang.locale)}"
-                        } else {
-                            FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale)
-                        },
-                        valueColor = if (isPosBalance) EmeraldGreenDark else if (isNegBalance) CoralRedDark else Color(0xFF64748B),
-                        isBold = true
-                    )
-                    MathRow(
-                        label = when (currentLang) {
-                            AppLanguage.ES -> "Saldo de otros usuarios:"
-                            AppLanguage.EN -> "Balance of other users:"
-                            AppLanguage.FR -> "Solde des autres utilisateurs :"
-                            AppLanguage.IT -> "Saldo di altri utenti:"
-                            AppLanguage.ZH -> "其他用户余额："
-                            AppLanguage.NL -> "Saldo van andere gebruikers:"
-                            AppLanguage.DE -> "Saldo anderer Benutzer:"
-                            AppLanguage.PL -> "Saldo innych użytkowników:"
-                            AppLanguage.PT -> "Saldo de outros utilizadores:"
-                        },
-                        value = "+${FormatUtils.formatCurrency(balance.otherUsersExcess, baseCurrency, currentLang.locale)}",
-                        valueColor = if (balance.otherUsersExcess > 0.009) EmeraldGreenDark else Color(0xFF64748B),
+                        value = FormatUtils.formatSignedCurrency(balance.netBalance, baseCurrency, currentLang.locale),
+                        valueColor = if (isPositive) EmeraldGreenDark else CoralRedDark,
                         isBold = true
                     )
 
@@ -1585,7 +1476,6 @@ private fun ParticipantBalanceInteractiveCard(
                         when (rawItem) {
                             is ExpenseEntity -> {
                                 val exp = rawItem
-                                val isSettlement = CategoryCatalog.isDebtSettlementExpense(exp)
                                 val paidThis = exp.paidById == balance.participantId
                                 val share = exp.splits.find { it.participantId == balance.participantId }?.amount ?: 0.0
                                 val displayCat = CategoryCatalog.displayName(CategoryCatalog.resolveCategoryName(exp), currentLang)
@@ -1605,32 +1495,13 @@ private fun ParticipantBalanceInteractiveCard(
                                     )
                                     Text(
                                         text = buildString {
-                                            if (isSettlement) {
-                                                if (paidThis) {
-                                                    append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}")
-                                                } else {
-                                                    val recLabel = when (currentLang) {
-                                                        AppLanguage.ES -> "Cobró"
-                                                        AppLanguage.EN -> "Received"
-                                                        AppLanguage.FR -> "Reçu"
-                                                        AppLanguage.IT -> "Ricevuto"
-                                                        AppLanguage.ZH -> "收款"
-                                                        AppLanguage.NL -> "Ontvangen"
-                                                        AppLanguage.DE -> "Erhalten"
-                                                        AppLanguage.PL -> "Otrzymano"
-                                                        AppLanguage.PT -> "Recebeu"
-                                                    }
-                                                    append("$recLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)}")
-                                                }
-                                            } else {
-                                                if (paidThis) {
-                                                    append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
-                                                }
-                                                append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
+                                            if (paidThis) {
+                                                append("$paidLabel ${FormatUtils.formatCurrency(exp.amountInBaseCurrency, baseCurrency, currentLang.locale)} · ")
                                             }
+                                            append("$shareLabel: ${FormatUtils.formatCurrency(share, baseCurrency, currentLang.locale)}")
                                         },
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                        color = if (paidThis) TravelBlue else if (isSettlement) EmeraldGreenDark else Color(0xFF64748B)
+                                        color = if (paidThis) TravelBlue else Color(0xFF64748B)
                                     )
                                 }
                             }
@@ -1719,7 +1590,8 @@ fun SettleDebtsModal(
     var expandedPayeeDropdown by remember { mutableStateOf(false) }
 
     val navBottomFromSystem = remember {
-        val activity = context as? android.app.Activity
+        val activity = context as? androidx.activity.ComponentActivity
+            ?: context as? android.app.Activity
         val decorView = activity?.window?.decorView
         val insets = if (decorView != null) androidx.core.view.ViewCompat.getRootWindowInsets(decorView) else null
         val bottomPx = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
@@ -1736,7 +1608,14 @@ fun SettleDebtsModal(
         maxOf(52.dp, navBottomFromSystem + 32.dp)
     }
 
-    var selectedPaymentMethod by remember { mutableStateOf("Efectivo") }
+    val cashLabel = PaymentMethodCatalog.displayName("Efectivo", currentLang)
+    val bizumLabel = PaymentMethodCatalog.displayName("Bizum / Transferencia", currentLang)
+    val cardLabel = PaymentMethodCatalog.displayName("Tarjeta", currentLang)
+
+    val paymentMethods = remember(currentLang) {
+        listOf(cashLabel, bizumLabel, cardLabel)
+    }
+    var selectedPaymentMethod by remember(currentLang) { mutableStateOf(cashLabel) }
 
     val settlementDateLabel = when (currentLang) {
         AppLanguage.ES -> "Fecha de la liquidación"
@@ -1761,9 +1640,8 @@ fun SettleDebtsModal(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
                 .padding(horizontal = 10.dp)
-                .padding(top = 10.dp, bottom = 12.dp)
+                .padding(top = 10.dp, bottom = bottomSpacing)
                 .imePadding(),
             shape = RoundedCornerShape(20.dp),
             color = Color.White
@@ -1932,7 +1810,6 @@ fun SettleDebtsModal(
                                     onClick = {
                                         selectedDebt = tx
                                         amountText = String.format(java.util.Locale.US, "%.2f", tx.amount)
-                                        settlementDate = java.time.LocalDate.now().toString()
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                     color = Color(0xFFF8FAFC),
@@ -1993,7 +1870,6 @@ fun SettleDebtsModal(
                                             onClick = {
                                                 selectedDebt = tx
                                                 amountText = String.format(java.util.Locale.US, "%.2f", tx.amount)
-                                                settlementDate = java.time.LocalDate.now().toString()
                                             },
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
@@ -2018,7 +1894,7 @@ fun SettleDebtsModal(
                             }
                         }
                     } else if (isManualSettlement) {
-                        // Vista 3: Formulario de Liquidación Manual (selectores libres Pagado por y Pagado a, y Cuantía editable)
+                        // Vista 3: Formulario de Liquidación Manual
                         val paidByLabel = when (currentLang) {
                             AppLanguage.ES -> "Pagado por"
                             AppLanguage.EN -> "Paid by"
@@ -2050,188 +1926,112 @@ fun SettleDebtsModal(
                             AppLanguage.NL -> "Bedrag (${trip.baseCurrency})"
                             AppLanguage.DE -> "Betrag (${trip.baseCurrency})"
                             AppLanguage.PL -> "Kwota (${trip.baseCurrency})"
-                            AppLanguage.PT -> "Quantia (${trip.baseCurrency})"
+                            AppLanguage.PT -> "Montante (${trip.baseCurrency})"
                         }
 
                         // Selector Pagado por
-                        Text(
-                            text = paidByLabel,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF475569)
-                        )
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            val selectedPayer = participants.find { it.id == manualPayerId }
-                            Surface(
-                                onClick = { expandedPayerDropdown = true },
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                        Column {
+                            Text(
+                                text = paidByLabel,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF475569)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Surface(
+                                    onClick = { expandedPayerDropdown = true },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color(0xFFF8FAFC),
+                                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    if (selectedPayer != null) {
-                                        com.example.ui.components.EditableParticipantAvatar(
-                                            name = selectedPayer.name,
-                                            avatarColorHex = selectedPayer.avatarColor,
-                                            photoUri = selectedPayer.photoUri,
-                                            onClick = {},
-                                            size = 28.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val payerObj = participants.find { it.id == manualPayerId }
                                         Text(
-                                            text = selectedPayer.name,
-                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = OceanNavy,
-                                            modifier = Modifier.weight(1f)
+                                            text = payerObj?.name ?: "-",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = OceanNavy
                                         )
-                                    } else {
-                                        Text(
-                                            text = paidByLabel,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color(0xFF94A3B8),
-                                            modifier = Modifier.weight(1f)
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = OceanNavy)
+                                    }
+                                }
+                                DropdownMenu(
+                                    expanded = expandedPayerDropdown,
+                                    onDismissRequest = { expandedPayerDropdown = false }
+                                ) {
+                                    participants.forEach { p ->
+                                        DropdownMenuItem(
+                                            text = { Text(p.name, fontWeight = if (p.id == manualPayerId) FontWeight.Bold else FontWeight.Normal) },
+                                            onClick = {
+                                                manualPayerId = p.id
+                                                expandedPayerDropdown = false
+                                            }
                                         )
                                     }
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = Color(0xFF64748B)
-                                    )
-                                }
-                            }
-                            DropdownMenu(
-                                expanded = expandedPayerDropdown,
-                                onDismissRequest = { expandedPayerDropdown = false },
-                                modifier = Modifier.background(Color.White)
-                            ) {
-                                participants.forEach { p ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                com.example.ui.components.EditableParticipantAvatar(
-                                                    name = p.name,
-                                                    avatarColorHex = p.avatarColor,
-                                                    photoUri = p.photoUri,
-                                                    onClick = {},
-                                                    size = 24.dp
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = p.name,
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = if (p.id == manualPayerId) FontWeight.Bold else FontWeight.Normal
-                                                    ),
-                                                    color = OceanNavy
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            manualPayerId = p.id
-                                            if (manualPayeeId == p.id) {
-                                                manualPayeeId = participants.firstOrNull { it.id != p.id }?.id.orEmpty()
-                                            }
-                                            expandedPayerDropdown = false
-                                        }
-                                    )
                                 }
                             }
                         }
 
                         // Selector Pagado a
-                        Text(
-                            text = paidToLabel,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF475569)
-                        )
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            val selectedPayee = participants.find { it.id == manualPayeeId }
-                            Surface(
-                                onClick = { expandedPayeeDropdown = true },
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF8FAFC),
-                                border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                        Column {
+                            Text(
+                                text = paidToLabel,
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF475569)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                Surface(
+                                    onClick = { expandedPayeeDropdown = true },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color(0xFFF8FAFC),
+                                    border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    if (selectedPayee != null) {
-                                        com.example.ui.components.EditableParticipantAvatar(
-                                            name = selectedPayee.name,
-                                            avatarColorHex = selectedPayee.avatarColor,
-                                            photoUri = selectedPayee.photoUri,
-                                            onClick = {},
-                                            size = 28.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        val payeeObj = participants.find { it.id == manualPayeeId }
                                         Text(
-                                            text = selectedPayee.name,
-                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            color = OceanNavy,
-                                            modifier = Modifier.weight(1f)
+                                            text = payeeObj?.name ?: "-",
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = OceanNavy
                                         )
-                                    } else {
-                                        Text(
-                                            text = paidToLabel,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color(0xFF94A3B8),
-                                            modifier = Modifier.weight(1f)
+                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = OceanNavy)
+                                    }
+                                }
+                                DropdownMenu(
+                                    expanded = expandedPayeeDropdown,
+                                    onDismissRequest = { expandedPayeeDropdown = false }
+                                ) {
+                                    participants.forEach { p ->
+                                        DropdownMenuItem(
+                                            text = { Text(p.name, fontWeight = if (p.id == manualPayeeId) FontWeight.Bold else FontWeight.Normal) },
+                                            onClick = {
+                                                manualPayeeId = p.id
+                                                expandedPayeeDropdown = false
+                                            }
                                         )
                                     }
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = Color(0xFF64748B)
-                                    )
-                                }
-                            }
-                            DropdownMenu(
-                                expanded = expandedPayeeDropdown,
-                                onDismissRequest = { expandedPayeeDropdown = false },
-                                modifier = Modifier.background(Color.White)
-                            ) {
-                                participants.filter { it.id != manualPayerId }.forEach { p ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                com.example.ui.components.EditableParticipantAvatar(
-                                                    name = p.name,
-                                                    avatarColorHex = p.avatarColor,
-                                                    photoUri = p.photoUri,
-                                                    onClick = {},
-                                                    size = 24.dp
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = p.name,
-                                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                                        fontWeight = if (p.id == manualPayeeId) FontWeight.Bold else FontWeight.Normal
-                                                    ),
-                                                    color = OceanNavy
-                                                )
-                                            }
-                                        },
-                                        onClick = {
-                                            manualPayeeId = p.id
-                                            expandedPayeeDropdown = false
-                                        }
-                                    )
                                 }
                             }
                         }
 
-                        // Cuantía editable libremente
+                        // Campo de cuantía
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = { amountText = it },
-                            label = {
-                                Text(amountInputLabel)
-                            },
-                            placeholder = { Text("0.00") },
+                            label = { Text(amountInputLabel) },
                             singleLine = true,
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                                 keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
@@ -2249,7 +2049,7 @@ fun SettleDebtsModal(
                                 .testTag("manual_settlement_amount_input")
                         )
 
-                        // Fecha de la liquidación (editable y con hoy por defecto)
+                        // Selector de fecha
                         Surface(
                             onClick = {
                                 val d = try {
@@ -2299,22 +2099,20 @@ fun SettleDebtsModal(
                             }
                         }
 
-                        // Método de pago para registrar la liquidación
+                        // Método de pago
                         Text(
                             text = texts.paymentMethodLabel,
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF475569)
                         )
-                        // Fila 1: Efectivo, Tarjeta, Bizum
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf("Efectivo", "Tarjeta", "Bizum").forEach { rawMethod ->
-                                val isSelected = selectedPaymentMethod == rawMethod
-                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
+                            paymentMethods.forEach { method ->
+                                val isSelected = selectedPaymentMethod == method
                                 Button(
-                                    onClick = { selectedPaymentMethod = rawMethod },
+                                    onClick = { selectedPaymentMethod = method },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
@@ -2322,40 +2120,10 @@ fun SettleDebtsModal(
                                     ),
                                     border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
                                     modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
                                 ) {
                                     Text(
-                                        text = display,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        ),
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                        // Fila 2: Transferencia, Bote Común
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf("Transferencia", "Bote Común").forEach { rawMethod ->
-                                val isSelected = selectedPaymentMethod == rawMethod
-                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
-                                Button(
-                                    onClick = { selectedPaymentMethod = rawMethod },
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
-                                        contentColor = if (isSelected) Color.White else Color(0xFF334155)
-                                    ),
-                                    border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-                                ) {
-                                    Text(
-                                        text = display,
+                                        text = method,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         ),
@@ -2603,16 +2371,14 @@ fun SettleDebtsModal(
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                             color = Color(0xFF475569)
                         )
-                        // Fila 1: Efectivo, Tarjeta, Bizum
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            listOf("Efectivo", "Tarjeta", "Bizum").forEach { rawMethod ->
-                                val isSelected = selectedPaymentMethod == rawMethod
-                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
+                            paymentMethods.forEach { method ->
+                                val isSelected = selectedPaymentMethod == method
                                 Button(
-                                    onClick = { selectedPaymentMethod = rawMethod },
+                                    onClick = { selectedPaymentMethod = method },
                                     shape = RoundedCornerShape(10.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
@@ -2620,40 +2386,10 @@ fun SettleDebtsModal(
                                     ),
                                     border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
                                     modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 2.dp)
                                 ) {
                                     Text(
-                                        text = display,
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                        ),
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                        // Fila 2: Transferencia, Bote Común
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf("Transferencia", "Bote Común").forEach { rawMethod ->
-                                val isSelected = selectedPaymentMethod == rawMethod
-                                val display = PaymentMethodCatalog.displayName(rawMethod, currentLang)
-                                Button(
-                                    onClick = { selectedPaymentMethod = rawMethod },
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isSelected) TravelBlue else Color(0xFFF8FAFC),
-                                        contentColor = if (isSelected) Color.White else Color(0xFF334155)
-                                    ),
-                                    border = BorderStroke(1.dp, if (isSelected) TravelBlue else Color(0xFFCBD5E1)),
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-                                ) {
-                                    Text(
-                                        text = display,
+                                        text = method,
                                         style = MaterialTheme.typography.labelSmall.copy(
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                                         ),
@@ -2674,7 +2410,6 @@ fun SettleDebtsModal(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFFF8FAFC))
-                        .navigationBarsPadding()
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -2731,7 +2466,7 @@ fun SettleDebtsModal(
                                         val payer = participants.find { it.id == manualPayerId }
                                         val payee = participants.find { it.id == manualPayeeId }
                                         if (payer != null && payee != null) {
-                                             val tx = DebtTransaction(
+                                            val tx = DebtTransaction(
                                                 fromParticipantId = payer.id,
                                                 fromName = payer.name,
                                                 toParticipantId = payee.id,

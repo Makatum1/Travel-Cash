@@ -8,7 +8,6 @@ import com.example.ui.theme.AppLanguage
 import com.example.util.FormatUtils
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToLong
 
 enum class MovementStatus {
@@ -369,36 +368,14 @@ object ParticipantNetSpendCalculator {
                     )
                 }
 
-            // C) Pagos/liquidaciones recibidas de otros participantes ("Recibido de XXX")
-            // Sólo se descuenta del desembolso la parte que salda deudas reales que este participante adelantó.
-            // El exceso es saldo extra custodiado para el emisor y no reduce el gasto del receptor.
-            val otherParticipants = participants.filter { it.id != participant.id }
-            val debtReimbursedReceivedTotal = if (realExpenses.isEmpty()) {
-                completedTransfers.filter { it.toParticipantId == participant.id && it.fromParticipantId != participant.id }.sumOf { it.amount }
-            } else {
-                otherParticipants.sumOf { sender ->
-                    val totalSentBySenderToMe = completedTransfers
-                        .filter { it.fromParticipantId == sender.id && it.toParticipantId == participant.id }
-                        .sumOf { it.amount }
-                    val realCostPaidByMeForSender = realExpenses.filter { it.paidById == participant.id }.sumOf { exp ->
-                        val sp = exp.splits.find { it.participantId == sender.id }
-                        sp?.amount ?: if (exp.splits.isEmpty() && participants.isNotEmpty()) (exp.amountInBaseCurrency / participants.size) else 0.0
-                    }
-                    val realCostPaidBySenderForMe = realExpenses.filter { it.paidById == sender.id }.sumOf { exp ->
-                        val sp = exp.splits.find { it.participantId == participant.id }
-                        sp?.amount ?: if (exp.splits.isEmpty() && participants.isNotEmpty()) (exp.amountInBaseCurrency / participants.size) else 0.0
-                    }
-                    val realDebtSenderToMe = max(0.0, realCostPaidByMeForSender - realCostPaidBySenderForMe)
-                    min(totalSentBySenderToMe, realDebtSenderToMe)
-                }
-            }
-
+            // C) Pagos/liquidaciones recibidas de otros participantes ("Recibido de XXX") -> -importe
+            var receivedTotal = 0.0
             completedTransfers
                 .filter { it.toParticipantId == participant.id && it.fromParticipantId != participant.id }
                 .forEach { tx ->
-                    val senderId = tx.fromParticipantId
                     val amt = round2(tx.amount)
-                    val senderName = participantMap[senderId]?.name ?: "?"
+                    receivedTotal += amt
+                    val senderName = participantMap[tx.fromParticipantId]?.name ?: "?"
                     entries.add(
                         ParticipantLedgerEntry(
                             id = "recv-${tx.id}",
@@ -459,8 +436,8 @@ object ParticipantNetSpendCalculator {
                     )
                 }
 
-            // F) Gasto asumido según las reglas exactas de reparto (splits) de cada gasto real del viaje (excluyendo Bote Común)
-            val assumedRaw = realExpenses.filter { !isPaidFromBote(it) }.sumOf { exp ->
+            // F) Gasto asumido según las reglas exactas de reparto (splits) de cada gasto real del viaje
+            val assumedRaw = realExpenses.sumOf { exp ->
                 if (exp.splits.isNotEmpty()) {
                     exp.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
                 } else if (participants.isNotEmpty()) {
@@ -471,9 +448,9 @@ object ParticipantNetSpendCalculator {
             }
             val assumedSpend = round2(assumedRaw)
 
-            // Pagado (desembolso de su bolsillo en gastos del viaje y liquidaciones) = Gastos pagados directamente + Liquidaciones enviadas - Reembolsos recibidos
-            val netSpend = round2(paidDirectly + sentTotal - debtReimbursedReceivedTotal)
-            // Balance / Saldo extra = Pagado - Asumido (+ saldo a favor / bote personal, - deuda pendiente)
+            // Pagado (desembolso neto real de su bolsillo) = Gastos pagados + Liquidaciones enviadas + Aportaciones al bote - Liquidaciones recibidas - Recibido del bote
+            val netSpend = round2(paidDirectly + sentTotal + potContribTotal - receivedTotal - potRecvTotal)
+            // Balance / Reserva = Pagado - Asumido (+ saldo a favor / reserva para futuras deudas, - deuda pendiente)
             val balance = round2(netSpend - assumedSpend)
             val diffFromAvg = round2(netSpend - equalShareAverage)
 
@@ -483,7 +460,7 @@ object ParticipantNetSpendCalculator {
                 participant = participant,
                 realExpensesPaid = round2(paidDirectly),
                 transfersSent = round2(sentTotal),
-                transfersReceived = round2(debtReimbursedReceivedTotal),
+                transfersReceived = round2(receivedTotal),
                 potContributions = round2(potContribTotal),
                 potReceived = round2(potRecvTotal),
                 netSpend = netSpend,

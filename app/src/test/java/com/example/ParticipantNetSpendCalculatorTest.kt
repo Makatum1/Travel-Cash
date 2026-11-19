@@ -206,20 +206,18 @@ class ParticipantNetSpendCalculatorTest {
         assertEquals(2, report.realExpenseCount)
         assertEquals(55.0, report.equalShareAverage, 0.01)
         assertEquals(0.0, report.commonPotBalance, 0.01)
+        assertTrue(report.allEqual)
 
         val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
         val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
 
-        // Pepe: 0 + 15 (Pago a Juan) = 15 €
-        assertEquals(15.0, pepeSummary.netSpend, 0.01)
-        assertEquals(40.0, pepeSummary.potContributions, 0.01)
+        // Pepe: 0 + 40 (Aportado al bote) + 15 (Pago a Juan) = 55 €
+        assertEquals(55.0, pepeSummary.netSpend, 0.01)
         assertTrue(pepeSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_CONTRIBUTION && it.displayLabel(AppLanguage.ES) == "Aportado al bote" && it.signedAmount == 40.0 })
         assertTrue(pepeSummary.entries.any { it.type == ParticipantLedgerEntryType.TRANSFER_SENT && it.displayLabel(AppLanguage.ES) == "Pago a Juan" && it.signedAmount == 15.0 })
 
-        // Juan: 60 (Taxi) - 15 (Recibido de Pepe) = 45 €
-        assertEquals(45.0, juanSummary.netSpend, 0.01)
-        assertEquals(40.0, juanSummary.potContributions, 0.01)
-        assertEquals(30.0, juanSummary.potReceived, 0.01)
+        // Juan: 60 (Taxi) + 40 (Aportado al bote) - 30 (Recibido del bote) - 15 (Recibido de Pepe) = 55 €
+        assertEquals(55.0, juanSummary.netSpend, 0.01)
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_CONTRIBUTION && it.displayLabel(AppLanguage.ES) == "Aportado al bote" && it.signedAmount == 40.0 })
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_RECEIVED && it.displayLabel(AppLanguage.ES) == "Recibido del bote" && it.signedAmount == -30.0 })
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.TRANSFER_RECEIVED && it.displayLabel(AppLanguage.ES) == "Recibido de Pepe" && it.signedAmount == -15.0 })
@@ -317,9 +315,8 @@ class ParticipantNetSpendCalculatorTest {
         val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
         val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
 
-        // Pepe: +25 (Pago a Juan) = 25 € (el pendiente de 100 € no suma); aportado al bote = 40 €
-        assertEquals(25.0, pepeSummary.netSpend, 0.01)
-        assertEquals(40.0, pepeSummary.potContributions, 0.01)
+        // Pepe: +25 (Pago a Juan) + 40 (Aportado al bote) = 65 € (el pendiente de 100 € no suma)
+        assertEquals(65.0, pepeSummary.netSpend, 0.01)
         // Juan: -25 (Recibido de Pepe) = -25 €
         assertEquals(-25.0, juanSummary.netSpend, 0.01)
     }
@@ -442,132 +439,10 @@ class ParticipantNetSpendCalculatorTest {
         assertEquals(204.0, pepeSummary.balance, 0.01)
         assertEquals(pepeSummary.netSpend - pepeSummary.assumedSpend, pepeSummary.balance, 0.01)
 
-        // Juan: Pagado = 700 - 296 = 404 € (recupera los 296 € de Pepe, los 204 € de exceso son bote personal de Pepe sin crear gasto a Juan), Asumido = 404 €, Balance = 0 € (en paz)
-        assertEquals(404.0, juanSummary.netSpend, 0.01)
+        // Juan: Pagado = 700 - 500 = 200 €, Asumido = 404 €, Balance = -204 € (debe 204 €)
+        assertEquals(200.0, juanSummary.netSpend, 0.01)
         assertEquals(404.0, juanSummary.assumedSpend, 0.01)
-        assertEquals(0.0, juanSummary.balance, 0.01)
+        assertEquals(-204.0, juanSummary.balance, 0.01)
         assertEquals(juanSummary.netSpend - juanSummary.assumedSpend, juanSummary.balance, 0.01)
-    }
-
-    @Test
-    fun multipleTransfersFromSameSender_groupedCorrectlyAndCappedAtRealDebt() {
-        val tripExpense = ExpenseEntity(
-            id = "e-hotel",
-            tripId = "t1",
-            amount = 200.0,
-            currency = "EUR",
-            amountInBaseCurrency = 200.0,
-            exchangeRate = 1.0,
-            category = "Alojamiento",
-            date = "2026-06-15",
-            paymentMethod = "Tarjeta",
-            notes = "Hotel",
-            placeName = "Hotel",
-            paidById = juan.id,
-            splits = listOf(
-                ExpenseSplit("s1", "e-hotel", pepe.id, 100.0, 50.0),
-                ExpenseSplit("s2", "e-hotel", juan.id, 100.0, 50.0)
-            )
-        )
-
-        // Pepe le hace dos pagos a Juan: uno de 60€ y otro de 70€ (total 130€, debía 100€ -> exceso 30€)
-        val transfer1 = ExpenseEntity(
-            id = "tx1",
-            tripId = "t1",
-            amount = 60.0,
-            currency = "EUR",
-            amountInBaseCurrency = 60.0,
-            exchangeRate = 1.0,
-            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
-            date = "2026-06-16",
-            paymentMethod = "Bizum",
-            notes = "Pago 1",
-            placeName = "Liquidación",
-            paidById = pepe.id,
-            splits = listOf(ExpenseSplit("stx1", "tx1", juan.id, 60.0, 100.0))
-        )
-        val transfer2 = ExpenseEntity(
-            id = "tx2",
-            tripId = "t1",
-            amount = 70.0,
-            currency = "EUR",
-            amountInBaseCurrency = 70.0,
-            exchangeRate = 1.0,
-            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
-            date = "2026-06-17",
-            paymentMethod = "Bizum",
-            notes = "Pago 2",
-            placeName = "Liquidación",
-            paidById = pepe.id,
-            splits = listOf(ExpenseSplit("stx2", "tx2", juan.id, 70.0, 100.0))
-        )
-
-        val report = ParticipantNetSpendCalculator.calculate(
-            participants = listOf(pepe, juan),
-            expenses = listOf(tripExpense, transfer1, transfer2),
-            incomes = emptyList()
-        )
-
-        val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
-        val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
-
-        // Pepe: Pagó 130€ en liquidaciones, Asumido = 100€ -> Saldo extra = +30€
-        assertEquals(130.0, pepeSummary.netSpend, 0.01)
-        assertEquals(100.0, pepeSummary.assumedSpend, 0.01)
-        assertEquals(30.0, pepeSummary.balance, 0.01)
-
-        // Juan: Pagó 200€ - 100€ (deuda real reembolsada agrupada) = 100€ netSpend, Asumido = 100€ -> Balance = 0.00€
-        assertEquals(100.0, juanSummary.netSpend, 0.01)
-        assertEquals(100.0, juanSummary.assumedSpend, 0.01)
-        assertEquals(0.0, juanSummary.balance, 0.01)
-    }
-
-    @Test
-    fun directTripExpensePayment_yieldsExtraBalanceForPayerAndDebtForOthers() {
-        // Juan paga una cena de 300€ para Pepe, Juan y Ana (100€ cada uno)
-        val dinner = ExpenseEntity(
-            id = "e-dinner",
-            tripId = "t1",
-            amount = 300.0,
-            currency = "EUR",
-            amountInBaseCurrency = 300.0,
-            exchangeRate = 1.0,
-            category = "Restaurantes",
-            date = "2026-06-15",
-            paymentMethod = "Tarjeta",
-            notes = "Cena grupal",
-            placeName = "Restaurante",
-            paidById = juan.id,
-            splits = listOf(
-                ExpenseSplit("d1", "e-dinner", pepe.id, 100.0, 33.33),
-                ExpenseSplit("d2", "e-dinner", juan.id, 100.0, 33.34),
-                ExpenseSplit("d3", "e-dinner", ana.id, 100.0, 33.33)
-            )
-        )
-
-        val report = ParticipantNetSpendCalculator.calculate(
-            participants = listOf(pepe, juan, ana),
-            expenses = listOf(dinner),
-            incomes = emptyList()
-        )
-
-        val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
-        val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
-        val anaSummary = report.participantSummaries.first { it.participant.id == ana.id }
-
-        // Juan: Pagado = 300€, Asumido = 100€, Saldo extra = +200€
-        assertEquals(300.0, juanSummary.netSpend, 0.01)
-        assertEquals(100.0, juanSummary.assumedSpend, 0.01)
-        assertEquals(200.0, juanSummary.balance, 0.01)
-
-        // Pepe: Pagado = 0€, Asumido = 100€, Debe = -100€
-        assertEquals(0.0, pepeSummary.netSpend, 0.01)
-        assertEquals(100.0, pepeSummary.assumedSpend, 0.01)
-        assertEquals(-100.0, pepeSummary.balance, 0.01)
-
-        // Ana: Pagado = 0€, Asumido = 100€, Debe = -100€
-        assertEquals(0.0, anaSummary.netSpend, 0.01)
-        assertEquals(100.0, anaSummary.assumedSpend, 0.01)
-        assertEquals(-100.0, anaSummary.balance, 0.01)
     }
 }
