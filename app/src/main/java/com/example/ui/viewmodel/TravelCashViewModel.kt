@@ -271,16 +271,44 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         }.sumOf { it.amountInBaseCurrency }
         val availableBote = kotlin.math.max(0.0, totalBoteIncome - totalSpentFromBote)
 
-        // Suma de las deudas pendientes reales de los usuarios (balances negativos de los usuarios que aún deben):
-        // Regla estricta: Excluye por completo el "bote personal" (excesos de liquidación o saldos a favor > 0)
-        val totalDeudasPendientes = debtResult.participantBalances
-            .filter { it.netBalance < -0.009 }
-            .sumOf { kotlin.math.abs(it.netBalance) }
+        // Cálculo estricto de deudas pendientes por participante:
+        // Para cada usuario, se calcula lo que le correspondía asumir en gastos reales del viaje menos lo que ha cubierto
+        // (pagos directos + liquidaciones abonadas + aportaciones en efectivo al bote).
+        // Regla de oro: Si un usuario ha pagado de más (excesos / botes personales, como los 204€ de U2 o 4€ de U3),
+        // se fija su deuda en 0.0 (max(0, ...)) sin restar ni sumar jamás esos excesos al saldo del viaje.
+        // Los acreedores (quienes adelantaron gastos de su bolsillo) tienen deuda 0.0.
+        val totalDeudasPendientes = activeParts.sumOf { p ->
+            val expenseShare = activeExps
+                .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
+                .sumOf { exp -> exp.splits.find { it.participantId == p.id }?.amount ?: 0.0 }
+
+            val paidDirectly = activeExps
+                .filter { exp ->
+                    !CategoryCatalog.isDebtSettlementExpense(exp) &&
+                        exp.paidById == p.id &&
+                        !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+                }.sumOf { it.amountInBaseCurrency }
+
+            val paidInSettlements = activeExps
+                .filter { exp ->
+                    CategoryCatalog.isDebtSettlementExpense(exp) && exp.paidById == p.id
+                }.sumOf { it.amountInBaseCurrency }
+
+            val boteContributed = activeIncs.sumOf { inc ->
+                inc.contributions
+                    .filter { it.participantId == p.id }
+                    .sumOf { kotlin.math.max(0.0, it.amount) }
+            }
+
+            val totalCovered = paidDirectly + paidInSettlements + boteContributed
+            kotlin.math.max(0.0, expenseShare - totalCovered)
+        }
 
         // Fórmula del Saldo Extra (Déficit o superávit real de la caja):
-        // Saldo Extra = (Ingresos al bote / Caja actual) - (Suma de las deudas pendientes de los usuarios)
-        // Si el bote está a 0 y hay deudas pendientes (ej: U3 debe 101€ y U4 debe 21€), el saldo es exactamente -122€.
-        // Si todos han pagado, el saldo será 0 (o el superávit disponible en bote si se ha ingresado).
+        // Saldo Extra = availableBote - totalDeudasPendientes
+        // Con el bote a 0: Saldo Extra = -1 * totalDeudasPendientes
+        // Si U3 debe 101€ y U4 debe 21€, totalDeudasPendientes = 122€ y Saldo Extra = -122€.
+        // Bajo ningún concepto se muestra -208€ (los 204€ de U2 y 4€ de U3 quedan totalmente aislados y excluidos).
         val saldoExtraCaja = availableBote - totalDeudasPendientes
 
         android.util.Log.d(
