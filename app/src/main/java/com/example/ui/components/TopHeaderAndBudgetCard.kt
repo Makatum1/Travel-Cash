@@ -490,28 +490,6 @@ fun ActiveTripHeaderAndBudgetCard(
         AppLanguage.PL -> "DODATKOWE SALDO"
         AppLanguage.PT -> "SALDO EXTRA"
     }
-    val boteLabel = when (currentLang) {
-        AppLanguage.ES -> "Bote:"
-        AppLanguage.EN -> "Pot:"
-        AppLanguage.FR -> "Cagnotte :"
-        AppLanguage.IT -> "Cassa:"
-        AppLanguage.ZH -> "公账："
-        AppLanguage.NL -> "Pot:"
-        AppLanguage.DE -> "Kasse:"
-        AppLanguage.PL -> "Kasa:"
-        AppLanguage.PT -> "Fundo:"
-    }
-    val adjustmentLabel = when (currentLang) {
-        AppLanguage.ES -> "Ajuste:"
-        AppLanguage.EN -> "Adjustment:"
-        AppLanguage.FR -> "Ajustement :"
-        AppLanguage.IT -> "Rettifica:"
-        AppLanguage.ZH -> "调整："
-        AppLanguage.NL -> "Aanpassing:"
-        AppLanguage.DE -> "Anpassung:"
-        AppLanguage.PL -> "Korekta:"
-        AppLanguage.PT -> "Ajuste:"
-    }
     val spentTitle = when (currentLang) {
         AppLanguage.ES -> "Gastado"
         AppLanguage.EN -> "Spent"
@@ -580,7 +558,7 @@ fun ActiveTripHeaderAndBudgetCard(
         }
     }
 
-    val isPositive = personalAdjustment >= -0.004 || availableBote > 0.009
+    val isPositive = extraBalance >= -0.004
     val extraBg = if (isPositive) EmeraldGreenLight else CoralRedLight
     val extraBorder = if (isPositive) EmeraldGreen else CoralRed
     val extraText = if (isPositive) Color(0xFF065F46) else Color(0xFF991B1B)
@@ -748,56 +726,16 @@ fun ActiveTripHeaderAndBudgetCard(
                                 color = extraText
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            // Línea 1: Bote
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = boteLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = Color(0xFF475569)
-                                )
-                                Text(
-                                    text = FormatUtils.formatCurrency(availableBote, trip.baseCurrency, currentLang.locale),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp
-                                    ),
-                                    color = Color(0xFF0F172A),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            // Línea 2: Ajuste
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = adjustmentLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = Color(0xFF475569)
-                                )
-                                Text(
-                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 11.sp
-                                    ),
-                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Text(
+                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 14.sp
+                                ),
+                                color = extraText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -995,55 +933,17 @@ fun ActiveTripHeaderAndBudgetCard(
                                 ),
                                 color = extraText
                             )
-                            Spacer(modifier = Modifier.height(1.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = boteLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 10.sp
-                                    ),
-                                    color = Color(0xFF475569)
-                                )
-                                Text(
-                                    text = FormatUtils.formatCurrency(availableBote, trip.baseCurrency, currentLang.locale),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = Color(0xFF0F172A),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = adjustmentLabel,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        fontSize = 10.sp
-                                    ),
-                                    color = Color(0xFF475569)
-                                )
-                                Text(
-                                    text = FormatUtils.formatSignedCurrency(personalAdjustment, trip.baseCurrency, currentLang.locale),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 10.5.sp
-                                    ),
-                                    color = if (personalAdjustment >= -0.004) EmeraldGreenDark else CoralRedDark,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = FormatUtils.formatSignedCurrency(extraBalance, trip.baseCurrency, currentLang.locale),
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 13.5.sp
+                                ),
+                                color = extraText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
