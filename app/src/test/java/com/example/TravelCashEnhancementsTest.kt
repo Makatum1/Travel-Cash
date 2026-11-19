@@ -628,92 +628,147 @@ class TravelCashEnhancementsTest {
 
     @Test
     fun extraBalance_exactFormula_matchesValidationScenario() {
-        // Ejemplo de validación del requerimiento:
-        // Gastos totales del viaje: 1000€.
-        // Pagos directos de los usuarios (saldados de su bolsillo): 400€.
-        // Dinero ingresado al bote: 600€.
-        // Resultado esperado: 600 - 1000 + 400 = 0€. (El bote está perfectamente cuadrado).
-        // Si ingresan 200€ más al bote (800€): 800 - 1000 + 400 = 200€.
-        // Si ingresan 1000€ al bote: 1000 - 1000 + 400 = 400€.
+        // Test Unitario Obligatorio del requerimiento exacto:
+        // Total de Gastos del viaje: 1010€.
+        // El Usuario 1 (Administrador) adelanta los 1010€.
+        // El Usuario 2 paga su parte de 296€.
+        // El Usuario 3 tiene una deuda pendiente de 101€.
+        // El Usuario 4 tiene una deuda pendiente de 21€.
+        // Cálculo esperado: Como el Usuario 3 debe 101€ y el Usuario 4 debe 21€, el déficit total de la caja es de -122€.
+        // Por lo tanto, el 'Saldo extra' debe mostrar exactamente -122. Bajo ningún concepto debe mostrar 0.
 
-        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1 (Admin)", "#0066FF")
         val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Usuario 3", "#F59E0B")
+        val u4 = ParticipantEntity("u4", "t1", "Usuario 4", "#8B5CF6")
+        val participants = listOf(u1, u2, u3, u4)
 
-        // 1. Gasto directo pagado por U1 de su bolsillo: 400€
-        val expDirect = ExpenseEntity(
-            id = "exp-direct-400",
+        // 1. Gasto total del viaje: 1010€ adelantado por Usuario 1 (Admin)
+        // Splits:
+        // U2 debe 296€
+        // U3 debe 101€
+        // U4 debe 21€
+        // U1 asume el resto: 1010 - 296 - 101 - 21 = 592€
+        val exp1010 = ExpenseEntity(
+            id = "exp-1010",
             tripId = "t1",
-            amount = 400.0,
+            amount = 1010.0,
             currency = "EUR",
-            amountInBaseCurrency = 400.0,
+            amountInBaseCurrency = 1010.0,
             exchangeRate = 1.0,
             category = "Alojamiento",
             date = "2026-07-01",
             paymentMethod = "Tarjeta",
-            notes = "Hotel pagado por U1",
-            paidById = u1.id
+            notes = "Adelanto de gastos del viaje por Administrador",
+            paidById = u1.id,
+            splits = listOf(
+                ExpenseSplit("s1", "exp-1010", u1.id, 592.0, (592.0 / 1010.0) * 100.0),
+                ExpenseSplit("s2", "exp-1010", u2.id, 296.0, (296.0 / 1010.0) * 100.0),
+                ExpenseSplit("s3", "exp-1010", u3.id, 101.0, (101.0 / 1010.0) * 100.0),
+                ExpenseSplit("s4", "exp-1010", u4.id, 21.0, (21.0 / 1010.0) * 100.0)
+            )
         )
 
-        // 2. Gastos pagados desde el bote común (o a cubrir por el bote): 600€
-        val expBote = ExpenseEntity(
-            id = "exp-bote-600",
+        // 2. El Usuario 2 paga su parte de 296€ (liquidación saldando su deuda hacia Usuario 1)
+        val settleU2 = ExpenseEntity(
+            id = "settle-u2",
             tripId = "t1",
-            amount = 600.0,
+            amount = 296.0,
             currency = "EUR",
-            amountInBaseCurrency = 600.0,
+            amountInBaseCurrency = 296.0,
             exchangeRate = 1.0,
-            category = "Restaurante",
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
             date = "2026-07-02",
-            paymentMethod = "Bote Común",
-            notes = "Cena de grupo",
-            paidById = DebtCalculator.BOTE_COMUN_ID
+            paymentMethod = "Bizum",
+            notes = "U2 salda su deuda a U1",
+            paidById = u2.id,
+            splits = listOf(
+                ExpenseSplit("s-settle-u2", "settle-u2", u1.id, 296.0, 100.0)
+            )
         )
 
-        // 3. Liquidación entre usuarios con exceso (pago de más): NO debe alterar esta fórmula
-        val settleExcess = ExpenseEntity(
-            id = "settle-excess-500",
+        val expenses = listOf(exp1010, settleU2)
+        val incomes = emptyList<IncomeEntity>() // Bote común a 0
+
+        // Calculamos los balances de deuda mediante DebtCalculator
+        val debtResult = DebtCalculator.calculateDebtBalances(participants, expenses, incomes)
+
+        // Verificamos balances individuales de los participantes:
+        val b1 = debtResult.participantBalances.find { it.participantId == u1.id }!!
+        val b2 = debtResult.participantBalances.find { it.participantId == u2.id }!!
+        val b3 = debtResult.participantBalances.find { it.participantId == u3.id }!!
+        val b4 = debtResult.participantBalances.find { it.participantId == u4.id }!!
+
+        assertEquals(0.0, b2.netBalance, 0.001) // U2 ha saldado totalmente su deuda
+        assertEquals(-101.0, b3.netBalance, 0.001) // U3 tiene deuda pendiente de 101€
+        assertEquals(-21.0, b4.netBalance, 0.001) // U4 tiene deuda pendiente de 21€
+        assertEquals(122.0, b1.netBalance, 0.001) // U1 tiene a favor 122€ (lo que falta por cobrar)
+
+        // Verificamos cálculo de deudas pendientes (balances negativos < -0.009):
+        val totalDeudasPendientes = debtResult.participantBalances
+            .filter { it.netBalance < -0.009 }
+            .sumOf { kotlin.math.abs(it.netBalance) }
+        assertEquals(122.0, totalDeudasPendientes, 0.001)
+
+        // Con bote a 0:
+        val availableBote = debtResult.availableBote
+        assertEquals(0.0, availableBote, 0.001)
+
+        // Saldo Extra = availableBote - totalDeudasPendientes:
+        val saldoExtra = availableBote - totalDeudasPendientes
+        assertEquals(-122.0, saldoExtra, 0.001)
+        assertNotEquals(0.0, saldoExtra, 0.001) // Bajo ningún concepto debe dar 0 con deudas pendientes
+
+        // Si se ingresa dinero al bote común (ej: 200€ al bote):
+        val incomesConBote = listOf(
+            IncomeEntity(
+                id = "inc-200",
+                tripId = "t1",
+                amount = 200.0,
+                date = "2026-07-02",
+                description = "Aportación al bote común",
+                contributions = emptyList()
+            )
+        )
+        val debtResultConBote = DebtCalculator.calculateDebtBalances(participants, expenses, incomesConBote)
+        val saldoExtraConBote = debtResultConBote.availableBote - totalDeudasPendientes
+        assertEquals(78.0, saldoExtraConBote, 0.001) // 200 - 122 = +78€
+
+        // Si U3 y U4 también saldan sus deudas (101€ y 21€) sin bote:
+        val settleU3 = ExpenseEntity(
+            id = "s-u3",
             tripId = "t1",
-            amount = 500.0,
+            amount = 101.0,
             currency = "EUR",
-            amountInBaseCurrency = 500.0,
+            amountInBaseCurrency = 101.0,
             exchangeRate = 1.0,
             category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
             date = "2026-07-03",
             paymentMethod = "Bizum",
-            notes = "Liquidación personal con exceso",
-            paidById = u2.id
+            notes = "U3 salda deuda",
+            paidById = u3.id,
+            splits = listOf(ExpenseSplit("s3", "s-u3", u1.id, 101.0, 100.0))
         )
-
-        val expenses = listOf(expDirect, expBote, settleExcess)
-
-        // Total gastos reales del viaje (sin liquidaciones) = 1000€
-        val totalGastos = expenses
-            .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
-            .sumOf { it.amountInBaseCurrency }
-        assertEquals(1000.0, totalGastos, 0.001)
-
-        // Pagos directos de los usuarios (de su bolsillo, sin bote ni liquidaciones) = 400€
-        val totalPagadoDirecto = expenses.filter { exp ->
-            !CategoryCatalog.isDebtSettlementExpense(exp) &&
-                exp.paidById.isNotBlank() &&
-                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
-                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
-        }.sumOf { it.amountInBaseCurrency }
-        assertEquals(400.0, totalPagadoDirecto, 0.001)
-
-        // Caso base: 600€ ingresados al bote
-        var totalBoteIncome = 600.0
-        var saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
-        assertEquals(0.0, saldoExtraCaja, 0.001) // 600 - 1000 + 400 = 0€
-
-        // Si se añaden 200€ más al bote (800€ total ingresado al bote):
-        totalBoteIncome = 800.0
-        saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
-        assertEquals(200.0, saldoExtraCaja, 0.001) // 800 - 1000 + 400 = 200€
-
-        // Si ingresan 1000€ al bote:
-        totalBoteIncome = 1000.0
-        saldoExtraCaja = totalBoteIncome - totalGastos + totalPagadoDirecto
-        assertEquals(400.0, saldoExtraCaja, 0.001) // 1000 - 1000 + 400 = 400€
+        val settleU4 = ExpenseEntity(
+            id = "s-u4",
+            tripId = "t1",
+            amount = 21.0,
+            currency = "EUR",
+            amountInBaseCurrency = 21.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "U4 salda deuda",
+            paidById = u4.id,
+            splits = listOf(ExpenseSplit("s4", "s-u4", u1.id, 21.0, 100.0))
+        )
+        val debtResultAllSettled = DebtCalculator.calculateDebtBalances(participants, listOf(exp1010, settleU2, settleU3, settleU4), incomes)
+        val deudasAllSettled = debtResultAllSettled.participantBalances
+            .filter { it.netBalance < -0.009 }
+            .sumOf { kotlin.math.abs(it.netBalance) }
+        assertEquals(0.0, deudasAllSettled, 0.001)
+        val saldoExtraAllSettled = debtResultAllSettled.availableBote - deudasAllSettled
+        assertEquals(0.0, saldoExtraAllSettled, 0.001) // Todos han pagado -> Saldo es 0
     }
 }

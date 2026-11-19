@@ -263,28 +263,29 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             .sumOf { it.amountInBaseCurrency }
         val inc = activeIncs.sumOf { it.amount }
 
-        // Total de dinero ingresado al bote
+        // Total de dinero ingresado al bote y dinero disponible en caja del bote común
         val totalBoteIncome = activeIncs.sumOf { it.amount }
-
-        // Total de gastos del viaje (excluyendo liquidaciones de deudas)
-        val totalGastosViaje = spent
-
-        // Total de dinero pagado directamente por los usuarios de su bolsillo (excluyendo pagos del bote común y liquidaciones)
-        val totalPagadoDirectoUsuarios = activeExps.filter { exp ->
+        val totalSpentFromBote = activeExps.filter { exp ->
             !CategoryCatalog.isDebtSettlementExpense(exp) &&
-                exp.paidById.isNotBlank() &&
-                exp.paidById != DebtCalculator.BOTE_COMUN_ID &&
-                !exp.paymentMethod.equals("Bote Común", ignoreCase = true)
+                (exp.paidById == DebtCalculator.BOTE_COMUN_ID || exp.paymentMethod.equals("Bote Común", ignoreCase = true))
         }.sumOf { it.amountInBaseCurrency }
+        val availableBote = kotlin.math.max(0.0, totalBoteIncome - totalSpentFromBote)
 
-        // Fórmula exacta:
-        // Saldo Extra = (Total de dinero ingresado al bote) - (Total de gastos del viaje) + (Total de dinero pagado directamente por los usuarios de su bolsillo)
-        // Regla estricta: Ignora por completo cualquier exceso de liquidaciones (bote personal).
-        val saldoExtraCaja = totalBoteIncome - totalGastosViaje + totalPagadoDirectoUsuarios
+        // Suma de las deudas pendientes reales de los usuarios (balances negativos de los usuarios que aún deben):
+        // Regla estricta: Excluye por completo el "bote personal" (excesos de liquidación o saldos a favor > 0)
+        val totalDeudasPendientes = debtResult.participantBalances
+            .filter { it.netBalance < -0.009 }
+            .sumOf { kotlin.math.abs(it.netBalance) }
+
+        // Fórmula del Saldo Extra (Déficit o superávit real de la caja):
+        // Saldo Extra = (Ingresos al bote / Caja actual) - (Suma de las deudas pendientes de los usuarios)
+        // Si el bote está a 0 y hay deudas pendientes (ej: U3 debe 101€ y U4 debe 21€), el saldo es exactamente -122€.
+        // Si todos han pagado, el saldo será 0 (o el superávit disponible en bote si se ha ingresado).
+        val saldoExtraCaja = availableBote - totalDeudasPendientes
 
         android.util.Log.d(
             "TravelCashViewModel",
-            "SaldoExtraCaja: ingresadoBote=$totalBoteIncome, gastosTotales=$totalGastosViaje, pagadoDirectoUsuarios=$totalPagadoDirectoUsuarios, saldoExtraCaja=$saldoExtraCaja"
+            "SaldoExtraCaja: totalBoteIncome=$totalBoteIncome, availableBote=$availableBote, deudasPendientes=$totalDeudasPendientes, saldoExtraCaja=$saldoExtraCaja"
         )
 
         TravelCashUiState(
@@ -301,8 +302,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
             totalSpent = spent,
             totalIncome = inc,
             extraBalance = saldoExtraCaja,
-            availableBote = totalBoteIncome,
-            personalAdjustment = totalPagadoDirectoUsuarios,
+            availableBote = availableBote,
+            personalAdjustment = totalDeudasPendientes,
             isInitialized = true
         )
     }.stateIn(
