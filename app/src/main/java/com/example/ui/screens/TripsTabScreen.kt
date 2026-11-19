@@ -103,6 +103,10 @@ fun TripsTabScreen(
     var tripPendingDeletion by remember { mutableStateOf<TripEntity?>(null) }
     var expandedTripIds by remember { mutableStateOf(setOf<String>()) }
 
+    val participantsByTrip = remember(allParticipants) { allParticipants.groupBy { it.tripId } }
+    val expensesByTrip = remember(allExpenses) { allExpenses.groupBy { it.tripId } }
+    val incomesByTrip = remember(allIncomes) { allIncomes.groupBy { it.tripId } }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -113,7 +117,7 @@ fun TripsTabScreen(
         }
 
         // Barra de acciones superiores en Pestaña Viajes
-        item {
+        item(key = "trips_actions_header") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -229,7 +233,7 @@ fun TripsTabScreen(
 
         // Si la lista de viajes está vacía
         if (trips.isEmpty()) {
-            item {
+            item(key = "trips_empty_state") {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -293,9 +297,9 @@ fun TripsTabScreen(
         items(trips, key = { it.id }) { trip ->
             val isActive = trip.id == activeTripId
             val isExpanded = expandedTripIds.contains(trip.id)
-            val tParts = allParticipants.filter { it.tripId == trip.id }
-            val tExps = allExpenses.filter { it.tripId == trip.id }
-            val tIncs = allIncomes.filter { it.tripId == trip.id }
+            val tParts = participantsByTrip[trip.id] ?: emptyList()
+            val tExps = expensesByTrip[trip.id] ?: emptyList()
+            val tIncs = incomesByTrip[trip.id] ?: emptyList()
             val spent = tExps
                 .filter { !com.example.data.model.CategoryCatalog.isDebtSettlementExpense(it) }
                 .sumOf { it.amountInBaseCurrency }

@@ -157,8 +157,10 @@ object CurrencyCatalog {
         CurrencyInfo("THB", "Baht tailandés", "฿", 0.027, "Thai Baht")
     )
 
+    private val symbolByCode: Map<String, String> = currencies.associate { it.code.uppercase(Locale.ROOT) to it.symbol }
+
     fun getSymbol(code: String): String {
-        return currencies.find { it.code.equals(code, ignoreCase = true) }?.symbol ?: code
+        return symbolByCode[code.trim().uppercase(Locale.ROOT)] ?: code
     }
 
     fun getDisplayName(curr: CurrencyInfo, lang: AppLanguage): String {

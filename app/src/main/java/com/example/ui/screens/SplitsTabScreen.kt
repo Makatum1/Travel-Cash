@@ -271,7 +271,7 @@ fun SplitsTabScreen(
         // =========================================================================
         // 1. LIQUIDACIÓN DE CUENTAS (CLICKABLE CON PANEL DETALLADO)
         // =========================================================================
-        item {
+        item(key = "splits_settlement_accounts") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -358,7 +358,7 @@ fun SplitsTabScreen(
         // =========================================================================
         // 2. BALANCE DETALLADO POR PERSONA (CLICKABLE)
         // =========================================================================
-        item {
+        item(key = "splits_detailed_balance") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -416,7 +416,7 @@ fun SplitsTabScreen(
         // =========================================================================
         // 3. BOTE COMÚN E HISTORIAL DE APORTACIONES (CON LÁPIZ EDITAR Y PAPELERA ELIMINAR)
         // =========================================================================
-        item {
+        item(key = "splits_pot_contributions") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -608,7 +608,7 @@ fun SplitsTabScreen(
         // =========================================================================
         // 4. GESTIÓN DE PARTICIPANTES (AÑADIR, EDITAR NOMBRE, CAMBIAR FOTO Y ELIMINAR)
         // =========================================================================
-        item {
+        item(key = "splits_participants_list") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

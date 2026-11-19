@@ -6,10 +6,12 @@ import com.example.data.model.ExpenseSplit
 import com.example.data.model.IncomeContribution
 import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
+import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
 import com.example.domain.MapWaypointOffsetCalculator
 import com.example.domain.ParticipantNetSpendCalculator
+import com.example.util.CurrencyCatalog
 import com.example.util.DailyReminderScheduler
 import com.example.util.FormatUtils
 import org.junit.Assert.assertEquals
@@ -942,5 +944,52 @@ class TravelCashEnhancementsTest {
         // Verificamos que ambos elementos son identificables para su edición/borrado
         assertTrue(settlements.any { it.id == "settle-1" })
         assertTrue(incomes.any { it.id == "inc-1" })
+    }
+
+    @Test
+    fun currencyCatalog_getSymbol_fastLookupAndFallback() {
+        assertEquals("€", CurrencyCatalog.getSymbol("EUR"))
+        assertEquals("$", CurrencyCatalog.getSymbol("USD"))
+        assertEquals("£", CurrencyCatalog.getSymbol("GBP"))
+        assertEquals("¥", CurrencyCatalog.getSymbol("JPY"))
+        assertEquals("CHF", CurrencyCatalog.getSymbol("CHF"))
+        assertEquals("COL$", CurrencyCatalog.getSymbol("COP"))
+        // Case insensitive
+        assertEquals("€", CurrencyCatalog.getSymbol("eur"))
+        assertEquals("$", CurrencyCatalog.getSymbol("Usd"))
+        // Fallback for unknown currency code
+        assertEquals("XYZ", CurrencyCatalog.getSymbol("XYZ"))
+    }
+
+    @Test
+    fun tripsScreen_groupingOptimization_matchesDirectFiltering() {
+        val trip1 = TripEntity("t1", "Viaje Roma", "2026-06-01", "2026-06-10", 1500.0)
+        val trip2 = TripEntity("t2", "Viaje París", "2026-07-01", "2026-07-10", 2000.0)
+        val trips = listOf(trip1, trip2)
+
+        val u1 = ParticipantEntity("u1", "t1", "Viajero 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Viajero 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t2", "Viajero 3", "#F59E0B")
+        val allParticipants = listOf(u1, u2, u3)
+
+        val exp1 = ExpenseEntity(
+            id = "e1", tripId = "t1", amount = 100.0, currency = "EUR",
+            amountInBaseCurrency = 100.0, exchangeRate = 1.0, category = "Restaurantes",
+            date = "2026-06-02", paymentMethod = "Tarjeta", notes = "", paidById = "u1"
+        )
+        val exp2 = ExpenseEntity(
+            id = "e2", tripId = "t2", amount = 250.0, currency = "EUR",
+            amountInBaseCurrency = 250.0, exchangeRate = 1.0, category = "Alojamiento",
+            date = "2026-07-03", paymentMethod = "Tarjeta", notes = "", paidById = "u3"
+        )
+        val allExpenses = listOf(exp1, exp2)
+
+        val participantsByTrip = allParticipants.groupBy { it.tripId }
+        val expensesByTrip = allExpenses.groupBy { it.tripId }
+
+        assertEquals(2, (participantsByTrip["t1"] ?: emptyList()).size)
+        assertEquals(1, (participantsByTrip["t2"] ?: emptyList()).size)
+        assertEquals(100.0, (expensesByTrip["t1"] ?: emptyList()).sumOf { it.amountInBaseCurrency }, 0.001)
+        assertEquals(250.0, (expensesByTrip["t2"] ?: emptyList()).sumOf { it.amountInBaseCurrency }, 0.001)
     }
 }

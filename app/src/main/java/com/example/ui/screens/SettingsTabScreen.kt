@@ -125,7 +125,7 @@ fun SettingsTabScreen(
         // =========================================================================
         // 1. SECCIÓN RECONFIGURADA: EXPORTAR E IMPORTAR (.ZIP CON ARCHIVOS .JSON)
         // =========================================================================
-        item {
+        item(key = "settings_export_import") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -239,7 +239,7 @@ fun SettingsTabScreen(
         // =========================================================================
         // 2. NOTIFICACIONES DE RECORDATORIO DIARIO
         // =========================================================================
-        item {
+        item(key = "settings_daily_reminder") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -451,7 +451,7 @@ fun SettingsTabScreen(
         // =========================================================================
         // 3. MODO DE TEMA: CLARO (PREDETERMINADO), OSCURO O SISTEMA - CERRADO POR DEFECTO
         // =========================================================================
-        item {
+        item(key = "settings_appearance") {
             fun getThemeLabel(mode: AppThemeMode): String = when (mode) {
                 AppThemeMode.LIGHT -> when (language) {
                     AppLanguage.ES -> "Modo Claro (Predeterminado)"
@@ -612,7 +612,7 @@ fun SettingsTabScreen(
         // =========================================================================
         // 4. IDIOMA: DISPONIBLES EN LA APP - CERRADO POR DEFECTO
         // =========================================================================
-        item {
+        item(key = "settings_language") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -724,7 +724,7 @@ fun SettingsTabScreen(
             }
         }
 
-        item {
+        item(key = "settings_bottom_spacer") {
             Spacer(modifier = Modifier.height(72.dp))
         }
     }

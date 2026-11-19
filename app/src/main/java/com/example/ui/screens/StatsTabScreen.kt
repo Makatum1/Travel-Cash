@@ -94,9 +94,15 @@ fun StatsTabScreen(
     val tripDays = remember(trip.startDate, trip.endDate) {
         FormatUtils.calculateTripDays(trip.startDate, trip.endDate)
     }
-    val avgPerDay = if (tripDays > 0) totalSpent / tripDays else 0.0
-    val totalPerPerson = if (participants.isNotEmpty()) totalSpent / participants.size else 0.0
-    val avgPerDayPerPerson = if (participants.isNotEmpty() && tripDays > 0) avgPerDay / participants.size else 0.0
+    val avgPerDay = remember(totalSpent, tripDays) {
+        if (tripDays > 0) totalSpent / tripDays else 0.0
+    }
+    val totalPerPerson = remember(totalSpent, participants.size) {
+        if (participants.isNotEmpty()) totalSpent / participants.size else 0.0
+    }
+    val avgPerDayPerPerson = remember(avgPerDay, participants.size, tripDays) {
+        if (participants.isNotEmpty() && tripDays > 0) avgPerDay / participants.size else 0.0
+    }
 
     val byPersonAndCategory = remember(participants, expenses) {
         ParticipantNetSpendCalculator.calculateByParticipantAndCategory(
@@ -142,7 +148,7 @@ fun StatsTabScreen(
         }
 
         // TARJETAS RESUMEN SUPERIORES (Gasto Total, Media por Día, Gasto por Persona y Media día/persona)
-        item {
+        item(key = "stats_summary_cards") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -255,7 +261,7 @@ fun StatsTabScreen(
         }
 
         // SECCIÓN 1: GASTOS POR CATEGORÍA (INTERACTIVO / DESPLEGABLE)
-        item {
+        item(key = "stats_by_category") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -493,7 +499,7 @@ fun StatsTabScreen(
         }
 
         // SECCIÓN 2: GASTOS POR PARTICIPANTE (GASTO NETO REAL, AJUSTES Y DESGLOSE INTERACTIVO)
-        item {
+        item(key = "stats_by_participant") {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -1036,7 +1042,7 @@ fun StatsTabScreen(
         }
 
         // SECCIÓN 2B: DESGLOSE DE GASTOS POR PERSONA Y CATEGORÍA
-        item {
+        item(key = "stats_by_person_and_category") {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1360,7 +1366,7 @@ fun StatsTabScreen(
         }
 
         // SECCIÓN 3: GASTOS POR MÉTODO DE PAGO Y POR DIRECCIÓN / ZONA
-        item {
+        item(key = "stats_by_method_and_zone") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1458,7 +1464,7 @@ fun StatsTabScreen(
             }
         }
 
-        item {
+        item(key = "stats_bottom_spacer") {
             Spacer(modifier = Modifier.height(72.dp))
         }
     }

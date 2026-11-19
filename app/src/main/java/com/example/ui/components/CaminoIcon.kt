@@ -388,10 +388,13 @@ fun TravelLocationPinIcon(
  * Genera un Drawable de pin de localización personalizado acorde a la estética de Travel Cash
  * para los marcadores del mapa interactivo osmdroid.
  */
+private val mapPinDrawableCache = java.util.concurrent.ConcurrentHashMap<String, android.graphics.drawable.BitmapDrawable>()
+
 /**
  * Genera un Drawable de pin de localización personalizado acorde a la estética de Travel Cash
  * para los marcadores del mapa interactivo osmdroid, mostrando en su círculo interior el icono
  * de su categoría correspondiente respetando el color propio de dicha categoría.
+ * Utiliza un caché en memoria para evitar asignaciones repetitivas de Bitmaps y mejorar la fluidez.
  */
 fun createTravelMapPinDrawable(
     context: android.content.Context,
@@ -400,6 +403,16 @@ fun createTravelMapPinDrawable(
     isSelected: Boolean = false
 ): android.graphics.drawable.BitmapDrawable {
     val density = context.resources.displayMetrics.density
+    val argbPin = android.graphics.Color.argb(
+        255,
+        (pinColor.red * 255).toInt(),
+        (pinColor.green * 255).toInt(),
+        (pinColor.blue * 255).toInt()
+    )
+    val cacheKey = "${categoryName.trim().lowercase()}-$isSelected-$argbPin-$density"
+    val cached = mapPinDrawableCache[cacheKey]
+    if (cached != null) return cached
+
     val widthPx = ((if (isSelected) 46 else 38) * density).toInt().coerceAtLeast(50)
     val heightPx = ((if (isSelected) 56 else 46) * density).toInt().coerceAtLeast(62)
 
@@ -420,13 +433,6 @@ fun createTravelMapPinDrawable(
     canvas.drawOval(
         android.graphics.RectF(w * 0.26f, h * 0.85f, w * 0.74f, h * 0.97f),
         shadowPaint
-    )
-
-    val argbPin = android.graphics.Color.argb(
-        255,
-        (pinColor.red * 255).toInt(),
-        (pinColor.green * 255).toInt(),
-        (pinColor.blue * 255).toInt()
     )
 
     val borderPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
@@ -611,12 +617,17 @@ fun createTravelMapPinDrawable(
         }
     }
 
-    return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+    val result = android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+    mapPinDrawableCache[cacheKey] = result
+    return result
 }
+
+private val routeCategoryBadgeCache = java.util.concurrent.ConcurrentHashMap<String, android.graphics.drawable.BitmapDrawable>()
 
 /**
  * Genera un Drawable circular estilizado con el icono del gasto (Avión para Vuelos, Taxi para Taxi,
  * o Autobús para Transporte) para colocar en el punto medio de cada polilínea/trayecto en el mapa.
+ * Utiliza un caché en memoria para maximizar la fluidez del mapa.
  */
 fun createRouteCategoryBadgeDrawable(
     context: android.content.Context,
@@ -624,6 +635,16 @@ fun createRouteCategoryBadgeDrawable(
     badgeColor: Color
 ): android.graphics.drawable.BitmapDrawable {
     val density = context.resources.displayMetrics.density
+    val argbColor = android.graphics.Color.argb(
+        255,
+        (badgeColor.red * 255).toInt(),
+        (badgeColor.green * 255).toInt(),
+        (badgeColor.blue * 255).toInt()
+    )
+    val cacheKey = "${categoryName.trim().lowercase()}-$argbColor-$density"
+    val cached = routeCategoryBadgeCache[cacheKey]
+    if (cached != null) return cached
+
     val sizePx = (34 * density).toInt().coerceAtLeast(44)
     val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bitmap)
@@ -647,12 +668,6 @@ fun createRouteCategoryBadgeDrawable(
     canvas.drawCircle(cx, cy, radius, borderPaint)
 
     // Círculo de fondo con el color de la categoría
-    val argbColor = android.graphics.Color.argb(
-        255,
-        (badgeColor.red * 255).toInt(),
-        (badgeColor.green * 255).toInt(),
-        (badgeColor.blue * 255).toInt()
-    )
     val bodyPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = argbColor
         style = android.graphics.Paint.Style.FILL
@@ -758,6 +773,8 @@ fun createRouteCategoryBadgeDrawable(
         canvas.drawRoundRect(grillRect, 0.8f * s, 0.8f * s, innerDetailPaint)
     }
 
-    return android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+    val result = android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+    routeCategoryBadgeCache[cacheKey] = result
+    return result
 }
 
