@@ -206,18 +206,20 @@ class ParticipantNetSpendCalculatorTest {
         assertEquals(2, report.realExpenseCount)
         assertEquals(55.0, report.equalShareAverage, 0.01)
         assertEquals(0.0, report.commonPotBalance, 0.01)
-        assertTrue(report.allEqual)
 
         val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
         val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
 
-        // Pepe: 0 + 40 (Aportado al bote) + 15 (Pago a Juan) = 55 €
-        assertEquals(55.0, pepeSummary.netSpend, 0.01)
+        // Pepe: 0 + 15 (Pago a Juan) = 15 €
+        assertEquals(15.0, pepeSummary.netSpend, 0.01)
+        assertEquals(40.0, pepeSummary.potContributions, 0.01)
         assertTrue(pepeSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_CONTRIBUTION && it.displayLabel(AppLanguage.ES) == "Aportado al bote" && it.signedAmount == 40.0 })
         assertTrue(pepeSummary.entries.any { it.type == ParticipantLedgerEntryType.TRANSFER_SENT && it.displayLabel(AppLanguage.ES) == "Pago a Juan" && it.signedAmount == 15.0 })
 
-        // Juan: 60 (Taxi) + 40 (Aportado al bote) - 30 (Recibido del bote) - 15 (Recibido de Pepe) = 55 €
-        assertEquals(55.0, juanSummary.netSpend, 0.01)
+        // Juan: 60 (Taxi) - 15 (Recibido de Pepe) = 45 €
+        assertEquals(45.0, juanSummary.netSpend, 0.01)
+        assertEquals(40.0, juanSummary.potContributions, 0.01)
+        assertEquals(30.0, juanSummary.potReceived, 0.01)
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_CONTRIBUTION && it.displayLabel(AppLanguage.ES) == "Aportado al bote" && it.signedAmount == 40.0 })
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.POT_RECEIVED && it.displayLabel(AppLanguage.ES) == "Recibido del bote" && it.signedAmount == -30.0 })
         assertTrue(juanSummary.entries.any { it.type == ParticipantLedgerEntryType.TRANSFER_RECEIVED && it.displayLabel(AppLanguage.ES) == "Recibido de Pepe" && it.signedAmount == -15.0 })
@@ -315,8 +317,9 @@ class ParticipantNetSpendCalculatorTest {
         val pepeSummary = report.participantSummaries.first { it.participant.id == pepe.id }
         val juanSummary = report.participantSummaries.first { it.participant.id == juan.id }
 
-        // Pepe: +25 (Pago a Juan) + 40 (Aportado al bote) = 65 € (el pendiente de 100 € no suma)
-        assertEquals(65.0, pepeSummary.netSpend, 0.01)
+        // Pepe: +25 (Pago a Juan) = 25 € (el pendiente de 100 € no suma); aportado al bote = 40 €
+        assertEquals(25.0, pepeSummary.netSpend, 0.01)
+        assertEquals(40.0, pepeSummary.potContributions, 0.01)
         // Juan: -25 (Recibido de Pepe) = -25 €
         assertEquals(-25.0, juanSummary.netSpend, 0.01)
     }

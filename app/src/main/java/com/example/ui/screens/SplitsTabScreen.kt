@@ -1721,8 +1721,9 @@ fun SettleDebtsModal(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 10.dp)
-                .padding(top = 10.dp, bottom = bottomSpacing)
+                .padding(top = 10.dp, bottom = 12.dp)
                 .imePadding(),
             shape = RoundedCornerShape(20.dp),
             color = Color.White
@@ -1891,6 +1892,7 @@ fun SettleDebtsModal(
                                     onClick = {
                                         selectedDebt = tx
                                         amountText = String.format(java.util.Locale.US, "%.2f", tx.amount)
+                                        settlementDate = java.time.LocalDate.now().toString()
                                     },
                                     shape = RoundedCornerShape(12.dp),
                                     color = Color(0xFFF8FAFC),
@@ -2648,10 +2650,10 @@ fun SettleDebtsModal(
                                 contentColor = OceanNavy
                             ),
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp),
                             modifier = Modifier
-                                .weight(0.38f)
-                                .height(50.dp)
+                                .weight(0.35f)
+                                .height(48.dp)
                                 .testTag("settle_debts_back_button")
                         ) {
                             Icon(
@@ -2673,7 +2675,7 @@ fun SettleDebtsModal(
                                     AppLanguage.PL -> "Wstecz"
                                     AppLanguage.PT -> "Voltar"
                                 },
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 color = OceanNavy,
                                 maxLines = 1
                             )
@@ -2723,27 +2725,27 @@ fun SettleDebtsModal(
                                 disabledContainerColor = Color(0xFFCBD5E1),
                                 disabledContentColor = Color(0xFF94A3B8)
                             ),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             modifier = Modifier
-                                .weight(0.62f)
-                                .height(50.dp)
+                                .weight(0.65f)
+                                .height(48.dp)
                                 .testTag("confirm_settlement_button")
                         ) {
                             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = when (currentLang) {
-                                    AppLanguage.ES -> "Confirmar Liquidación"
-                                    AppLanguage.EN -> "Confirm Settlement"
+                                    AppLanguage.ES -> "Confirmar"
+                                    AppLanguage.EN -> "Confirm"
                                     AppLanguage.FR -> "Confirmer"
                                     AppLanguage.IT -> "Conferma"
-                                    AppLanguage.ZH -> "确认结清"
+                                    AppLanguage.ZH -> "确认"
                                     AppLanguage.NL -> "Bevestigen"
                                     AppLanguage.DE -> "Bestätigen"
                                     AppLanguage.PL -> "Potwierdź"
                                     AppLanguage.PT -> "Confirmar"
                                 },
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 maxLines = 1,
                                 textAlign = TextAlign.Center
                             )
@@ -2759,7 +2761,7 @@ fun SettleDebtsModal(
                             border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .height(48.dp)
                                 .testTag("settle_debts_close_button")
                         ) {
                             Icon(

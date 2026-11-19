@@ -459,8 +459,8 @@ object ParticipantNetSpendCalculator {
                     )
                 }
 
-            // F) Gasto asumido según las reglas exactas de reparto (splits) de cada gasto real del viaje
-            val assumedRaw = realExpenses.sumOf { exp ->
+            // F) Gasto asumido según las reglas exactas de reparto (splits) de cada gasto real del viaje (excluyendo Bote Común)
+            val assumedRaw = realExpenses.filter { !isPaidFromBote(it) }.sumOf { exp ->
                 if (exp.splits.isNotEmpty()) {
                     exp.splits.filter { it.participantId == participant.id }.sumOf { it.amount }
                 } else if (participants.isNotEmpty()) {
@@ -471,9 +471,9 @@ object ParticipantNetSpendCalculator {
             }
             val assumedSpend = round2(assumedRaw)
 
-            // Pagado (desembolso neto real de su bolsillo) = Gastos pagados + Liquidaciones enviadas + Aportaciones al bote - Reembolsos recibidos de deudas - Recibido del bote
-            val netSpend = round2(paidDirectly + sentTotal + potContribTotal - debtReimbursedReceivedTotal - potRecvTotal)
-            // Balance / Reserva = Pagado - Asumido (+ saldo a favor / reserva para futuras deudas, - deuda pendiente)
+            // Pagado (desembolso de su bolsillo en gastos del viaje y liquidaciones) = Gastos pagados directamente + Liquidaciones enviadas - Reembolsos recibidos
+            val netSpend = round2(paidDirectly + sentTotal - debtReimbursedReceivedTotal)
+            // Balance / Saldo extra = Pagado - Asumido (+ saldo a favor / bote personal, - deuda pendiente)
             val balance = round2(netSpend - assumedSpend)
             val diffFromAvg = round2(netSpend - equalShareAverage)
 

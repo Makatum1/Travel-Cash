@@ -3,6 +3,8 @@ package com.example
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.ExpenseSplit
+import com.example.data.model.IncomeContribution
+import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
@@ -504,5 +506,211 @@ class TravelCashEnhancementsTest {
         assertEquals(100.0, carlosBalance.totalExpensesPaid, 0.01)
         assertEquals(100.0, carlosBalance.totalExpensesOwed, 0.01)
         assertEquals(0.0, carlosBalance.netBalance, 0.01)
+    }
+
+    @Test
+    fun completeScenario_adminAdvancing_personalPotExcess_commonPot_andBoteExpenses() {
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1 (Admin)", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Usuario 3", "#F59E0B")
+        val participants = listOf(u1, u2, u3)
+
+        // Paso 1: Se crea un viaje. El Usuario 1 paga los gastos de todos.
+        // U1 paga 888€ repartidos a partes iguales (296€ para cada uno).
+        val initialExpense = ExpenseEntity(
+            id = "exp-init",
+            tripId = "t1",
+            amount = 888.0,
+            currency = "EUR",
+            amountInBaseCurrency = 888.0,
+            exchangeRate = 1.0,
+            category = "Alojamiento",
+            date = "2026-07-01",
+            paymentMethod = "Tarjeta",
+            notes = "Hotel inicial",
+            paidById = u1.id,
+            splits = listOf(
+                ExpenseSplit("s1", "exp-init", u1.id, 296.0, 33.33),
+                ExpenseSplit("s2", "exp-init", u2.id, 296.0, 33.33),
+                ExpenseSplit("s3", "exp-init", u3.id, 296.0, 33.34)
+            )
+        )
+
+        val step1Debt = DebtCalculator.calculateDebtBalances(participants, listOf(initialExpense), emptyList())
+        assertEquals(2, step1Debt.transactions.size)
+        val u2Debt1 = step1Debt.transactions.first { it.fromParticipantId == u2.id }
+        assertEquals(296.0, u2Debt1.amount, 0.01)
+        assertEquals(u1.id, u2Debt1.toParticipantId)
+
+        // Paso 2: El Usuario 2 debe 296€ pero entrega 500€ (204€ a su bote personal/saldo extra).
+        val settleU2 = ExpenseEntity(
+            id = "settle-u2",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-02",
+            paymentMethod = "Transferencia",
+            notes = "Liquidación U2 a U1",
+            paidById = u2.id,
+            splits = listOf(ExpenseSplit("su2", "settle-u2", u1.id, 500.0, 100.0))
+        )
+
+        val step2Debt = DebtCalculator.calculateDebtBalances(participants, listOf(initialExpense, settleU2), emptyList())
+        val u2BalStep2 = step2Debt.participantBalances.first { it.participantId == u2.id }
+        assertEquals(204.0, u2BalStep2.netBalance, 0.01) // 204€ bote personal de U2
+        assertEquals(1, step2Debt.transactions.size)
+        assertEquals(u3.id, step2Debt.transactions.first().fromParticipantId)
+        assertEquals(296.0, step2Debt.transactions.first().amount, 0.01)
+
+        // Paso 3: El Usuario 3 debe 296€ pero entrega 300€ (4€ a su bote personal/saldo extra).
+        val settleU3 = ExpenseEntity(
+            id = "settle-u3",
+            tripId = "t1",
+            amount = 300.0,
+            currency = "EUR",
+            amountInBaseCurrency = 300.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-03",
+            paymentMethod = "Bizum",
+            notes = "Liquidación U3 a U1",
+            paidById = u3.id,
+            splits = listOf(ExpenseSplit("su3", "settle-u3", u1.id, 300.0, 100.0))
+        )
+
+        val step3Debt = DebtCalculator.calculateDebtBalances(participants, listOf(initialExpense, settleU2, settleU3), emptyList())
+        val u3BalStep3 = step3Debt.participantBalances.first { it.participantId == u3.id }
+        assertEquals(4.0, u3BalStep3.netBalance, 0.01) // 4€ bote personal de U3
+        val u1BalStep3 = step3Debt.participantBalances.first { it.participantId == u1.id }
+        assertEquals(0.0, u1BalStep3.netBalance, 0.01) // U1 en paz
+        assertTrue(step3Debt.transactions.isEmpty())
+
+        // Paso 4: Se siguen añadiendo gastos pagados por el Usuario 1.
+        val expenseMore = ExpenseEntity(
+            id = "exp-more",
+            tripId = "t1",
+            amount = 150.0,
+            currency = "EUR",
+            amountInBaseCurrency = 150.0,
+            exchangeRate = 1.0,
+            category = "Restaurantes y Comida",
+            date = "2026-07-04",
+            paymentMethod = "Tarjeta",
+            notes = "Cena pagada por U1",
+            paidById = u1.id,
+            splits = listOf(
+                ExpenseSplit("sm1", "exp-more", u1.id, 50.0, 33.33),
+                ExpenseSplit("sm2", "exp-more", u2.id, 50.0, 33.33),
+                ExpenseSplit("sm3", "exp-more", u3.id, 50.0, 33.34)
+            )
+        )
+
+        val step4Debt = DebtCalculator.calculateDebtBalances(
+            participants,
+            listOf(initialExpense, settleU2, settleU3, expenseMore),
+            emptyList()
+        )
+        val u1BalStep4 = step4Debt.participantBalances.first { it.participantId == u1.id }
+        val u2BalStep4 = step4Debt.participantBalances.first { it.participantId == u2.id }
+        val u3BalStep4 = step4Debt.participantBalances.first { it.participantId == u3.id }
+
+        assertEquals(46.0, u1BalStep4.netBalance, 0.01) // U1 tiene 46€ a favor (acreedor principal)
+        assertEquals(154.0, u2BalStep4.netBalance, 0.01) // U2 conserva 154€ en su bote personal / saldo extra
+        assertEquals(-46.0, u3BalStep4.netBalance, 0.01) // U3 debe 46€ a U1
+        assertEquals(1, step4Debt.transactions.size)
+        assertEquals(u3.id, step4Debt.transactions.first().fromParticipantId)
+        assertEquals(u1.id, step4Debt.transactions.first().toParticipantId)
+        assertEquals(46.0, step4Debt.transactions.first().amount, 0.01)
+
+        // Paso 5: Se crea un Bote común (ej. todos ponen 100€).
+        val commonPotIncome = IncomeEntity(
+            id = "inc-pot",
+            tripId = "t1",
+            amount = 300.0,
+            date = "2026-07-05",
+            description = "Fondo Bote Común",
+            basePerPerson = 100.0,
+            calculationMethod = "perPerson",
+            contributions = listOf(
+                IncomeContribution(u1.id, 100.0),
+                IncomeContribution(u2.id, 100.0),
+                IncomeContribution(u3.id, 100.0)
+            )
+        )
+
+        val step5Debt = DebtCalculator.calculateDebtBalances(
+            participants,
+            listOf(initialExpense, settleU2, settleU3, expenseMore),
+            listOf(commonPotIncome)
+        )
+        assertEquals(300.0, step5Debt.totalBoteCollected, 0.01)
+        assertEquals(300.0, step5Debt.availableBote, 0.01)
+        val u1BalStep5 = step5Debt.participantBalances.first { it.participantId == u1.id }
+        val u2BalStep5 = step5Debt.participantBalances.first { it.participantId == u2.id }
+        val u3BalStep5 = step5Debt.participantBalances.first { it.participantId == u3.id }
+        assertEquals(46.0, u1BalStep5.netBalance, 0.01)
+        assertEquals(154.0, u2BalStep5.netBalance, 0.01)
+        assertEquals(-46.0, u3BalStep5.netBalance, 0.01)
+        assertEquals(1, step5Debt.transactions.size)
+        assertEquals(u3.id, step5Debt.transactions.first().fromParticipantId)
+        assertEquals(u1.id, step5Debt.transactions.first().toParticipantId)
+        assertEquals(46.0, step5Debt.transactions.first().amount, 0.01)
+
+        // Paso 6: Se añaden nuevos gastos que se pagan directamente del Bote común (ej. 90€).
+        val boteExpense = ExpenseEntity(
+            id = "exp-bote",
+            tripId = "t1",
+            amount = 90.0,
+            currency = "EUR",
+            amountInBaseCurrency = 90.0,
+            exchangeRate = 1.0,
+            category = "Transporte",
+            date = "2026-07-06",
+            paymentMethod = "Bote Común",
+            notes = "Gasolina y peaje",
+            paidById = DebtCalculator.BOTE_COMUN_ID,
+            splits = listOf(
+                ExpenseSplit("sb1", "exp-bote", u1.id, 30.0, 33.33),
+                ExpenseSplit("sb2", "exp-bote", u2.id, 30.0, 33.33),
+                ExpenseSplit("sb3", "exp-bote", u3.id, 30.0, 33.34)
+            )
+        )
+
+        val allExpenses = listOf(initialExpense, settleU2, settleU3, expenseMore, boteExpense)
+        val allIncomes = listOf(commonPotIncome)
+
+        val finalDebt = DebtCalculator.calculateDebtBalances(participants, allExpenses, allIncomes)
+        assertEquals(300.0, finalDebt.totalBoteCollected, 0.01)
+        assertEquals(90.0, finalDebt.totalSpentFromBoteDirectly, 0.01)
+        assertEquals(210.0, finalDebt.availableBote, 0.01)
+
+        val u1Final = finalDebt.participantBalances.first { it.participantId == u1.id }
+        val u2Final = finalDebt.participantBalances.first { it.participantId == u2.id }
+        val u3Final = finalDebt.participantBalances.first { it.participantId == u3.id }
+        assertEquals(46.0, u1Final.netBalance, 0.01)
+        assertEquals(154.0, u2Final.netBalance, 0.01)
+        assertEquals(-46.0, u3Final.netBalance, 0.01)
+
+        assertEquals(1, finalDebt.transactions.size)
+        assertEquals(u3.id, finalDebt.transactions.first().fromParticipantId)
+        assertEquals(u1.id, finalDebt.transactions.first().toParticipantId)
+        assertEquals(46.0, finalDebt.transactions.first().amount, 0.01)
+        assertFalse(finalDebt.transactions.first().isFromBote)
+
+        val netReport = ParticipantNetSpendCalculator.calculate(participants, allExpenses, allIncomes)
+        assertEquals(210.0, netReport.commonPotBalance, 0.01)
+        assertEquals(300.0, netReport.totalPotCollected, 0.01)
+        assertEquals(90.0, netReport.totalRealSpentFromPot, 0.01)
+
+        val u1Net = netReport.participantSummaries.first { it.participant.id == u1.id }
+        val u2Net = netReport.participantSummaries.first { it.participant.id == u2.id }
+        val u3Net = netReport.participantSummaries.first { it.participant.id == u3.id }
+
+        assertEquals(46.0, u1Net.balance, 0.01)
+        assertEquals(154.0, u2Net.balance, 0.01)
+        assertEquals(-46.0, u3Net.balance, 0.01)
     }
 }
