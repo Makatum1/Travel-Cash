@@ -371,26 +371,32 @@ object ParticipantNetSpendCalculator {
 
             // C) Pagos/liquidaciones recibidas de otros participantes ("Recibido de XXX")
             // Sólo se descuenta del desembolso la parte que salda deudas reales que este participante adelantó.
-            // El exceso es bote personal custodiado para el emisor y no reduce el gasto del receptor.
-            var debtReimbursedReceivedTotal = 0.0
+            // El exceso es saldo extra custodiado para el emisor y no reduce el gasto del receptor.
+            val otherParticipants = participants.filter { it.id != participant.id }
+            val debtReimbursedReceivedTotal = if (realExpenses.isEmpty()) {
+                completedTransfers.filter { it.toParticipantId == participant.id && it.fromParticipantId != participant.id }.sumOf { it.amount }
+            } else {
+                otherParticipants.sumOf { sender ->
+                    val totalSentBySenderToMe = completedTransfers
+                        .filter { it.fromParticipantId == sender.id && it.toParticipantId == participant.id }
+                        .sumOf { it.amount }
+                    val realCostPaidByMeForSender = realExpenses.filter { it.paidById == participant.id }.sumOf { exp ->
+                        val sp = exp.splits.find { it.participantId == sender.id }
+                        sp?.amount ?: if (exp.splits.isEmpty() && participants.isNotEmpty()) (exp.amountInBaseCurrency / participants.size) else 0.0
+                    }
+                    val realCostPaidBySenderForMe = realExpenses.filter { it.paidById == sender.id }.sumOf { exp ->
+                        val sp = exp.splits.find { it.participantId == participant.id }
+                        sp?.amount ?: if (exp.splits.isEmpty() && participants.isNotEmpty()) (exp.amountInBaseCurrency / participants.size) else 0.0
+                    }
+                    val realDebtSenderToMe = max(0.0, realCostPaidByMeForSender - realCostPaidBySenderForMe)
+                    min(totalSentBySenderToMe, realDebtSenderToMe)
+                }
+            }
+
             completedTransfers
                 .filter { it.toParticipantId == participant.id && it.fromParticipantId != participant.id }
                 .forEach { tx ->
                     val senderId = tx.fromParticipantId
-                    val amtReimbursed = if (realExpenses.isEmpty()) {
-                        tx.amount
-                    } else {
-                        val realCostPaidByMeForSender = realExpenses.filter { it.paidById == participant.id }.sumOf { exp ->
-                            exp.splits.find { it.participantId == senderId }?.amount ?: 0.0
-                        }
-                        val realCostPaidBySenderForMe = realExpenses.filter { it.paidById == senderId }.sumOf { exp ->
-                            exp.splits.find { it.participantId == participant.id }?.amount ?: 0.0
-                        }
-                        val realDebtSenderToMe = max(0.0, realCostPaidByMeForSender - realCostPaidBySenderForMe)
-                        min(tx.amount, realDebtSenderToMe)
-                    }
-                    debtReimbursedReceivedTotal += amtReimbursed
-
                     val amt = round2(tx.amount)
                     val senderName = participantMap[senderId]?.name ?: "?"
                     entries.add(
