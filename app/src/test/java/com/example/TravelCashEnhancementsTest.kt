@@ -315,50 +315,130 @@ class TravelCashEnhancementsTest {
     }
 
     @Test
-    fun extraBalance_adjustmentSection_reflectsSpentMinusSettled() {
-        // Escenario: 500€ en gastos reales y 200€ en liquidaciones
-        val regularExpense = ExpenseEntity(
+    fun extraBalance_adjustmentSection_progressiveCalculation_matchesValidationScenario() {
+        // Escenario de validación obligatorio:
+        // Total de Gastos del viaje: -1010€.
+        // Usuario 1: Su parte proporcional (gastos asumidos) es de 296€.
+        // Cálculo: Al total (-1010) se le suma su parte (296). Resultado: -714€ (que se mostrará como 714).
+        // Usuario 2: Su parte proporcional es de 296€. (Da 500€ a cuenta, pero eso no afecta a esta resta).
+        // Cálculo: Al ajuste anterior (-714) se le suma su parte (296). Resultado: -418€ (que se mostrará como 418).
+        // Usuario 3: Su parte proporcional es de 296€. (Da 300€ a cuenta, pero eso no afecta a esta resta).
+        // Cálculo: Al ajuste anterior (-418) se le suma su parte (296). Resultado: -122€ (que se mostrará como -122).
+        // si otro usuario su ajuste de gasto es 21 pues solo esa cuantía (-122 + 21 = -101)
+
+        val u1 = ParticipantEntity("u1", "t1", "Usuario 1", "#0066FF")
+        val u2 = ParticipantEntity("u2", "t1", "Usuario 2", "#10B981")
+        val u3 = ParticipantEntity("u3", "t1", "Usuario 3", "#F59E0B")
+        val participants = listOf(u1, u2, u3)
+
+        // Gasto 1: 888€ asumido a partes iguales entre U1, U2 y U3 (296€ cada uno)
+        val exp888 = ExpenseEntity(
             id = "exp-1",
-            tripId = "trip-test",
-            amount = 500.0,
+            tripId = "t1",
+            amount = 888.0,
             currency = "EUR",
-            amountInBaseCurrency = 500.0,
+            amountInBaseCurrency = 888.0,
             exchangeRate = 1.0,
             category = "Alojamiento",
             date = "2026-07-01",
             paymentMethod = "Tarjeta",
             notes = "Hotel",
-            paidById = "p1"
+            paidById = u1.id,
+            splits = listOf(
+                ExpenseSplit("s1", "exp-1", u1.id, 296.0, 33.33),
+                ExpenseSplit("s2", "exp-1", u2.id, 296.0, 33.33),
+                ExpenseSplit("s3", "exp-1", u3.id, 296.0, 33.34)
+            )
         )
-        val settlementExpense = ExpenseEntity(
-            id = "settle-1",
-            tripId = "trip-test",
-            amount = 200.0,
+
+        // Gasto 2: 122€ para alcanzar exactamente 1010€ de gastos totales del viaje (888 + 122 = 1010€)
+        val exp122 = ExpenseEntity(
+            id = "exp-2",
+            tripId = "t1",
+            amount = 122.0,
             currency = "EUR",
-            amountInBaseCurrency = 200.0,
+            amountInBaseCurrency = 122.0,
+            exchangeRate = 1.0,
+            category = "Transporte",
+            date = "2026-07-02",
+            paymentMethod = "Tarjeta",
+            notes = "Tren",
+            paidById = u1.id,
+            splits = emptyList()
+        )
+
+        // Liquidaciones: U2 da 500€ a U1, U3 da 300€ a U1 (NO deben afectar al cálculo del Ajuste)
+        val settleU2 = ExpenseEntity(
+            id = "settle-u2",
+            tripId = "t1",
+            amount = 500.0,
+            currency = "EUR",
+            amountInBaseCurrency = 500.0,
             exchangeRate = 1.0,
             category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
-            date = "2026-07-02",
+            date = "2026-07-03",
             paymentMethod = "Transferencia",
-            notes = "Liquidación",
-            paidById = "p2"
+            notes = "Pago a cuenta U2",
+            paidById = u2.id
         )
 
-        val expenses = listOf(regularExpense, settlementExpense)
+        val settleU3 = ExpenseEntity(
+            id = "settle-u3",
+            tripId = "t1",
+            amount = 300.0,
+            currency = "EUR",
+            amountInBaseCurrency = 300.0,
+            exchangeRate = 1.0,
+            category = CategoryCatalog.DEBT_SETTLEMENT_CATEGORY,
+            date = "2026-07-04",
+            paymentMethod = "Bizum",
+            notes = "Pago a cuenta U3",
+            paidById = u3.id
+        )
 
-        val spent = expenses
+        val allExpenses = listOf(exp888, exp122, settleU2, settleU3)
+
+        // 1. Total de Gastos del viaje (excluyendo liquidaciones)
+        val totalSpent = allExpenses
             .filter { !CategoryCatalog.isDebtSettlementExpense(it) }
             .sumOf { it.amountInBaseCurrency }
-        val settled = expenses
-            .filter { CategoryCatalog.isDebtSettlementExpense(it) }
-            .sumOf { it.amountInBaseCurrency }
+        assertEquals(1010.0, totalSpent, 0.001)
 
-        // Ajuste = gastos - lo saldado
-        val personalAdjustment = spent - settled
+        // 2. Cálculo matemático de balances
+        val debtResult = DebtCalculator.calculateDebtBalances(participants, allExpenses, emptyList())
+        val balU1 = debtResult.participantBalances.first { it.participantId == u1.id }
+        val balU2 = debtResult.participantBalances.first { it.participantId == u2.id }
+        val balU3 = debtResult.participantBalances.first { it.participantId == u3.id }
 
-        assertEquals(300.0, personalAdjustment, 0.001)
+        assertEquals(296.0, balU1.totalExpensesOwed, 0.001)
+        assertEquals(296.0, balU2.totalExpensesOwed, 0.001)
+        assertEquals(296.0, balU3.totalExpensesOwed, 0.001)
 
+        // 3. Progresión paso a paso requerida:
+        var stepBalance = -totalSpent // -1010€
+        assertEquals(-1010.0, stepBalance, 0.001)
+
+        stepBalance += balU1.totalExpensesOwed // -1010 + 296 = -714
+        assertEquals(-714.0, stepBalance, 0.001)
+
+        stepBalance += balU2.totalExpensesOwed // -714 + 296 = -418 (el pago de 500 no afecta)
+        assertEquals(-418.0, stepBalance, 0.001)
+
+        stepBalance += balU3.totalExpensesOwed // -418 + 296 = -122 (el pago de 300 no afecta)
+        assertEquals(-122.0, stepBalance, 0.001)
+
+        // 4. Fórmula directa integrada en TravelCashViewModel:
+        val totalAssumed = debtResult.participantBalances.sumOf { it.totalExpensesOwed }
+        val personalAdjustment = -totalSpent + totalAssumed
+        assertEquals(-122.0, personalAdjustment, 0.001)
+
+        // 5. Formato con signo resultante:
         val formatted = FormatUtils.formatSignedCurrency(personalAdjustment, "EUR", java.util.Locale.GERMANY)
-        assertTrue(formatted.startsWith("+300,00"))
+        assertTrue(formatted.startsWith("-122,00"))
+
+        // 6. Caso con 4º participante con ajuste de gasto de 21€:
+        val u4Owed = 21.0
+        val adjustmentWithU4 = personalAdjustment + u4Owed
+        assertEquals(-101.0, adjustmentWithU4, 0.001)
     }
 }

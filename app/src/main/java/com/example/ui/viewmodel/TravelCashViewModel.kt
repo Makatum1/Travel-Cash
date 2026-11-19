@@ -264,14 +264,15 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
         val inc = activeIncs.sumOf { it.amount }
 
         val availableBote = debtResult.availableBote
-        val settled = activeExps
-            .filter { CategoryCatalog.isDebtSettlementExpense(it) }
-            .sumOf { it.amountInBaseCurrency }
 
-        // Ajuste = gastos - lo saldado
-        val personalAdjustment = spent - settled
+        // Ajuste dentro de Saldo Extra:
+        // Cuenta progresiva basada en los gastos totales del viaje en negativo (-spent)
+        // más la suma de las partes proporcionales (gastos asumidos) de los usuarios.
+        // Las liquidaciones / pagos a cuenta no afectan a esta resta.
+        val totalAssumedByParticipants = debtResult.participantBalances.sumOf { it.totalExpensesOwed }
+        val personalAdjustment = -spent + totalAssumedByParticipants
 
-        // Saldo extra: Bote disponible + ajuste (gastos - lo saldado)
+        // Saldo extra: Bote disponible + ajuste
         val extra = availableBote + personalAdjustment
 
         TravelCashUiState(
