@@ -124,11 +124,14 @@ class MainActivity : ComponentActivity() {
                 themeMode = themeMode,
                 language = language
             ) {
-                var isSplashActive by remember { mutableStateOf(true) }
+                var isSplashActive by rememberSaveable { mutableStateOf(!vm.hasSplashScreenBeenShown) }
 
-                if (isSplashActive) {
+                if (isSplashActive && !vm.hasSplashScreenBeenShown) {
                     SplashScreen(
-                        onSplashFinished = { isSplashActive = false }
+                        onSplashFinished = {
+                            vm.hasSplashScreenBeenShown = true
+                            isSplashActive = false
+                        }
                     )
                 } else {
                     TravelCashApp(viewModel = vm)

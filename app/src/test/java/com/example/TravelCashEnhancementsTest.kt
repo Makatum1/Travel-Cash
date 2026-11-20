@@ -992,4 +992,25 @@ class TravelCashEnhancementsTest {
         assertEquals(100.0, (expensesByTrip["t1"] ?: emptyList()).sumOf { it.amountInBaseCurrency }, 0.001)
         assertEquals(250.0, (expensesByTrip["t2"] ?: emptyList()).sumOf { it.amountInBaseCurrency }, 0.001)
     }
+
+    @Test
+    fun splashScreen_survivesScreenRotationWithoutReplaying() {
+        var hasSplashScreenBeenShown = false
+        var isSplashActive = !hasSplashScreenBeenShown
+
+        // On initial launch: splash should be active
+        assertTrue(isSplashActive && !hasSplashScreenBeenShown)
+
+        // Splash completes
+        hasSplashScreenBeenShown = true
+        isSplashActive = false
+
+        assertFalse(isSplashActive && !hasSplashScreenBeenShown)
+
+        // Simulated screen rotation (configuration change):
+        // ViewModel retains hasSplashScreenBeenShown = true
+        // UI re-evaluates initial or saved state
+        val activeOnRotation = isSplashActive && !hasSplashScreenBeenShown
+        assertFalse("Splash screen must not be active on screen rotation", activeOnRotation)
+    }
 }

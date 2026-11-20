@@ -161,6 +161,8 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     )
     val themeMode: StateFlow<AppThemeMode> = _themeMode.asStateFlow()
 
+    var hasSplashScreenBeenShown: Boolean = false
+
     private val _language = MutableStateFlow(
         runCatching {
             val saved = prefs.getString("app_language", null)
