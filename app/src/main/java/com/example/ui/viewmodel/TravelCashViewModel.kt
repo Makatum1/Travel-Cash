@@ -221,7 +221,25 @@ class TravelCashViewModel(application: Application) : AndroidViewModel(applicati
     private val _selectedCategoryFilter = MutableStateFlow<String?>(null)
     val selectedCategoryFilter: StateFlow<String?> = _selectedCategoryFilter.asStateFlow()
 
-    // Ubicación GPS y sugerencias Nominatim
+    // Ubicación GPS y sugerencias Nominatim / Google Places
+    private val _googlePlacesApiKey = MutableStateFlow(
+        prefs.getString("google_places_api_key", "") ?: ""
+    )
+    val googlePlacesApiKey: StateFlow<String> = _googlePlacesApiKey.asStateFlow()
+
+    fun setGooglePlacesApiKey(key: String) {
+        val trimmed = key.trim()
+        _googlePlacesApiKey.value = trimmed
+        prefs.edit().putString("google_places_api_key", trimmed).apply()
+    }
+
+    fun verifyGooglePlacesApiKey(key: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = NominatimService.validateGooglePlacesApiKey(key)
+            onResult(result.first, result.second)
+        }
+    }
+
     private val _userLocation = MutableStateFlow<Pair<Double, Double>?>(null)
     val userLocation: StateFlow<Pair<Double, Double>?> = _userLocation.asStateFlow()
 

@@ -27,31 +27,42 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Brightness4
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsSuggest
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,12 +74,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.data.model.TripEntity
 import com.example.ui.theme.AppLanguage
 import com.example.ui.theme.AppThemeMode
+import com.example.ui.theme.CoralRed
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.EmeraldGreenLight
 import com.example.ui.theme.TravelBlue
@@ -83,10 +97,13 @@ fun SettingsTabScreen(
     reminderHour: Int = DailyReminderScheduler.DEFAULT_HOUR,
     reminderMinute: Int = DailyReminderScheduler.DEFAULT_MINUTE,
     trips: List<TripEntity>,
+    googlePlacesApiKey: String = "",
     onThemeModeChange: (AppThemeMode) -> Unit,
     onLanguageChange: (AppLanguage) -> Unit,
     onReminderNotificationsChange: (Boolean) -> Unit,
     onReminderTimeChange: (Int, Int) -> Unit = { _, _ -> },
+    onGooglePlacesApiKeyChange: (String) -> Unit = {},
+    onVerifyApiKey: ((String, (Boolean, String) -> Unit) -> Unit)? = null,
     onExportZipClick: (TripEntity?) -> Unit,
     onImportZipClick: () -> Unit
 ) {
@@ -95,6 +112,11 @@ fun SettingsTabScreen(
 
     var appearanceExpanded by remember { mutableStateOf(false) }
     var languageExpanded by remember { mutableStateOf(false) }
+    var placesCardExpanded by remember { mutableStateOf(false) }
+    var apiKeyInput by remember(googlePlacesApiKey) { mutableStateOf(googlePlacesApiKey) }
+    var keyVisibility by remember { mutableStateOf(false) }
+    var isTestingKey by remember { mutableStateOf(false) }
+    var testResultMessage by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
 
     // Permiso POST_NOTIFICATIONS en Android 13+ al activar las notificaciones de recordatorio
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -714,6 +736,273 @@ fun SettingsTabScreen(
                                                 fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium
                                             ),
                                             color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // =========================================================================
+        // 5. MOTOR DE BÚSQUEDA DE LUGARES (GOOGLE PLACES API / MOTOR LIBRE)
+        // =========================================================================
+        item(key = "settings_places_engine") {
+            val isGoogleActive = googlePlacesApiKey.isNotBlank()
+
+            val sectionTitle = when (language) {
+                AppLanguage.ES -> "Buscador de Lugares (Google Places API)"
+                AppLanguage.EN -> "Place Search Engine (Google Places API)"
+                AppLanguage.FR -> "Moteur de recherche de lieux (Google Places API)"
+                AppLanguage.IT -> "Motore di ricerca luoghi (Google Places API)"
+                AppLanguage.ZH -> "地点搜索引擎（Google Places API）"
+                AppLanguage.NL -> "Zoekmachine voor locaties (Google Places API)"
+                AppLanguage.DE -> "Ortssuchmaschine (Google Places API)"
+                AppLanguage.PL -> "Wyszukiwarka miejsc (Google Places API)"
+                AppLanguage.PT -> "Motor de Busca de Locais (Google Places API)"
+            }
+
+            val engineStatus = if (isGoogleActive) {
+                when (language) {
+                    AppLanguage.ES -> "🟢 Google Places activo (búsqueda como Google Maps)"
+                    AppLanguage.EN -> "🟢 Google Places active (Google Maps search)"
+                    AppLanguage.FR -> "🟢 Google Places actif (recherche comme Google Maps)"
+                    AppLanguage.IT -> "🟢 Google Places attivo (ricerca come Google Maps)"
+                    AppLanguage.ZH -> "🟢 Google Places 已启用（与 Google 地图相同）"
+                    AppLanguage.NL -> "🟢 Google Places actief (zoeken zoals Google Maps)"
+                    AppLanguage.DE -> "🟢 Google Places aktiv (Suche wie Google Maps)"
+                    AppLanguage.PL -> "🟢 Google Places aktywny (wyszukiwanie jak w Google Maps)"
+                    AppLanguage.PT -> "🟢 Google Places ativo (pesquisa como o Google Maps)"
+                }
+            } else {
+                when (language) {
+                    AppLanguage.ES -> "🌍 Motor libre activo (OpenStreetMap / Geocoder)"
+                    AppLanguage.EN -> "🌍 Open-source engine active (OpenStreetMap / Geocoder)"
+                    AppLanguage.FR -> "🌍 Moteur libre actif (OpenStreetMap / Geocoder)"
+                    AppLanguage.IT -> "🌍 Motore open source attivo (OpenStreetMap / Geocoder)"
+                    AppLanguage.ZH -> "🌍 开源引擎已启用（OpenStreetMap / Geocoder）"
+                    AppLanguage.NL -> "🌍 Open-sourcemotor actief (OpenStreetMap / Geocoder)"
+                    AppLanguage.DE -> "🌍 Open-Source-Engine aktiv (OpenStreetMap / Geocoder)"
+                    AppLanguage.PL -> "🌍 Silnik open source aktywny (OpenStreetMap / Geocoder)"
+                    AppLanguage.PT -> "🌍 Motor de código aberto ativo (OpenStreetMap / Geocoder)"
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { placesCardExpanded = !placesCardExpanded }
+                            .testTag("settings_places_engine_header"),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = if (isGoogleActive) TravelBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = sectionTitle,
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = engineStatus,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = if (isGoogleActive) FontWeight.Bold else FontWeight.Normal
+                                    ),
+                                    color = if (isGoogleActive) EmeraldGreenDark else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = if (placesCardExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    AnimatedVisibility(visible = placesCardExpanded) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            val descText = when (language) {
+                                AppLanguage.ES -> "Para encontrar cualquier comercio, camping, hotel o restaurante con la misma potencia de Google Maps, introduce tu clave de Google Cloud Places API. Se guarda de forma privada en tu dispositivo."
+                                AppLanguage.EN -> "To find any business, campsite, hotel or restaurant with the precision of Google Maps, enter your Google Cloud Places API key. It is saved privately on your device."
+                                AppLanguage.FR -> "Pour trouver n'importe quel commerce, camping, hôtel ou restaurant avec la précision de Google Maps, saisissez votre clé Google Cloud Places API. Elle est enregistrée localement."
+                                AppLanguage.IT -> "Per trovare qualsiasi attività, campeggio, hotel o ristorante con la precisione di Google Maps, inserisci la tua chiave Google Cloud Places API. È salvata privatamente."
+                                AppLanguage.ZH -> "若要以与 Google 地图相同的精度搜索商户、露营地、酒店或餐厅，请在此输入您的 Google Cloud Places API 密钥。密钥将保存在本地设备上。"
+                                AppLanguage.NL -> "Voer uw Google Cloud Places API-sleutel in om bedrijven, campings, hotels of restaurants met de precisie van Google Maps te vinden."
+                                AppLanguage.DE -> "Geben Sie Ihren Google Cloud Places API-Schlüssel ein, um Unternehmen, Campingplätze, Hotels oder Restaurants mit der Präzision von Google Maps zu finden."
+                                AppLanguage.PL -> "Wprowadź swój klucz Google Cloud Places API, aby wyszukiwać firmy, kempingi, hotele lub restauracje z dokładnością Google Maps."
+                                AppLanguage.PT -> "Para encontrar qualquer empresa, parque de campismo, hotel ou restaurante com a precisão do Google Maps, introduza a sua chave da Google Cloud Places API."
+                            }
+                            Text(
+                                text = descText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 18.sp
+                            )
+
+                            OutlinedTextField(
+                                value = apiKeyInput,
+                                onValueChange = {
+                                    apiKeyInput = it
+                                    testResultMessage = null
+                                },
+                                label = { Text("Google Places API Key") },
+                                placeholder = { Text("AIzaSy...") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.VpnKey, contentDescription = null, tint = TravelBlue)
+                                },
+                                trailingIcon = {
+                                    IconButton(onClick = { keyVisibility = !keyVisibility }) {
+                                        Icon(
+                                            imageVector = if (keyVisibility) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
+                                visualTransformation = if (keyVisibility) VisualTransformation.None else PasswordVisualTransformation(),
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("settings_places_api_key_input")
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val saveLabel = when (language) {
+                                    AppLanguage.ES -> "Guardar"
+                                    AppLanguage.EN -> "Save"
+                                    AppLanguage.FR -> "Enregistrer"
+                                    AppLanguage.IT -> "Salva"
+                                    AppLanguage.ZH -> "保存"
+                                    AppLanguage.NL -> "Opslaan"
+                                    AppLanguage.DE -> "Speichern"
+                                    AppLanguage.PL -> "Zapisz"
+                                    AppLanguage.PT -> "Guardar"
+                                }
+                                val verifyLabel = when (language) {
+                                    AppLanguage.ES -> "Probar conexión"
+                                    AppLanguage.EN -> "Test connection"
+                                    AppLanguage.FR -> "Tester la connexion"
+                                    AppLanguage.IT -> "Testa connessione"
+                                    AppLanguage.ZH -> "测试连接"
+                                    AppLanguage.NL -> "Verbinding testen"
+                                    AppLanguage.DE -> "Verbindung testen"
+                                    AppLanguage.PL -> "Testuj połączenie"
+                                    AppLanguage.PT -> "Testar ligação"
+                                }
+                                val clearLabel = when (language) {
+                                    AppLanguage.ES -> "Borrar"
+                                    AppLanguage.EN -> "Clear"
+                                    AppLanguage.FR -> "Effacer"
+                                    AppLanguage.IT -> "Elimina"
+                                    AppLanguage.ZH -> "清除"
+                                    AppLanguage.NL -> "Wissen"
+                                    AppLanguage.DE -> "Löschen"
+                                    AppLanguage.PL -> "Wyczyść"
+                                    AppLanguage.PT -> "Limpar"
+                                }
+
+                                Button(
+                                    onClick = {
+                                        val trimmed = apiKeyInput.trim()
+                                        onGooglePlacesApiKeyChange(trimmed)
+                                        testResultMessage = null
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = TravelBlue),
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(text = saveLabel, fontWeight = FontWeight.Bold)
+                                }
+
+                                if (onVerifyApiKey != null) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            isTestingKey = true
+                                            testResultMessage = null
+                                            onVerifyApiKey(apiKeyInput.trim()) { success, msg ->
+                                                testResultMessage = success to msg
+                                                isTestingKey = false
+                                            }
+                                        },
+                                        enabled = !isTestingKey && apiKeyInput.isNotBlank(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.weight(1.3f)
+                                    ) {
+                                        if (isTestingKey) {
+                                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                        } else {
+                                            Text(text = verifyLabel, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        }
+                                    }
+                                }
+
+                                if (isGoogleActive) {
+                                    TextButton(
+                                        onClick = {
+                                            apiKeyInput = ""
+                                            onGooglePlacesApiKeyChange("")
+                                            testResultMessage = null
+                                        }
+                                    ) {
+                                        Text(text = clearLabel, color = CoralRed, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+
+                            if (testResultMessage != null) {
+                                val (success, msg) = testResultMessage!!
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (success) EmeraldGreenLight else CoralRed.copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, if (success) EmeraldGreenDark else CoralRed),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = if (success) Icons.Default.CheckCircle else Icons.Default.Error,
+                                            contentDescription = null,
+                                            tint = if (success) EmeraldGreenDark else CoralRed,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = msg,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                            color = if (success) EmeraldGreenDark else CoralRed
                                         )
                                     }
                                 }
