@@ -77,6 +77,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -400,6 +401,8 @@ fun AddExpenseModal(
     }
 
     val coroutineScope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val initialFocusRequester = remember { FocusRequester() }
 
     LaunchedEffect(Unit) {
@@ -804,16 +807,19 @@ fun AddExpenseModal(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth()) {
-                                    placeSuggestions.take(6).forEach { suggestion ->
+                                    placeSuggestions.forEach { suggestion ->
+                                        val resolvedAddress = suggestion.resolveFormattedAddress()
                                         Row(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
                                                     placeName = suggestion.shortPlaceName
-                                                    addressText = suggestion.displayName
+                                                    addressText = resolvedAddress
                                                     latitudeValue = suggestion.latitude
                                                     longitudeValue = suggestion.longitude
                                                     onClearPlaceSuggestions()
+                                                    focusManager.clearFocus()
+                                                    keyboardController?.hide()
                                                 }
                                                 .padding(horizontal = 12.dp, vertical = 9.dp),
                                             verticalAlignment = Alignment.CenterVertically,
@@ -827,13 +833,16 @@ fun AddExpenseModal(
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
-                                                Text(
-                                                    text = suggestion.displayName,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = Color(0xFF64748B),
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
+                                                val addressToShow = resolvedAddress.ifBlank { suggestion.displayName }
+                                                if (addressToShow.isNotBlank() && !addressToShow.equals(suggestion.shortPlaceName, ignoreCase = true)) {
+                                                    Text(
+                                                        text = addressToShow,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color(0xFF64748B),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
                                             }
                                             if (suggestion.distanceKm != null) {
                                                 val distText = if (suggestion.distanceKm < 1.0) {
@@ -959,7 +968,7 @@ fun AddExpenseModal(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
-                                            originSuggestions.take(5).forEach { suggestion ->
+                                            originSuggestions.forEach { suggestion ->
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -969,6 +978,8 @@ fun AddExpenseModal(
                                                             originLongitudeValue = suggestion.longitude
                                                             originSuggestions = emptyList()
                                                             activeRouteSearchField = null
+                                                            focusManager.clearFocus()
+                                                            keyboardController?.hide()
                                                         }
                                                         .padding(horizontal = 12.dp, vertical = 8.dp),
                                                     verticalAlignment = Alignment.CenterVertically,
@@ -1038,7 +1049,7 @@ fun AddExpenseModal(
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
-                                            destinationSuggestions.take(5).forEach { suggestion ->
+                                            destinationSuggestions.forEach { suggestion ->
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
@@ -1048,6 +1059,8 @@ fun AddExpenseModal(
                                                             longitudeValue = suggestion.longitude
                                                             destinationSuggestions = emptyList()
                                                             activeRouteSearchField = null
+                                                            focusManager.clearFocus()
+                                                            keyboardController?.hide()
                                                         }
                                                         .padding(horizontal = 12.dp, vertical = 8.dp),
                                                     verticalAlignment = Alignment.CenterVertically,

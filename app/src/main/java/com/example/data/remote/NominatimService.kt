@@ -29,8 +29,27 @@ data class NominatimPlaceSuggestion(
     val latitude: Double,
     val longitude: Double,
     val euclideanDistance: Double?,
-    val distanceKm: Double?
-)
+    val distanceKm: Double?,
+    val formattedAddress: String = ""
+) {
+    /**
+     * Devuelve la dirección formateada limpia (sin el nombre del lugar).
+     * Si no hay dirección formateada (o es idéntica al nombre), devuelve cadena vacía.
+     */
+    fun resolveFormattedAddress(): String {
+        if (formattedAddress.isNotBlank()) return formattedAddress.trim()
+        val trimmedDisplay = displayName.trim()
+        val trimmedName = shortPlaceName.trim()
+        return when {
+            trimmedName.isNotBlank() && trimmedDisplay.startsWith(trimmedName, ignoreCase = true) -> {
+                val after = trimmedDisplay.substring(trimmedName.length).trim()
+                after.removePrefix(",").trim()
+            }
+            trimmedName.isNotBlank() && trimmedDisplay.equals(trimmedName, ignoreCase = true) -> ""
+            else -> trimmedDisplay
+        }
+    }
+}
 
 object NominatimService {
 
@@ -95,15 +114,25 @@ object NominatimService {
                         .mapNotNull { addr.getAddressLine(it) }
                         .joinToString(", ")
                         .ifBlank {
-                            listOf(feature, locality, country).filter { it.isNotBlank() }.joinToString(", ")
+                            listOf(locality, country).filter { it.isNotBlank() }.joinToString(", ")
                         }
 
-                    val shortName = when {
-                        feature.isNotBlank() && locality.isNotBlank() && !feature.equals(locality, ignoreCase = true) ->
-                            "$feature, $locality"
+                    val placeTitle = when {
+                        feature.isNotBlank() && !feature.matches(Regex("^\\d+.*")) && !feature.equals(locality, ignoreCase = true) ->
+                            feature
+                        cleanQuery.isNotBlank() && !cleanQuery.matches(Regex("^[\\d.,\\s]+$")) ->
+                            cleanQuery
                         feature.isNotBlank() -> feature
                         locality.isNotBlank() -> locality
-                        else -> fullAddress.take(50)
+                        else -> fullAddress.substringBefore(",").trim().ifBlank { cleanQuery }
+                    }
+
+                    val addressOnly = when {
+                        placeTitle.isNotBlank() && fullAddress.startsWith(placeTitle, ignoreCase = true) ->
+                            fullAddress.substring(placeTitle.length).removePrefix(",").trim()
+                        placeTitle.isNotBlank() && fullAddress.equals(placeTitle, ignoreCase = true) ->
+                            ""
+                        else -> fullAddress.trim()
                     }
 
                     val euclid = if (userLat != null && userLon != null) {
@@ -117,13 +146,14 @@ object NominatimService {
                     list.add(
                         NominatimPlaceSuggestion(
                             displayName = fullAddress,
-                            shortPlaceName = shortName,
+                            shortPlaceName = placeTitle,
                             country = country,
                             cityOrTown = locality,
                             latitude = lat,
                             longitude = lon,
                             euclideanDistance = euclid,
-                            distanceKm = distKm
+                            distanceKm = distKm,
+                            formattedAddress = addressOnly
                         )
                     )
                 }
@@ -181,13 +211,20 @@ object NominatimService {
                                 ?: ""
 
                             val firstSegment = displayName.substringBefore(",").trim()
-                            val shortName = when {
-                                nameProp.isNotBlank() && city.isNotBlank() && !nameProp.equals(city, ignoreCase = true) ->
-                                    "$nameProp, $city"
-                                nameProp.isNotBlank() -> nameProp
-                                firstSegment.isNotBlank() && city.isNotBlank() -> "$firstSegment, $city"
+                            val placeTitle = when {
+                                nameProp.isNotBlank() -> nameProp.trim()
                                 firstSegment.isNotBlank() -> firstSegment
-                                else -> displayName.take(50)
+                                else -> cleanQuery.ifBlank { "Lugar" }
+                            }
+
+                            val addressOnly = when {
+                                placeTitle.isNotBlank() && displayName.startsWith(placeTitle, ignoreCase = true) ->
+                                    displayName.substring(placeTitle.length).removePrefix(",").trim()
+                                placeTitle.isNotBlank() && displayName.equals(placeTitle, ignoreCase = true) ->
+                                    ""
+                                displayName.contains(",") ->
+                                    displayName.substringAfter(",").trim()
+                                else -> ""
                             }
 
                             val euclid = if (userLat != null && userLon != null) {
@@ -201,13 +238,14 @@ object NominatimService {
                             list.add(
                                 NominatimPlaceSuggestion(
                                     displayName = displayName,
-                                    shortPlaceName = shortName,
+                                    shortPlaceName = placeTitle,
                                     country = country,
                                     cityOrTown = city,
                                     latitude = lat,
                                     longitude = lon,
                                     euclideanDistance = euclid,
-                                    distanceKm = distKm
+                                    distanceKm = distKm,
+                                    formattedAddress = addressOnly
                                 )
                             )
                         }

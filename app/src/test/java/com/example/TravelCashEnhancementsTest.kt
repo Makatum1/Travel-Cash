@@ -7,6 +7,7 @@ import com.example.data.model.IncomeContribution
 import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
+import com.example.data.remote.NominatimPlaceSuggestion
 import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
 import com.example.domain.MapWaypointOffsetCalculator
@@ -1012,5 +1013,65 @@ class TravelCashEnhancementsTest {
         // UI re-evaluates initial or saved state
         val activeOnRotation = isSplashActive && !hasSplashScreenBeenShown
         assertFalse("Splash screen must not be active on screen rotation", activeOnRotation)
+    }
+
+    @Test
+    fun nominatimPlaceSuggestion_separatesNameAndFormattedAddressAccurately() {
+        // Case 1: DisplayName contains place name followed by full address
+        val s1 = NominatimPlaceSuggestion(
+            displayName = "Museo Nacional del Prado, Calle de Ruiz de Alarcón, 23, 28014 Madrid, España",
+            shortPlaceName = "Museo Nacional del Prado",
+            country = "España",
+            cityOrTown = "Madrid",
+            latitude = 40.4138,
+            longitude = -3.6921,
+            euclideanDistance = null,
+            distanceKm = null
+        )
+        assertEquals("Museo Nacional del Prado", s1.shortPlaceName)
+        assertEquals("Calle de Ruiz de Alarcón, 23, 28014 Madrid, España", s1.resolveFormattedAddress())
+
+        // Case 2: Explicit formattedAddress provided
+        val s2 = NominatimPlaceSuggestion(
+            displayName = "Bar El Candil, Rúa do Franco, 12, Santiago de Compostela",
+            shortPlaceName = "Bar El Candil",
+            country = "España",
+            cityOrTown = "Santiago de Compostela",
+            latitude = 42.8782,
+            longitude = -8.5448,
+            euclideanDistance = null,
+            distanceKm = null,
+            formattedAddress = "Rúa do Franco, 12, Santiago de Compostela"
+        )
+        assertEquals("Bar El Candil", s2.shortPlaceName)
+        assertEquals("Rúa do Franco, 12, Santiago de Compostela", s2.resolveFormattedAddress())
+
+        // Case 3: Coordinates or generic name with no address formatted (edge case C)
+        val s3 = NominatimPlaceSuggestion(
+            displayName = "40.4168, -3.7038",
+            shortPlaceName = "40.4168, -3.7038",
+            country = "",
+            cityOrTown = "",
+            latitude = 40.4168,
+            longitude = -3.7038,
+            euclideanDistance = null,
+            distanceKm = null
+        )
+        assertEquals("40.4168, -3.7038", s3.shortPlaceName)
+        assertEquals("", s3.resolveFormattedAddress())
+
+        // Case 4: No explicit address and displayName equals shortPlaceName
+        val s4 = NominatimPlaceSuggestion(
+            displayName = "Monumento Central",
+            shortPlaceName = "Monumento Central",
+            country = "España",
+            cityOrTown = "Toledo",
+            latitude = 39.8628,
+            longitude = -4.0273,
+            euclideanDistance = null,
+            distanceKm = null
+        )
+        assertEquals("Monumento Central", s4.shortPlaceName)
+        assertEquals("", s4.resolveFormattedAddress())
     }
 }
