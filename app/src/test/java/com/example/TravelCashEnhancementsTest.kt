@@ -1126,4 +1126,48 @@ class TravelCashEnhancementsTest {
         assertEquals("Camping Huttopia Parque de los Alcornocales", suggestion.shortPlaceName)
         assertEquals("Carretera Prado del Rey a El Bosque, km 1, 11660 Prado del Rey, Cádiz, España", suggestion.resolveFormattedAddress())
     }
+
+    @Test
+    fun extractPlaceTitle_peregrinusDezae_neverUsesBajoOrStreetNameAsTitle() {
+        // Caso real: Geocoder devuelve feature="Bajo", street="Rúa Banda do Río, 12", fullAddress="Rúa Banda do Río, 12, Bajo, 36500 Lalín"
+        val title = NominatimService.extractPlaceTitle(
+            rawName = "Bajo",
+            firstSegment = "Rúa Banda do Río",
+            fullAddress = "Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España",
+            query = "peregrinus dezae",
+            street = "Rúa Banda do Río, 12",
+            city = "Lalín"
+        )
+        // Debe usar el nombre del lugar buscado, NUNCA "Bajo" ni "Rúa Banda do Río"
+        assertEquals("Peregrinus Dezae", title)
+        assertFalse(title.contains("Bajo", ignoreCase = true))
+        assertFalse(title.contains("Rúa", ignoreCase = true))
+
+        val address = NominatimService.extractFormattedAddress(
+            displayName = "Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España",
+            placeTitle = title,
+            fullAddress = "Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España"
+        )
+        assertEquals("Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España", address)
+    }
+
+    @Test
+    fun extractPlaceTitle_concatenatedPOI_extractsBeforeFirstComma() {
+        val title = NominatimService.extractPlaceTitle(
+            rawName = "",
+            firstSegment = "Asoc. Peregrinus Dezae",
+            fullAddress = "Asoc. Peregrinus Dezae, Rúa Banda do Río, 12, 36500 Lalín, España",
+            query = "peregrinus",
+            street = "Rúa Banda do Río",
+            city = "Lalín"
+        )
+        assertEquals("Asoc. Peregrinus Dezae", title)
+
+        val address = NominatimService.extractFormattedAddress(
+            displayName = "Asoc. Peregrinus Dezae, Rúa Banda do Río, 12, 36500 Lalín, España",
+            placeTitle = title,
+            fullAddress = "Asoc. Peregrinus Dezae, Rúa Banda do Río, 12, 36500 Lalín, España"
+        )
+        assertEquals("Rúa Banda do Río, 12, 36500 Lalín, España", address)
+    }
 }

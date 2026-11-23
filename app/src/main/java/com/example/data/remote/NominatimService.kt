@@ -37,9 +37,12 @@ data class NominatimPlaceSuggestion(
      * Si no hay dirección formateada (o es idéntica al nombre), devuelve cadena vacía.
      */
     fun resolveFormattedAddress(): String {
-        if (formattedAddress.isNotBlank()) return formattedAddress.trim()
-        val trimmedDisplay = displayName.trim()
+        val trimmedAddress = formattedAddress.trim()
         val trimmedName = shortPlaceName.trim()
+        if (trimmedAddress.isNotBlank() && !trimmedAddress.equals(trimmedName, ignoreCase = true)) {
+            return trimmedAddress
+        }
+        val trimmedDisplay = displayName.trim()
         return when {
             trimmedName.isNotBlank() && trimmedDisplay.startsWith(trimmedName, ignoreCase = true) -> {
                 val after = trimmedDisplay.substring(trimmedName.length).trim()
@@ -65,6 +68,112 @@ object NominatimService {
         return false
     }
 
+    private fun isStreetName(candidate: String, street: String): Boolean {
+        val c = candidate.trim()
+        val s = street.trim()
+        if (c.isBlank() || s.isBlank()) return false
+        return c.equals(s, ignoreCase = true) ||
+                s.startsWith(c, ignoreCase = true) ||
+                c.startsWith(s, ignoreCase = true)
+    }
+
+    /**
+     * Extrae de forma limpia y exclusiva el Nombre/Título del sitio (POI) para el campo Lugar,
+     * asegurando que NUNCA se asigne la dirección completa, ni "Bajo", ni números de portal como título.
+     */
+    fun extractPlaceTitle(
+        rawName: String,
+        firstSegment: String,
+        fullAddress: String,
+        query: String,
+        street: String = "",
+        city: String = ""
+    ): String {
+        val cleanRaw = rawName.trim()
+        val cleanFirst = firstSegment.trim()
+        val cleanQuery = query.trim()
+        val cleanStreet = street.trim()
+        val cleanCity = city.trim()
+
+        // 1. Intentar con el campo específico de nombre (name, title, POI) si no es fragmento de dirección ni la calle
+        if (cleanRaw.isNotBlank() && !isAddressFragment(cleanRaw) && !isStreetName(cleanRaw, cleanStreet) && !cleanRaw.equals(cleanCity, ignoreCase = true)) {
+            return cleanRaw
+        }
+
+        // 2. Si el texto viene concatenado con la dirección (ej. 'Camping Huttopia, Calle Mayor 1...'),
+        // extraer la primera parte antes de la coma (siempre que no sea 'Bajo', número de portal ni la calle)
+        if (cleanFirst.isNotBlank() && !isAddressFragment(cleanFirst) && !isStreetName(cleanFirst, cleanStreet) && !cleanFirst.equals(cleanCity, ignoreCase = true)) {
+            return cleanFirst
+        }
+
+        // 3. Si la búsqueda del usuario (ej. 'peregrinus dezae' o 'camping huttopia') es un nombre propio y aparece en el texto completo
+        if (cleanQuery.isNotBlank() && !isAddressFragment(cleanQuery) && cleanQuery.length >= 3) {
+            val queryWords = cleanQuery.split(" ").filter { it.length > 2 }
+            if (queryWords.isNotEmpty() && queryWords.any { fullAddress.contains(it, ignoreCase = true) }) {
+                if (cleanFirst.isNotBlank() && !isAddressFragment(cleanFirst) && !isStreetName(cleanFirst, cleanStreet)) {
+                    return cleanFirst
+                }
+                return cleanQuery.split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+            }
+        }
+
+        // 4. Si la consulta era un nombre de lugar buscado (no fragmento de dirección)
+        if (cleanQuery.isNotBlank() && !isAddressFragment(cleanQuery) && cleanQuery.length >= 3) {
+            return cleanQuery.split(" ").joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+        }
+
+        // 5. Si rawName o firstSegment existen aunque no sean POIs independientes
+        if (cleanRaw.isNotBlank() && !isAddressFragment(cleanRaw)) {
+            return cleanRaw
+        }
+        if (cleanFirst.isNotBlank() && !isAddressFragment(cleanFirst)) {
+            return cleanFirst
+        }
+
+        // 6. Si hay nombre de vía / calle (ej. "Rúa Rosalía de Castro, 12")
+        if (cleanStreet.isNotBlank()) {
+            return cleanStreet
+        }
+
+        // 7. Si hay ciudad o localidad
+        if (cleanCity.isNotBlank()) {
+            return cleanCity
+        }
+
+        // 8. Fallback de último recurso
+        return cleanQuery.ifBlank { "Lugar" }
+    }
+
+    /**
+     * Extrae la dirección formateada excluyendo el título del lugar para no duplicar datos.
+     */
+    fun extractFormattedAddress(displayName: String, placeTitle: String, fullAddress: String = ""): String {
+        val title = placeTitle.trim()
+        val raw = if (fullAddress.isNotBlank()) fullAddress.trim() else displayName.trim()
+        if (title.isBlank()) return raw
+
+        return when {
+            raw.startsWith(title, ignoreCase = true) -> {
+                val remaining = raw.substring(title.length).trim()
+                remaining.removePrefix(",").trim()
+            }
+            raw.equals(title, ignoreCase = true) -> ""
+            displayName.startsWith(title, ignoreCase = true) -> {
+                val remaining = displayName.substring(title.length).trim()
+                remaining.removePrefix(",").trim()
+            }
+            raw.contains(",") && !raw.equals(title, ignoreCase = true) -> {
+                val first = raw.substringBefore(",").trim()
+                if (first.equals(title, ignoreCase = true)) {
+                    raw.substringAfter(",").trim()
+                } else {
+                    raw
+                }
+            }
+            else -> raw
+        }
+    }
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
         .readTimeout(8, TimeUnit.SECONDS)
@@ -74,7 +183,7 @@ object NominatimService {
      * Consulta el Geocoder nativo del dispositivo (Google Play Services / Google Maps)
      * complementado con la API de OpenStreetMap Nominatim con prioridad por cercanía GPS,
      * extrayendo de forma precisa el título del establecimiento o POI para asignarlo como Lugar
-     * y evitando colocar fragmentos como "Bajo" o el número de portal en el título.
+     * y la dirección formateada para el campo Dirección.
      */
     @Suppress("DEPRECATION")
     suspend fun searchPlacesByProximity(
@@ -134,42 +243,27 @@ object NominatimService {
                     }
 
                     val firstSegment = fullLine0.substringBefore(",").trim()
-
-                    // Determinación limpia del título de Lugar (evitando 'Bajo', números de portal y nombres de calle cuando hay un POI/nombre real)
-                    val placeTitle = when {
-                        // Si featureName es un nombre propio real (no un descriptor como 'Bajo', ni un número, ni la calle ni la localidad)
-                        feature.isNotBlank() && !isAddressFragment(feature) && !feature.equals(thoroughfare, ignoreCase = true) && !feature.equals(locality, ignoreCase = true) ->
-                            feature
-                        // Si el primer segmento de la línea devuelta por Geocoder es el nombre del POI (ej. "Asoc. Peregrinus Dezae")
-                        firstSegment.isNotBlank() && !isAddressFragment(firstSegment) && !firstSegment.equals(thoroughfare, ignoreCase = true) && !firstSegment.equals(locality, ignoreCase = true) ->
-                            firstSegment
-                        // Si la búsqueda coincide con un nombre comercial o asociación que aparece en la dirección
-                        cleanQuery.isNotBlank() && !isAddressFragment(cleanQuery) && fullAddress.contains(cleanQuery, ignoreCase = true) -> {
-                            if (firstSegment.contains(cleanQuery, ignoreCase = true)) firstSegment else cleanQuery
-                        }
-                        // Si hay nombre de vía con portal (ej. "Rúa Rosalía de Castro, 12")
-                        thoroughfare.isNotBlank() ->
-                            if (subThoroughfare.isNotBlank()) "$thoroughfare, $subThoroughfare" else thoroughfare
-                        feature.isNotBlank() && !isAddressFragment(feature) ->
-                            feature
-                        firstSegment.isNotBlank() && !isAddressFragment(firstSegment) ->
-                            firstSegment
-                        locality.isNotBlank() ->
-                            locality
-                        else ->
-                            cleanQuery.ifBlank { "Lugar" }
+                    val streetWithNumber = when {
+                        thoroughfare.isNotBlank() && subThoroughfare.isNotBlank() -> "$thoroughfare, $subThoroughfare"
+                        thoroughfare.isNotBlank() -> thoroughfare
+                        else -> ""
                     }
 
-                    // Extraer Dirección formateada (evitando duplicar el título)
-                    val addressOnly = when {
-                        fullAddress.startsWith(placeTitle, ignoreCase = true) ->
-                            fullAddress.substring(placeTitle.length).trim().removePrefix(",").trim()
-                        fullLine0.startsWith(placeTitle, ignoreCase = true) ->
-                            fullLine0.substring(placeTitle.length).trim().removePrefix(",").trim()
-                        fullAddress.equals(placeTitle, ignoreCase = true) ->
-                            ""
-                        else -> fullAddress.trim()
-                    }
+                    val placeTitle = extractPlaceTitle(
+                        rawName = feature,
+                        firstSegment = firstSegment,
+                        fullAddress = fullAddress,
+                        query = cleanQuery,
+                        street = streetWithNumber,
+                        city = locality
+                    )
+
+                    val addressOnly = extractFormattedAddress(fullAddress, placeTitle, fullAddress)
+
+                    android.util.Log.d(
+                        "NominatimService",
+                        "Geocoder: Query='$cleanQuery' -> Feature='$feature', Line0='$fullLine0' => Title='$placeTitle', Address='$addressOnly'"
+                    )
 
                     val euclid = if (userLat != null && userLon != null) {
                         sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
@@ -246,45 +340,30 @@ object NominatimService {
                                 ?: addr?.optString("municipality")?.takeIf { it.isNotBlank() }
                                 ?: "").trim()
                             val road = addr?.optString("road", "")?.trim() ?: ""
+                            val houseNumber = addr?.optString("house_number", "")?.trim() ?: ""
+                            val streetWithNumber = when {
+                                road.isNotBlank() && houseNumber.isNotBlank() -> "$road, $houseNumber"
+                                road.isNotBlank() -> road
+                                else -> ""
+                            }
 
                             val firstSegment = displayName.substringBefore(",").trim()
 
-                            // Determinación limpia del título de Lugar
-                            val placeTitle = when {
-                                // 1. Si nameProp es un nombre de POI real (no un descriptor como 'Bajo', ni un número, ni igual a la calle ni a la ciudad)
-                                nameProp.isNotBlank() && !isAddressFragment(nameProp) && !nameProp.equals(road, ignoreCase = true) && !nameProp.equals(city, ignoreCase = true) ->
-                                    nameProp
-                                // 2. Si el primer segmento del nombre devuelto es un POI real
-                                firstSegment.isNotBlank() && !isAddressFragment(firstSegment) && !firstSegment.equals(road, ignoreCase = true) && !firstSegment.equals(city, ignoreCase = true) ->
-                                    firstSegment
-                                // 3. Si coincide con la consulta comercial buscada
-                                cleanQuery.isNotBlank() && !isAddressFragment(cleanQuery) && displayName.contains(cleanQuery, ignoreCase = true) -> {
-                                    if (firstSegment.contains(cleanQuery, ignoreCase = true)) firstSegment else cleanQuery
-                                }
-                                // 4. Si nameProp no es un fragmento de dirección
-                                nameProp.isNotBlank() && !isAddressFragment(nameProp) ->
-                                    nameProp
-                                // 5. Si firstSegment no es un fragmento de dirección
-                                firstSegment.isNotBlank() && !isAddressFragment(firstSegment) ->
-                                    firstSegment
-                                cleanQuery.isNotBlank() && !isAddressFragment(cleanQuery) ->
-                                    cleanQuery
-                                city.isNotBlank() ->
-                                    city
-                                else ->
-                                    cleanQuery.ifBlank { "Lugar" }
-                            }
+                            val placeTitle = extractPlaceTitle(
+                                rawName = nameProp,
+                                firstSegment = firstSegment,
+                                fullAddress = displayName,
+                                query = cleanQuery,
+                                street = streetWithNumber,
+                                city = city
+                            )
 
-                            // Extraer Dirección formateada
-                            val addressOnly = when {
-                                displayName.startsWith(placeTitle, ignoreCase = true) ->
-                                    displayName.substring(placeTitle.length).trim().removePrefix(",").trim()
-                                displayName.equals(placeTitle, ignoreCase = true) ->
-                                    ""
-                                displayName.contains(",") ->
-                                    displayName.substringAfter(",").trim()
-                                else -> ""
-                            }
+                            val addressOnly = extractFormattedAddress(displayName, placeTitle, displayName)
+
+                            android.util.Log.d(
+                                "NominatimService",
+                                "Nominatim: Query='$cleanQuery' -> nameProp='$nameProp', firstSegment='$firstSegment' => Title='$placeTitle', Address='$addressOnly'"
+                            )
 
                             val euclid = if (userLat != null && userLon != null) {
                                 sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
@@ -351,7 +430,6 @@ object NominatimService {
             if (loc != null) {
                 loc.latitude to loc.longitude
             } else {
-                // Fallback a lastLocation del LocationManager
                 val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
                 val providers = lm?.getProviders(true).orEmpty()
                 var best: android.location.Location? = null
@@ -386,19 +464,14 @@ object NominatimService {
                 val thoroughfare = addr.thoroughfare.orEmpty().trim()
                 val firstSegment = addr.getAddressLine(0)?.substringBefore(",")?.trim().orEmpty()
 
-                val place = when {
-                    feature.isNotBlank() && !isAddressFragment(feature) && !feature.equals(thoroughfare, ignoreCase = true) && !feature.equals(locality, ignoreCase = true) ->
-                        feature
-                    firstSegment.isNotBlank() && !isAddressFragment(firstSegment) && !firstSegment.equals(thoroughfare, ignoreCase = true) && !firstSegment.equals(locality, ignoreCase = true) ->
-                        firstSegment
-                    feature.isNotBlank() && !isAddressFragment(feature) ->
-                        feature
-                    firstSegment.isNotBlank() && !isAddressFragment(firstSegment) ->
-                        firstSegment
-                    locality.isNotBlank() ->
-                        locality
-                    else -> ""
-                }
+                val place = extractPlaceTitle(
+                    rawName = feature,
+                    firstSegment = firstSegment,
+                    fullAddress = addr.getAddressLine(0).orEmpty(),
+                    query = "",
+                    street = thoroughfare,
+                    city = locality
+                )
                 if (place.isNotBlank()) {
                     return@withContext (place to country)
                 }
@@ -439,19 +512,14 @@ object NominatimService {
                 val road = addr?.optString("road", "")?.trim() ?: ""
 
                 val firstSegment = displayName.substringBefore(",").trim()
-                val place = when {
-                    nameProp.isNotBlank() && !isAddressFragment(nameProp) && !nameProp.equals(road, ignoreCase = true) && !nameProp.equals(city, ignoreCase = true) ->
-                        nameProp
-                    firstSegment.isNotBlank() && !isAddressFragment(firstSegment) && !firstSegment.equals(road, ignoreCase = true) && !firstSegment.equals(city, ignoreCase = true) ->
-                        firstSegment
-                    nameProp.isNotBlank() && !isAddressFragment(nameProp) ->
-                        nameProp
-                    firstSegment.isNotBlank() && !isAddressFragment(firstSegment) ->
-                        firstSegment
-                    city.isNotBlank() ->
-                        city
-                    else -> ""
-                }
+                val place = extractPlaceTitle(
+                    rawName = nameProp,
+                    firstSegment = firstSegment,
+                    fullAddress = displayName,
+                    query = "",
+                    street = road,
+                    city = city
+                )
                 return@withContext (place to country)
             }
         } catch (_: Exception) {
