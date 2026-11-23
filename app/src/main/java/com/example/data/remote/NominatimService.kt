@@ -320,6 +320,10 @@ object NominatimService {
                     ?: properties.optString("locality").takeIf { it.isNotBlank() }
                     ?: properties.optString("district").takeIf { it.isNotBlank() }
                     ?: "").trim()
+                val locality = (properties.optString("locality").takeIf { it.isNotBlank() }
+                    ?: properties.optString("district").takeIf { it.isNotBlank() }
+                    ?: properties.optString("suburb").takeIf { it.isNotBlank() }
+                    ?: "").trim()
                 val county = properties.optString("county", "").trim()
                 val state = properties.optString("state", "").trim()
                 val country = properties.optString("country", "").trim()
@@ -343,6 +347,10 @@ object NominatimService {
                 val addressParts = mutableListOf<String>()
                 if (streetWithNumber.isNotBlank() && !streetWithNumber.equals(placeTitle, ignoreCase = true)) {
                     addressParts.add(streetWithNumber)
+                }
+
+                if (locality.isNotBlank() && !locality.equals(city, ignoreCase = true) && !locality.equals(placeTitle, ignoreCase = true) && !addressParts.contains(locality)) {
+                    addressParts.add(locality)
                 }
 
                 val postalCity = when {
@@ -402,17 +410,24 @@ object NominatimService {
     }
 
     /**
-     * Realiza la búsqueda de lugares y POIs mediante el motor Open Source Photon (Komoot).
-     * No requiere clave de API y utiliza Elasticsearch sobre los datos de OpenStreetMap
-     * permitiendo búsquedas de texto libre precisas (ej. campings, asociaciones, albergues).
+     * Limpia preposiciones y conectores comunes en español e inglés ("en", "cerca de", "del", "el", "la", etc.)
+     * para facilitar la coincidencia de POIs en motores de búsqueda de texto libre.
      */
-    suspend fun searchWithPhoton(
+    fun cleanSearchQuery(query: String): String {
+        val stopWordsRegex = Regex(
+            "\\b(cerca de|cerca|en|de|del|el|la|los|las|un|una|unos|unas|at|in|near|the|of)\\b",
+            RegexOption.IGNORE_CASE
+        )
+        return query.replace(stopWordsRegex, " ").replace(Regex("\\s+"), " ").trim()
+    }
+
+    private fun queryPhotonEndpoint(
         query: String,
         userLat: Double?,
         userLon: Double?
-    ): List<NominatimPlaceSuggestion> = withContext(Dispatchers.IO) {
+    ): List<NominatimPlaceSuggestion> {
         val cleanQuery = query.trim()
-        if (cleanQuery.length < 2) return@withContext emptyList()
+        if (cleanQuery.length < 2) return emptyList()
 
         try {
             val urlBuilder = "https://photon.komoot.io/api/".toHttpUrlOrNull()
@@ -425,7 +440,7 @@ object NominatimService {
                 urlBuilder?.addQueryParameter("lon", userLon.toString())
             }
 
-            val url = urlBuilder?.build() ?: return@withContext emptyList()
+            val url = urlBuilder?.build() ?: return emptyList()
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "TravelCashAndroidApp/1.0 (GestorGastosViajes; OpenSource)")
@@ -436,7 +451,7 @@ object NominatimService {
                 if (response.isSuccessful) {
                     val bodyStr = response.body?.string()
                     if (!bodyStr.isNullOrBlank()) {
-                        return@withContext parsePhotonGeoJson(bodyStr, cleanQuery, userLat, userLon)
+                        return parsePhotonGeoJson(bodyStr, cleanQuery, userLat, userLon)
                     }
                 } else {
                     android.util.Log.w("PhotonService", "Photon HTTP ${response.code}: ${response.message}")
@@ -445,8 +460,53 @@ object NominatimService {
         } catch (e: Exception) {
             android.util.Log.w("PhotonService", "Error llamando a Photon API: ${e.message}")
         }
+        return emptyList()
+    }
 
-        emptyList()
+    /**
+     * Realiza la búsqueda de lugares y POIs mediante el motor Open Source Photon (Komoot).
+     * No requiere clave de API y utiliza Elasticsearch sobre los datos de OpenStreetMap
+     * permitiendo búsquedas de texto libre precisas (ej. campings, asociaciones, albergues).
+     * Si la consulta contiene conectores y devuelve pocos resultados, consulta automáticamente sin conectores.
+     */
+    suspend fun searchWithPhoton(
+        query: String,
+        userLat: Double?,
+        userLon: Double?
+    ): List<NominatimPlaceSuggestion> = withContext(Dispatchers.IO) {
+        val cleanQuery = query.trim()
+        if (cleanQuery.length < 2) return@withContext emptyList()
+
+        val results = mutableListOf<NominatimPlaceSuggestion>()
+        val seenCoords = mutableSetOf<String>()
+
+        // 1. Intento con la consulta directa
+        val directResults = queryPhotonEndpoint(cleanQuery, userLat, userLon)
+        for (item in directResults) {
+            val key = String.format(java.util.Locale.US, "%.4f,%.4f", item.latitude, item.longitude)
+            if (seenCoords.add(key)) {
+                results.add(item)
+            }
+        }
+
+        // 2. Si la consulta tiene conectores/preposiciones ("en", "cerca de") y devuelve pocos resultados (< 3),
+        // consultar también con la consulta limpia sin preposiciones
+        val queryWithoutStopWords = cleanSearchQuery(cleanQuery)
+        if (results.size < 3 && queryWithoutStopWords.length >= 2 && !queryWithoutStopWords.equals(cleanQuery, ignoreCase = true)) {
+            val extraResults = queryPhotonEndpoint(queryWithoutStopWords, userLat, userLon)
+            for (item in extraResults) {
+                val key = String.format(java.util.Locale.US, "%.4f,%.4f", item.latitude, item.longitude)
+                if (seenCoords.add(key)) {
+                    results.add(item)
+                }
+            }
+        }
+
+        if (userLat != null && userLon != null) {
+            results.sortedBy { it.euclideanDistance ?: Double.MAX_VALUE }
+        } else {
+            results
+        }
     }
 
     /**
@@ -473,14 +533,26 @@ object NominatimService {
             }
         }
 
-        // 2. Motor Open Source Photon (Komoot / OpenStreetMap POI Search)
-        val photonResults = searchWithPhoton(cleanQuery, userLat, userLon)
-        if (photonResults.isNotEmpty()) {
-            return@withContext photonResults
-        }
-
         val list = mutableListOf<NominatimPlaceSuggestion>()
         val seenCoords = mutableSetOf<String>()
+
+        // 2. Motor Open Source Photon (Komoot / OpenStreetMap POI Search)
+        val photonResults = searchWithPhoton(cleanQuery, userLat, userLon)
+        for (item in photonResults) {
+            val key = String.format(java.util.Locale.US, "%.3f,%.3f", item.latitude, item.longitude)
+            if (seenCoords.add(key)) {
+                list.add(item)
+            }
+        }
+
+        // Si Photon devolvió suficientes resultados de calidad (>= 5), retornar directamente
+        if (list.size >= 5) {
+            return@withContext if (userLat != null && userLon != null) {
+                list.sortedBy { it.euclideanDistance ?: Double.MAX_VALUE }
+            } else {
+                list
+            }
+        }
 
         // 3. Intentar con Android Geocoder nativo (Google Maps / Google Location Services)
         if (context != null) {

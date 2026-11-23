@@ -157,4 +157,45 @@ class NominatimPhotonTest {
         val results = NominatimService.parsePhotonGeoJson(jsonStr)
         assertEquals(1, results.size)
     }
+
+    @Test
+    fun nominatimService_cleanSearchQuery_removesStopWordsAndPrepositions() {
+        assertEquals("camping huttopia prado", NominatimService.cleanSearchQuery("camping huttopia en prado"))
+        assertEquals("restaurante sagrada familia", NominatimService.cleanSearchQuery("restaurante cerca de sagrada familia"))
+        assertEquals("hotel sevilla", NominatimService.cleanSearchQuery("hotel en sevilla"))
+        assertEquals("albergue santiago compostela", NominatimService.cleanSearchQuery("albergue en santiago de compostela"))
+    }
+
+    @Test
+    fun photon_withLocalityOrDistrict_formatsAddressAccurately() {
+        val jsonStr = """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                {
+                  "type": "Feature",
+                  "geometry": {
+                    "type": "Point",
+                    "coordinates": [-3.6920, 40.4137]
+                  },
+                  "properties": {
+                    "name": "Museo del Prado",
+                    "street": "Paseo del Prado",
+                    "locality": "Jerónimos",
+                    "city": "Madrid",
+                    "state": "Comunidad de Madrid",
+                    "country": "España",
+                    "postcode": "28014"
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val results = NominatimService.parsePhotonGeoJson(jsonStr, query = "museo prado")
+        assertEquals(1, results.size)
+        val s = results.first()
+        assertEquals("Museo del Prado", s.shortPlaceName)
+        assertEquals("Paseo del Prado, Jerónimos, 28014 Madrid, Comunidad de Madrid, España", s.formattedAddress)
+    }
 }
