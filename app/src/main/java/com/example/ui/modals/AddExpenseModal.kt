@@ -821,25 +821,34 @@ fun AddExpenseModal(
                                                     focusManager.clearFocus()
                                                     keyboardController?.hide()
                                                 }
-                                                .padding(horizontal = 12.dp, vertical = 9.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
+                                            Icon(
+                                                imageVector = Icons.Default.LocationOn,
+                                                contentDescription = null,
+                                                tint = TravelBlue,
+                                                modifier = Modifier
+                                                    .size(22.dp)
+                                                    .padding(end = 2.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
                                                     text = suggestion.shortPlaceName,
-                                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                                                     color = OceanNavy,
                                                     maxLines = 1,
                                                     overflow = TextOverflow.Ellipsis
                                                 )
                                                 val addressToShow = resolvedAddress.ifBlank { suggestion.displayName }
                                                 if (addressToShow.isNotBlank() && !addressToShow.equals(suggestion.shortPlaceName, ignoreCase = true)) {
+                                                    Spacer(modifier = Modifier.height(2.dp))
                                                     Text(
                                                         text = addressToShow,
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = Color(0xFF64748B),
-                                                        maxLines = 1,
+                                                        maxLines = 2,
                                                         overflow = TextOverflow.Ellipsis
                                                     )
                                                 }

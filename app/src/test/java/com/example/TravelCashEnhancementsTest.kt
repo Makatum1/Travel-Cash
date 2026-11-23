@@ -8,6 +8,7 @@ import com.example.data.model.IncomeEntity
 import com.example.data.model.ParticipantEntity
 import com.example.data.model.TripEntity
 import com.example.data.remote.NominatimPlaceSuggestion
+import com.example.data.remote.NominatimService
 import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
 import com.example.domain.MapWaypointOffsetCalculator
@@ -1073,5 +1074,36 @@ class TravelCashEnhancementsTest {
         )
         assertEquals("Monumento Central", s4.shortPlaceName)
         assertEquals("", s4.resolveFormattedAddress())
+    }
+
+    @Test
+    fun nominatimService_isAddressFragment_identifiesFloorsAndNumbers() {
+        assertTrue(NominatimService.isAddressFragment("Bajo"))
+        assertTrue(NominatimService.isAddressFragment("bajo"))
+        assertTrue(NominatimService.isAddressFragment("12"))
+        assertTrue(NominatimService.isAddressFragment("1º A"))
+        assertTrue(NominatimService.isAddressFragment("s/n"))
+        assertTrue(NominatimService.isAddressFragment("Planta 2"))
+        assertTrue(NominatimService.isAddressFragment("Nave 4"))
+
+        assertFalse(NominatimService.isAddressFragment("Asoc. Peregrinus Dezae"))
+        assertFalse(NominatimService.isAddressFragment("Museo del Prado"))
+        assertFalse(NominatimService.isAddressFragment("Café Bar Central"))
+    }
+
+    @Test
+    fun nominatimPlaceSuggestion_peregrinusDezae_separatesTitleAndAddress() {
+        val s = NominatimPlaceSuggestion(
+            displayName = "Asoc. Peregrinus Dezae, Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España",
+            shortPlaceName = "Asoc. Peregrinus Dezae",
+            country = "España",
+            cityOrTown = "Lalín",
+            latitude = 42.6612,
+            longitude = -8.1134,
+            euclideanDistance = null,
+            distanceKm = null
+        )
+        assertEquals("Asoc. Peregrinus Dezae", s.shortPlaceName)
+        assertEquals("Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España", s.resolveFormattedAddress())
     }
 }
