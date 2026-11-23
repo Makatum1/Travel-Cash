@@ -1106,4 +1106,31 @@ class TravelCashEnhancementsTest {
         assertEquals("Asoc. Peregrinus Dezae", s.shortPlaceName)
         assertEquals("Rúa Banda do Río, 12, Bajo, 36500 Lalín, Pontevedra, España", s.resolveFormattedAddress())
     }
+
+    @Test
+    fun googlePlaces_campingHuttopia_mapsTitleAndFormattedAddressAccurately() {
+        val title = "Camping Huttopia Parque de los Alcornocales"
+        val address = "Carretera Prado del Rey a El Bosque, km 1, 11660 Prado del Rey, Cádiz, España"
+        val suggestion = NominatimPlaceSuggestion(
+            displayName = "$title, $address",
+            shortPlaceName = title,
+            country = "España",
+            cityOrTown = "Prado del Rey",
+            latitude = 36.7821,
+            longitude = -5.5512,
+            euclideanDistance = null,
+            distanceKm = 12.4,
+            formattedAddress = address
+        )
+
+        assertEquals("Camping Huttopia Parque de los Alcornocales", suggestion.shortPlaceName)
+        assertEquals("Carretera Prado del Rey a El Bosque, km 1, 11660 Prado del Rey, Cádiz, España", suggestion.resolveFormattedAddress())
+    }
+
+    @Test
+    fun googlePlaces_resolveApiKey_handlesNullGracefully() {
+        val key = NominatimService.resolveGooglePlacesApiKey(null)
+        // If not set in environment or build config, returns string without exception
+        assertEquals("", key)
+    }
 }

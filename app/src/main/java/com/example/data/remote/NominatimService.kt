@@ -10,9 +10,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
+import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.math.atan2
@@ -71,6 +74,212 @@ object NominatimService {
         .build()
 
     /**
+     * Resuelve de forma segura la API Key de Google Places desde BuildConfig (.env),
+     * variables de entorno o metadatos de la aplicación.
+     */
+    fun resolveGooglePlacesApiKey(context: Context?): String {
+        val buildConfigKey = try {
+            com.example.BuildConfig::class.java.getField("GOOGLE_PLACES_API_KEY").get(null) as? String
+        } catch (_: Exception) { null }
+        if (!buildConfigKey.isNullOrBlank() && !buildConfigKey.startsWith("MY_") && !buildConfigKey.startsWith("DEFAULT_")) return buildConfigKey.trim()
+
+        val mapsKey = try {
+            com.example.BuildConfig::class.java.getField("GOOGLE_MAPS_API_KEY").get(null) as? String
+        } catch (_: Exception) { null }
+        if (!mapsKey.isNullOrBlank() && !mapsKey.startsWith("MY_") && !mapsKey.startsWith("DEFAULT_")) return mapsKey.trim()
+
+        val envKey = System.getenv("GOOGLE_PLACES_API_KEY") ?: System.getenv("GOOGLE_MAPS_API_KEY")
+        if (!envKey.isNullOrBlank()) return envKey.trim()
+
+        if (context != null) {
+            try {
+                val appInfo = context.packageManager.getApplicationInfo(context.packageName, android.content.pm.PackageManager.GET_META_DATA)
+                val metaKey = appInfo.metaData?.getString("com.google.android.geo.API_KEY")
+                if (!metaKey.isNullOrBlank() && !metaKey.startsWith("MY_") && !metaKey.contains("\${")) return metaKey.trim()
+            } catch (_: Exception) {}
+        }
+        return ""
+    }
+
+    /**
+     * Realiza la búsqueda de lugares mediante Google Places API (Places Text Search).
+     * Soporta Google Places API (New) con fallback a Google Places API (Legacy).
+     * Devuelve resultados de alta precisión con Título del POI en shortPlaceName y Dirección en formattedAddress.
+     */
+    suspend fun searchWithGooglePlaces(
+        query: String,
+        apiKey: String,
+        userLat: Double?,
+        userLon: Double?
+    ): List<NominatimPlaceSuggestion> = withContext(Dispatchers.IO) {
+        val cleanQuery = query.trim()
+        if (cleanQuery.length < 2 || apiKey.isBlank()) return@withContext emptyList()
+
+        val list = mutableListOf<NominatimPlaceSuggestion>()
+        val seenCoords = mutableSetOf<String>()
+        val langTag = java.util.Locale.getDefault().language.ifBlank { "es" }
+
+        // 1. Google Places API (New) - POST https://places.googleapis.com/v1/places:searchText
+        try {
+            val jsonBody = JSONObject().apply {
+                put("textQuery", cleanQuery)
+                put("languageCode", langTag)
+                if (userLat != null && userLon != null) {
+                    val locationBias = JSONObject().apply {
+                        val circle = JSONObject().apply {
+                            val center = JSONObject().apply {
+                                put("latitude", userLat)
+                                put("longitude", userLon)
+                            }
+                            put("center", center)
+                            put("radius", 50000.0) // 50 km de radio preferente
+                        }
+                        put("circle", circle)
+                    }
+                    put("locationBias", locationBias)
+                }
+            }
+
+            val requestBody = jsonBody.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
+
+            val request = Request.Builder()
+                .url("https://places.googleapis.com/v1/places:searchText")
+                .header("Content-Type", "application/json")
+                .header("X-Goog-Api-Key", apiKey)
+                .header("X-Goog-FieldMask", "places.id,places.displayName,places.formattedAddress,places.location")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val bodyStr = response.body?.string()
+                    if (!bodyStr.isNullOrBlank()) {
+                        val json = JSONObject(bodyStr)
+                        val placesArray = json.optJSONArray("places")
+                        for (i in 0 until (placesArray?.length() ?: 0)) {
+                            val place = placesArray?.optJSONObject(i) ?: continue
+                            val displayNameObj = place.optJSONObject("displayName")
+                            val placeTitle = displayNameObj?.optString("text")?.trim().orEmpty()
+                            val formattedAddress = place.optString("formattedAddress", "").trim()
+                            val locationObj = place.optJSONObject("location")
+                            val lat = locationObj?.optDouble("latitude") ?: 0.0
+                            val lon = locationObj?.optDouble("longitude") ?: 0.0
+
+                            if (placeTitle.isBlank()) continue
+                            val key = String.format(java.util.Locale.US, "%.3f,%.3f", lat, lon)
+                            if (!seenCoords.add(key)) continue
+
+                            val euclid = if (userLat != null && userLon != null) {
+                                sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
+                            } else null
+
+                            val distKm = if (userLat != null && userLon != null) {
+                                haversineKm(userLat, userLon, lat, lon)
+                            } else null
+
+                            android.util.Log.d(
+                                "GooglePlacesService",
+                                "Google Places (New) resultado para '$cleanQuery': Nombre='$placeTitle', Dirección='$formattedAddress', Coords=($lat, $lon)"
+                            )
+
+                            list.add(
+                                NominatimPlaceSuggestion(
+                                    displayName = if (formattedAddress.isNotBlank()) "$placeTitle, $formattedAddress" else placeTitle,
+                                    shortPlaceName = placeTitle,
+                                    country = "",
+                                    cityOrTown = "",
+                                    latitude = lat,
+                                    longitude = lon,
+                                    euclideanDistance = euclid,
+                                    distanceKm = distKm,
+                                    formattedAddress = formattedAddress
+                                )
+                            )
+                        }
+                        if (list.isNotEmpty()) return@withContext list
+                    }
+                } else {
+                    android.util.Log.w("GooglePlacesService", "Google Places (New) código HTTP ${response.code}: ${response.message}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("GooglePlacesService", "Error llamando a Google Places (New): ${e.message}")
+        }
+
+        // 2. Fallback a Google Places API Text Search (Legacy)
+        try {
+            val urlBuilder = "https://maps.googleapis.com/maps/api/place/textsearch/json".toHttpUrlOrNull()
+                ?.newBuilder()
+                ?.addQueryParameter("query", cleanQuery)
+                ?.addQueryParameter("language", langTag)
+                ?.addQueryParameter("key", apiKey)
+
+            if (userLat != null && userLon != null) {
+                urlBuilder?.addQueryParameter("location", "$userLat,$userLon")
+                urlBuilder?.addQueryParameter("radius", "50000")
+            }
+
+            val url = urlBuilder?.build() ?: return@withContext list
+            val request = Request.Builder().url(url).get().build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val bodyStr = response.body?.string()
+                    if (!bodyStr.isNullOrBlank()) {
+                        val json = JSONObject(bodyStr)
+                        val resultsArray = json.optJSONArray("results")
+                        for (i in 0 until (resultsArray?.length() ?: 0)) {
+                            val place = resultsArray?.optJSONObject(i) ?: continue
+                            val placeTitle = place.optString("name", "").trim()
+                            val formattedAddress = place.optString("formatted_address", "").trim()
+                            val geom = place.optJSONObject("geometry")?.optJSONObject("location")
+                            val lat = geom?.optDouble("lat") ?: 0.0
+                            val lon = geom?.optDouble("lng") ?: 0.0
+
+                            if (placeTitle.isBlank()) continue
+                            val key = String.format(java.util.Locale.US, "%.3f,%.3f", lat, lon)
+                            if (!seenCoords.add(key)) continue
+
+                            val euclid = if (userLat != null && userLon != null) {
+                                sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
+                            } else null
+
+                            val distKm = if (userLat != null && userLon != null) {
+                                haversineKm(userLat, userLon, lat, lon)
+                            } else null
+
+                            android.util.Log.d(
+                                "GooglePlacesService",
+                                "Google Places (Legacy) resultado para '$cleanQuery': Nombre='$placeTitle', Dirección='$formattedAddress', Coords=($lat, $lon)"
+                            )
+
+                            list.add(
+                                NominatimPlaceSuggestion(
+                                    displayName = if (formattedAddress.isNotBlank()) "$placeTitle, $formattedAddress" else placeTitle,
+                                    shortPlaceName = placeTitle,
+                                    country = "",
+                                    cityOrTown = "",
+                                    latitude = lat,
+                                    longitude = lon,
+                                    euclideanDistance = euclid,
+                                    distanceKm = distKm,
+                                    formattedAddress = formattedAddress
+                                )
+                            )
+                        }
+                    }
+                } else {
+                    android.util.Log.w("GooglePlacesService", "Google Places (Legacy) código HTTP ${response.code}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("GooglePlacesService", "Error llamando a Google Places (Legacy): ${e.message}")
+        }
+
+        list
+    }
+
+    /**
      * Consulta el Geocoder nativo del dispositivo (Google Play Services / Google Maps)
      * complementado con la API de OpenStreetMap Nominatim con prioridad por cercanía GPS,
      * devolviendo comercios, direcciones, restaurantes y puntos de interés equivalentes a Google Maps.
@@ -85,10 +294,19 @@ object NominatimService {
         val cleanQuery = query.trim()
         if (cleanQuery.length < 2) return@withContext emptyList()
 
+        // 1. Google Places API (si hay clave de API configurada en .env / BuildConfig / entorno / manifest)
+        val apiKey = resolveGooglePlacesApiKey(context)
+        if (apiKey.isNotBlank()) {
+            val googleResults = searchWithGooglePlaces(cleanQuery, apiKey, userLat, userLon)
+            if (googleResults.isNotEmpty()) {
+                return@withContext googleResults
+            }
+        }
+
         val list = mutableListOf<NominatimPlaceSuggestion>()
         val seenCoords = mutableSetOf<String>()
 
-        // 1. Intentar primero con Android Geocoder nativo (Google Maps / Google Location Services)
+        // 2. Intentar primero con Android Geocoder nativo (Google Maps / Google Location Services)
         if (context != null) {
             try {
                 val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
