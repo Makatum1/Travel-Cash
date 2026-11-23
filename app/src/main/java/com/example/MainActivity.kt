@@ -161,7 +161,6 @@ fun TravelCashApp(
     val reminderNotificationsEnabled by viewModel.reminderNotificationsEnabled.collectAsStateWithLifecycle()
     val reminderHour by viewModel.reminderHour.collectAsStateWithLifecycle()
     val reminderMinute by viewModel.reminderMinute.collectAsStateWithLifecycle()
-    val googlePlacesApiKey by viewModel.googlePlacesApiKey.collectAsStateWithLifecycle()
     val texts = UiTexts.get(language)
 
     fun sanitizeTripFileName(title: String, extension: String): String {
@@ -791,13 +790,10 @@ fun TravelCashApp(
                         reminderHour = reminderHour,
                         reminderMinute = reminderMinute,
                         trips = uiState.trips,
-                        googlePlacesApiKey = googlePlacesApiKey,
                         onThemeModeChange = viewModel::setThemeMode,
                         onLanguageChange = viewModel::setLanguage,
                         onReminderNotificationsChange = viewModel::setReminderNotificationsEnabled,
                         onReminderTimeChange = viewModel::setReminderTime,
-                        onGooglePlacesApiKeyChange = viewModel::setGooglePlacesApiKey,
-                        onVerifyApiKey = viewModel::verifyGooglePlacesApiKey,
                         onExportZipClick = { trip ->
                             if (trip == null && uiState.trips.isEmpty()) {
                                 viewModel.showToast(texts.toastNoTripsToExport, isError = true)

@@ -74,26 +74,10 @@ object NominatimService {
         .build()
 
     /**
-     * Resuelve de forma segura la API Key de Google Places.
-     * Prioridad:
-     * 1. Clave introducida por el usuario en Ajustes (SharedPreferences).
-     * 2. BuildConfig (.env) GOOGLE_PLACES_API_KEY o GOOGLE_MAPS_API_KEY.
-     * 3. Variables de entorno.
-     * 4. Metadatos del AndroidManifest.
+     * Resuelve de forma segura la API Key de Google Places desde BuildConfig (.env),
+     * variables de entorno o metadatos de la aplicación.
      */
     fun resolveGooglePlacesApiKey(context: Context?): String {
-        // 1. SharedPreferences (Ajustes de la app)
-        if (context != null) {
-            try {
-                val prefs = context.getSharedPreferences("travel_cash_settings", Context.MODE_PRIVATE)
-                val userKey = prefs.getString("google_places_api_key", null)?.trim()
-                if (!userKey.isNullOrBlank() && !userKey.startsWith("DEFAULT_") && !userKey.startsWith("MY_")) {
-                    return userKey
-                }
-            } catch (_: Exception) {}
-        }
-
-        // 2. BuildConfig
         val buildConfigKey = try {
             com.example.BuildConfig::class.java.getField("GOOGLE_PLACES_API_KEY").get(null) as? String
         } catch (_: Exception) { null }
@@ -104,11 +88,9 @@ object NominatimService {
         } catch (_: Exception) { null }
         if (!mapsKey.isNullOrBlank() && !mapsKey.startsWith("MY_") && !mapsKey.startsWith("DEFAULT_")) return mapsKey.trim()
 
-        // 3. Entorno
         val envKey = System.getenv("GOOGLE_PLACES_API_KEY") ?: System.getenv("GOOGLE_MAPS_API_KEY")
         if (!envKey.isNullOrBlank()) return envKey.trim()
 
-        // 4. Manifest
         if (context != null) {
             try {
                 val appInfo = context.packageManager.getApplicationInfo(context.packageName, android.content.pm.PackageManager.GET_META_DATA)
@@ -117,78 +99,6 @@ object NominatimService {
             } catch (_: Exception) {}
         }
         return ""
-    }
-
-    /**
-     * Valida si una API Key de Google Places es válida y tiene los permisos activos en Google Cloud.
-     * Devuelve Pair(éxito, mensajeExplicativo).
-     */
-    suspend fun validateGooglePlacesApiKey(apiKey: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        val cleanKey = apiKey.trim()
-        if (cleanKey.isBlank() || cleanKey.startsWith("DEFAULT_") || cleanKey.startsWith("MY_")) {
-            return@withContext false to "Clave vacía o con formato no válido."
-        }
-
-        // 1. Probar con Google Places API (New)
-        try {
-            val jsonBody = JSONObject().apply {
-                put("textQuery", "Google")
-                put("languageCode", "es")
-            }
-            val requestBody = jsonBody.toString().toRequestBody("application/json; charset=utf-8".toMediaTypeOrNull())
-            val request = Request.Builder()
-                .url("https://places.googleapis.com/v1/places:searchText")
-                .header("Content-Type", "application/json")
-                .header("X-Goog-Api-Key", cleanKey)
-                .header("X-Goog-FieldMask", "places.id,places.displayName")
-                .post(requestBody)
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    return@withContext true to "Conexión exitosa con Google Places API (New)."
-                }
-            }
-        } catch (_: Exception) {}
-
-        // 2. Probar con Google Places API (Legacy Text Search)
-        try {
-            val url = "https://maps.googleapis.com/maps/api/place/textsearch/json".toHttpUrlOrNull()
-                ?.newBuilder()
-                ?.addQueryParameter("query", "Google")
-                ?.addQueryParameter("key", cleanKey)
-                ?.build() ?: return@withContext false to "URL de Google inválida."
-
-            val request = Request.Builder().url(url).get().build()
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    val bodyStr = response.body?.string().orEmpty()
-                    val json = JSONObject(bodyStr)
-                    val status = json.optString("status")
-                    if (status == "OK" || status == "ZERO_RESULTS") {
-                        return@withContext true to "Conexión exitosa con Google Places API."
-                    } else {
-                        val errMsg = json.optString("error_message", status)
-                        return@withContext false to "Google rechazó la clave ($status: $errMsg)"
-                    }
-                } else {
-                    return@withContext false to "Error HTTP ${response.code} de Google Places"
-                }
-            }
-        } catch (e: Exception) {
-            return@withContext false to "Error de red al conectar con Google: ${e.message}"
-        }
-    }
-
-    /**
-     * Limpia palabras de parada (stop-words) comunes en consultas en lenguaje natural (ej. "en", "de", "cerca de")
-     * para facilitar la coincidencia en motores como OpenStreetMap Nominatim o Photon.
-     */
-    fun sanitizeQuery(query: String): String {
-        return query
-            .replace(Regex("\\b(en|de|del|cerca de|cerca|in|near|near to|at|por|el|la|los|las)\\b", RegexOption.IGNORE_CASE), " ")
-            .replace(Regex("\\s+"), " ")
-            .trim()
     }
 
     /**
@@ -370,9 +280,131 @@ object NominatimService {
     }
 
     /**
-     * Realiza la búsqueda de comercios, campings, restaurantes, alojamientos y puntos de interés (POIs)
-     * mediante la API de Photon (Komoot / OpenStreetMap Elasticsearch).
-     * Es gratuita, no requiere clave de API y ofrece tolerancia a errores y búsqueda en lenguaje natural.
+     * Parsea la respuesta GeoJSON del motor de búsqueda Open Source Photon (Komoot / OpenStreetMap).
+     * Extrae de forma limpia el nombre del POI (Lugar) en shortPlaceName y la dirección formateada completa en formattedAddress.
+     */
+    fun parsePhotonGeoJson(
+        jsonStr: String,
+        query: String = "",
+        userLat: Double? = null,
+        userLon: Double? = null
+    ): List<NominatimPlaceSuggestion> {
+        val list = mutableListOf<NominatimPlaceSuggestion>()
+        val seenCoords = mutableSetOf<String>()
+
+        try {
+            val json = JSONObject(jsonStr)
+            val features = json.optJSONArray("features") ?: return emptyList()
+
+            for (i in 0 until features.length()) {
+                val feature = features.optJSONObject(i) ?: continue
+                val geometry = feature.optJSONObject("geometry")
+                val coordinates = geometry?.optJSONArray("coordinates")
+                val lon = coordinates?.optDouble(0) ?: 0.0
+                val lat = coordinates?.optDouble(1) ?: 0.0
+
+                if (lat == 0.0 && lon == 0.0) continue
+
+                val key = String.format(java.util.Locale.US, "%.4f,%.4f", lat, lon)
+                if (!seenCoords.add(key)) continue
+
+                val properties = feature.optJSONObject("properties") ?: continue
+                val rawName = properties.optString("name", "").trim()
+                val street = properties.optString("street", "").trim()
+                val housenumber = properties.optString("housenumber", "").trim()
+                val postcode = properties.optString("postcode", "").trim()
+                val city = (properties.optString("city").takeIf { it.isNotBlank() }
+                    ?: properties.optString("town").takeIf { it.isNotBlank() }
+                    ?: properties.optString("village").takeIf { it.isNotBlank() }
+                    ?: properties.optString("municipality").takeIf { it.isNotBlank() }
+                    ?: properties.optString("locality").takeIf { it.isNotBlank() }
+                    ?: properties.optString("district").takeIf { it.isNotBlank() }
+                    ?: "").trim()
+                val county = properties.optString("county", "").trim()
+                val state = properties.optString("state", "").trim()
+                val country = properties.optString("country", "").trim()
+
+                val streetWithNumber = when {
+                    street.isNotBlank() && housenumber.isNotBlank() -> "$street, $housenumber"
+                    street.isNotBlank() -> street
+                    else -> ""
+                }
+
+                // Título del POI (Línea 1): Nombre comercial, camping, albergue, asociación o vía
+                val placeTitle = when {
+                    rawName.isNotBlank() && !isAddressFragment(rawName) -> rawName
+                    rawName.isNotBlank() -> rawName
+                    streetWithNumber.isNotBlank() -> streetWithNumber
+                    city.isNotBlank() -> city
+                    else -> query.trim().ifBlank { "Lugar" }
+                }
+
+                // Dirección formateada (Línea 2): Calle, número, código postal, localidad, provincia, país
+                val addressParts = mutableListOf<String>()
+                if (streetWithNumber.isNotBlank() && !streetWithNumber.equals(placeTitle, ignoreCase = true)) {
+                    addressParts.add(streetWithNumber)
+                }
+
+                val postalCity = when {
+                    postcode.isNotBlank() && city.isNotBlank() -> "$postcode $city"
+                    city.isNotBlank() -> city
+                    postcode.isNotBlank() -> postcode
+                    else -> ""
+                }
+                if (postalCity.isNotBlank() && !postalCity.equals(placeTitle, ignoreCase = true)) {
+                    addressParts.add(postalCity)
+                } else if (city.isNotBlank() && !city.equals(placeTitle, ignoreCase = true) && !addressParts.contains(city)) {
+                    addressParts.add(city)
+                }
+
+                if (county.isNotBlank() && !county.equals(city, ignoreCase = true) && !county.equals(placeTitle, ignoreCase = true) && !addressParts.contains(county)) {
+                    addressParts.add(county)
+                }
+                if (state.isNotBlank() && !state.equals(city, ignoreCase = true) && !state.equals(county, ignoreCase = true) && !state.equals(placeTitle, ignoreCase = true) && !addressParts.contains(state)) {
+                    addressParts.add(state)
+                }
+                if (country.isNotBlank() && !country.equals(placeTitle, ignoreCase = true)) {
+                    addressParts.add(country)
+                }
+
+                val formattedAddress = addressParts.joinToString(", ").trim()
+                val displayName = if (formattedAddress.isNotBlank()) "$placeTitle, $formattedAddress" else placeTitle
+
+                val euclid = if (userLat != null && userLon != null) {
+                    sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
+                } else null
+
+                val distKm = if (userLat != null && userLon != null) {
+                    haversineKm(userLat, userLon, lat, lon)
+                } else null
+
+                list.add(
+                    NominatimPlaceSuggestion(
+                        displayName = displayName,
+                        shortPlaceName = placeTitle,
+                        country = country,
+                        cityOrTown = city,
+                        latitude = lat,
+                        longitude = lon,
+                        euclideanDistance = euclid,
+                        distanceKm = distKm,
+                        formattedAddress = formattedAddress
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+
+        return if (userLat != null && userLon != null) {
+            list.sortedBy { it.euclideanDistance ?: Double.MAX_VALUE }
+        } else {
+            list
+        }
+    }
+
+    /**
+     * Realiza la búsqueda de lugares y POIs mediante el motor Open Source Photon (Komoot).
+     * No requiere clave de API y utiliza Elasticsearch sobre los datos de OpenStreetMap
+     * permitiendo búsquedas de texto libre precisas (ej. campings, asociaciones, albergues).
      */
     suspend fun searchWithPhoton(
         query: String,
@@ -382,16 +414,11 @@ object NominatimService {
         val cleanQuery = query.trim()
         if (cleanQuery.length < 2) return@withContext emptyList()
 
-        val list = mutableListOf<NominatimPlaceSuggestion>()
-        val seenCoords = mutableSetOf<String>()
-        val langTag = java.util.Locale.getDefault().language.ifBlank { "es" }
-
         try {
             val urlBuilder = "https://photon.komoot.io/api/".toHttpUrlOrNull()
                 ?.newBuilder()
                 ?.addQueryParameter("q", cleanQuery)
                 ?.addQueryParameter("limit", "15")
-                ?.addQueryParameter("lang", langTag)
 
             if (userLat != null && userLon != null) {
                 urlBuilder?.addQueryParameter("lat", userLat.toString())
@@ -401,7 +428,7 @@ object NominatimService {
             val url = urlBuilder?.build() ?: return@withContext emptyList()
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "TravelCashAndroidApp/1.0 ($langTag; GestorGastosViajes)")
+                .header("User-Agent", "TravelCashAndroidApp/1.0 (GestorGastosViajes; OpenSource)")
                 .get()
                 .build()
 
@@ -409,88 +436,22 @@ object NominatimService {
                 if (response.isSuccessful) {
                     val bodyStr = response.body?.string()
                     if (!bodyStr.isNullOrBlank()) {
-                        val json = JSONObject(bodyStr)
-                        val features = json.optJSONArray("features")
-                        for (i in 0 until (features?.length() ?: 0)) {
-                            val feature = features?.optJSONObject(i) ?: continue
-                            val geom = feature.optJSONObject("geometry")
-                            val coords = geom?.optJSONArray("coordinates")
-                            val lon = coords?.optDouble(0) ?: continue
-                            val lat = coords.optDouble(1)
-
-                            val key = String.format(java.util.Locale.US, "%.3f,%.3f", lat, lon)
-                            if (!seenCoords.add(key)) continue
-
-                            val props = feature.optJSONObject("properties") ?: continue
-                            val name = props.optString("name", "").trim()
-                            val street = props.optString("street", "").trim()
-                            val housenumber = props.optString("housenumber", "").trim()
-                            val city = (props.optString("city").takeIf { it.isNotBlank() }
-                                ?: props.optString("town").takeIf { it.isNotBlank() }
-                                ?: props.optString("village").takeIf { it.isNotBlank() }
-                                ?: props.optString("locality").takeIf { it.isNotBlank() }
-                                ?: props.optString("district").takeIf { it.isNotBlank() }
-                                ?: "").trim()
-                            val state = props.optString("state", "").trim()
-                            val country = props.optString("country", "").trim()
-
-                            val streetPart = when {
-                                street.isNotBlank() && housenumber.isNotBlank() -> "$street, $housenumber"
-                                street.isNotBlank() -> street
-                                else -> ""
-                            }
-
-                            val placeTitle = when {
-                                name.isNotBlank() && !isAddressFragment(name) -> name
-                                streetPart.isNotBlank() -> streetPart
-                                city.isNotBlank() -> city
-                                else -> cleanQuery
-                            }
-
-                            val addressParts = listOf(streetPart, city, state, country)
-                                .filter { it.isNotBlank() && !it.equals(placeTitle, ignoreCase = true) }
-                            val formattedAddress = addressParts.joinToString(", ")
-
-                            val euclid = if (userLat != null && userLon != null) {
-                                sqrt((lat - userLat).pow(2.0) + (lon - userLon).pow(2.0))
-                            } else null
-
-                            val distKm = if (userLat != null && userLon != null) {
-                                haversineKm(userLat, userLon, lat, lon)
-                            } else null
-
-                            android.util.Log.d(
-                                "PhotonService",
-                                "Photon resultado para '$cleanQuery': Nombre='$placeTitle', Dirección='$formattedAddress', Coords=($lat, $lon)"
-                            )
-
-                            list.add(
-                                NominatimPlaceSuggestion(
-                                    displayName = if (formattedAddress.isNotBlank()) "$placeTitle, $formattedAddress" else placeTitle,
-                                    shortPlaceName = placeTitle,
-                                    country = country,
-                                    cityOrTown = city,
-                                    latitude = lat,
-                                    longitude = lon,
-                                    euclideanDistance = euclid,
-                                    distanceKm = distKm,
-                                    formattedAddress = formattedAddress
-                                )
-                            )
-                        }
+                        return@withContext parsePhotonGeoJson(bodyStr, cleanQuery, userLat, userLon)
                     }
+                } else {
+                    android.util.Log.w("PhotonService", "Photon HTTP ${response.code}: ${response.message}")
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.w("PhotonService", "Error llamando a Photon: ${e.message}")
+            android.util.Log.w("PhotonService", "Error llamando a Photon API: ${e.message}")
         }
 
-        list
+        emptyList()
     }
 
     /**
      * Consulta el Geocoder nativo del dispositivo (Google Play Services / Google Maps)
-     * complementado con la API de OpenStreetMap Nominatim con prioridad por cercanía GPS,
+     * complementado con la API Open Source Photon (Komoot) y OpenStreetMap Nominatim con prioridad por cercanía GPS,
      * devolviendo comercios, direcciones, restaurantes y puntos de interés equivalentes a Google Maps.
      */
     @Suppress("DEPRECATION")
@@ -503,7 +464,7 @@ object NominatimService {
         val cleanQuery = query.trim()
         if (cleanQuery.length < 2) return@withContext emptyList()
 
-        // 1. Google Places API (si hay clave de API configurada en Ajustes / .env / BuildConfig / entorno / manifest)
+        // 1. Google Places API (si hay clave de API configurada en .env / BuildConfig / entorno / manifest)
         val apiKey = resolveGooglePlacesApiKey(context)
         if (apiKey.isNotBlank()) {
             val googleResults = searchWithGooglePlaces(cleanQuery, apiKey, userLat, userLon)
@@ -512,21 +473,16 @@ object NominatimService {
             }
         }
 
+        // 2. Motor Open Source Photon (Komoot / OpenStreetMap POI Search)
+        val photonResults = searchWithPhoton(cleanQuery, userLat, userLon)
+        if (photonResults.isNotEmpty()) {
+            return@withContext photonResults
+        }
+
         val list = mutableListOf<NominatimPlaceSuggestion>()
         val seenCoords = mutableSetOf<String>()
 
-        // 2. Intentar primero con Photon (Komoot / OpenStreetMap POI search engine)
-        try {
-            val photonResults = searchWithPhoton(cleanQuery, userLat, userLon)
-            for (res in photonResults) {
-                val key = String.format(java.util.Locale.US, "%.3f,%.3f", res.latitude, res.longitude)
-                if (seenCoords.add(key)) {
-                    list.add(res)
-                }
-            }
-        } catch (_: Exception) {}
-
-        // 3. Geocoder nativo de Android (Google Play Services / Red local)
+        // 3. Intentar con Android Geocoder nativo (Google Maps / Google Location Services)
         if (context != null) {
             try {
                 val geocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
@@ -731,23 +687,6 @@ object NominatimService {
                 }
             }
         } catch (_: Exception) {}
-
-        // 5. Si hay pocos resultados y la consulta original contenía stop-words (ej. "en Prado"),
-        // reintentar con la consulta saneada (ej. "Camping Huttopia Prado") mediante Photon.
-        if (list.size < 3) {
-            val sanitized = sanitizeQuery(cleanQuery)
-            if (sanitized.length >= 2 && !sanitized.equals(cleanQuery, ignoreCase = true)) {
-                try {
-                    val sanitizedPhoton = searchWithPhoton(sanitized, userLat, userLon)
-                    for (res in sanitizedPhoton) {
-                        val key = String.format(java.util.Locale.US, "%.3f,%.3f", res.latitude, res.longitude)
-                        if (seenCoords.add(key)) {
-                            list.add(res)
-                        }
-                    }
-                } catch (_: Exception) {}
-            }
-        }
 
         // Ordenar por cercanía si tenemos GPS activo
         if (userLat != null && userLon != null) {

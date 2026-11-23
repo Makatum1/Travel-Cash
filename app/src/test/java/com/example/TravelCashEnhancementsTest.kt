@@ -1133,24 +1133,4 @@ class TravelCashEnhancementsTest {
         // If not set in environment or build config, returns string without exception
         assertEquals("", key)
     }
-
-    @Test
-    fun nominatimService_sanitizeQuery_removesStopWordsCorrectly() {
-        assertEquals("Camping Huttopia Prado", NominatimService.sanitizeQuery("Camping Huttopia en Prado"))
-        assertEquals("Hotel Miramar Barcelona", NominatimService.sanitizeQuery("Hotel Miramar en Barcelona"))
-        assertEquals("Restaurante Casa Pepe", NominatimService.sanitizeQuery("Restaurante Casa Pepe"))
-        assertEquals("Farmacia Sol", NominatimService.sanitizeQuery("Farmacia cerca de Sol"))
-    }
-
-    @Test
-    fun nominatimService_validateApiKey_rejectsEmptyOrDefault() = kotlinx.coroutines.runBlocking {
-        val emptyResult = NominatimService.validateGooglePlacesApiKey("")
-        assertEquals(false, emptyResult.first)
-
-        val defaultResult = NominatimService.validateGooglePlacesApiKey("DEFAULT_API_KEY")
-        assertEquals(false, defaultResult.first)
-
-        val myResult = NominatimService.validateGooglePlacesApiKey("MY_GOOGLE_KEY")
-        assertEquals(false, myResult.first)
-    }
 }

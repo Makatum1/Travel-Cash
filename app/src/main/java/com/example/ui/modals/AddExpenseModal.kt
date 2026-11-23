@@ -1,4 +1,4 @@
-﻿package com.example.ui.modals
+package com.example.ui.modals
 
 import android.Manifest
 import android.app.DatePickerDialog
@@ -41,7 +41,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Euro
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -89,7 +88,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
@@ -876,72 +874,6 @@ fun AddExpenseModal(
                                         }
                                         HorizontalDivider(color = Color(0xFFE2E8F0))
                                     }
-                                }
-                            }
-                        }
-
-                        // Indicador de búsqueda activa o sugerencia informativa si no hay resultados
-                        if (isSearchingPlaces && activeRouteSearchField == null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = TravelBlue)
-                                val searchingHint = when (currentLang) {
-                                    AppLanguage.ES -> "Buscando sitios..."
-                                    AppLanguage.EN -> "Searching places..."
-                                    AppLanguage.FR -> "Recherche de lieux..."
-                                    AppLanguage.IT -> "Ricerca luoghi..."
-                                    AppLanguage.ZH -> "正在搜索地点..."
-                                    AppLanguage.NL -> "Locaties zoeken..."
-                                    AppLanguage.DE -> "Orte werden gesucht..."
-                                    AppLanguage.PL -> "Wyszukiwanie miejsc..."
-                                    AppLanguage.PT -> "A procurar locais..."
-                                }
-                                Text(
-                                    text = searchingHint,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF64748B)
-                                )
-                            }
-                        } else if (placeName.trim().length >= 2 && placeSuggestions.isEmpty() && !isSearchingPlaces && activeRouteSearchField == null) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                val noResultsHint = when (currentLang) {
-                                    AppLanguage.ES -> "No se encontraron resultados para «${placeName.trim()}». Puedes escribir el lugar y la dirección manualmente, o activar la búsqueda de Google Maps configurando tu clave en Ajustes."
-                                    AppLanguage.EN -> "No results found for \"${placeName.trim()}\". You can enter place and address manually, or enable Google Maps search in Settings."
-                                    AppLanguage.FR -> "Aucun résultat pour « ${placeName.trim()} ». Vous pouvez saisir le lieu et l'adresse manuellement, ou activer Google Maps dans les paramètres."
-                                    AppLanguage.IT -> "Nessun risultato per \"${placeName.trim()}\". Puoi inserire luogo e indirizzo manualmente, o abilitare Google Maps nelle impostazioni."
-                                    AppLanguage.ZH -> "未找到与“${placeName.trim()}”相关的地点。您可以手动输入地点与地址，或在“设置”中配置 Google 地图。"
-                                    AppLanguage.NL -> "Geen resultaten gevonden voor «${placeName.trim()}». U kunt de locatie handmatig invoeren of Google Maps inschakelen in Instellingen."
-                                    AppLanguage.DE -> "Keine Ergebnisse für „${placeName.trim()}“. Sie können Ort und Adresse manuell eingeben oder Google Maps in den Einstellungen aktivieren."
-                                    AppLanguage.PL -> "Nie znaleziono wyników dla „${placeName.trim()}”. Możesz wpisać miejsce i adres ręcznie lub włączyć Google Maps w Ustawieniach."
-                                    AppLanguage.PT -> "Nenhum resultado para «${placeName.trim()}». Pode introduzir o local e morada manualmente ou ativar o Google Maps nas Definições."
-                                }
-                                Row(
-                                    modifier = Modifier.padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Info,
-                                        contentDescription = null,
-                                        tint = TravelBlue,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = noResultsHint,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = Color(0xFF475569),
-                                        lineHeight = 16.sp
-                                    )
                                 }
                             }
                         }
