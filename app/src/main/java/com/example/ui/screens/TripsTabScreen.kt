@@ -160,11 +160,10 @@ fun TripsTabScreen(
                             .height(54.dp)
                             .testTag("create_new_trip_button")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(22.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = texts.newTripBtn,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
 

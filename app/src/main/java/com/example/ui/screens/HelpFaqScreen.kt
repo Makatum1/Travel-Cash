@@ -117,8 +117,8 @@ val TRAVEL_CASH_FAQS = listOf(
         categoryEn = "Trip Management",
         questionEs = "¿Cómo creo un viaje nuevo y qué datos necesito?",
         questionEn = "How do I create a new trip and what data do I need?",
-        answerEs = "Dirígete a la pestaña \"Viajes\" en la barra de navegación inferior y pulsa sobre el botón flotante \"+ Nuevo Viaje\" (o la tarjeta para crear viaje). Introduce el nombre de tu viaje o destino, las fechas de inicio y fin, el presupuesto estimado (opcional), la divisa base (por ejemplo EUR, USD...) y los participantes iniciales. Al guardar, quedará establecido como tu viaje activo sobre el que registrarás gastos.",
-        answerEn = "Go to the \"Trips\" tab on the bottom navigation bar and tap the \"+ New Trip\" button (or the new trip card). Enter your trip or destination name, start and end dates, estimated budget (optional), base currency (e.g. EUR, USD...), and initial participants. Once saved, it will become your active trip where you can log expenses."
+        answerEs = "Dirígete a la pestaña \"Viajes\" en la barra de navegación inferior y pulsa sobre el botón \"+ Crear Nuevo Viaje\" (o la tarjeta para crear viaje). Introduce el nombre de tu viaje o destino, las fechas de inicio y fin, el presupuesto estimado (opcional), la divisa base (por ejemplo EUR, USD...) y los participantes iniciales. Al guardar, quedará establecido como tu viaje activo sobre el que registrarás gastos.",
+        answerEn = "Go to the \"Trips\" tab on the bottom navigation bar and tap the \"+ Create New Trip\" button (or the new trip card). Enter your trip or destination name, start and end dates, estimated budget (optional), base currency (e.g. EUR, USD...), and initial participants. Once saved, it will become your active trip where you can log expenses."
     ),
     FaqItem(
         id = "faq_switch_trip",
