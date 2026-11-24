@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocalTaxi
+import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.Color
@@ -101,7 +102,7 @@ data class CategoryInfo(
 object CategoryCatalog {
     const val DEBT_SETTLEMENT_CATEGORY = "Liquidación de deudas"
 
-    // Taxi se sitúa junto a Vuelos (Transporte, Vuelos, Taxi), y al final junto a Entradas y Ocio queda General
+    // Taxi se sitúa junto a Vuelos (Transporte, Vuelos, Taxi), y al final junto a Entradas y Ocio queda Médicos y General (Personalizable)
     val categories = listOf(
         CategoryInfo("Restaurantes y Comida", "#F59E0B", Color(0xFFF59E0B), Icons.Default.Restaurant),
         CategoryInfo("Alojamiento", "#6366F1", Color(0xFF6366F1), Icons.Default.Hotel),
@@ -111,7 +112,8 @@ object CategoryCatalog {
         CategoryInfo("Compras y Supermercado", "#10B981", Color(0xFF10B981), Icons.Default.ShoppingCart),
         CategoryInfo("Cafés y Snacks", "#8B5CF6", Color(0xFF8B5CF6), Icons.Default.LocalCafe),
         CategoryInfo("Entradas y Ocio", "#EC4899", Color(0xFFEC4899), Icons.Default.ConfirmationNumber),
-        CategoryInfo("General", "#64748B", Color(0xFF64748B), Icons.Default.Category)
+        CategoryInfo("Médicos", "#EF4444", Color(0xFFEF4444), Icons.Default.MedicalServices),
+        CategoryInfo("General (Personalizable)", "#64748B", Color(0xFF64748B), Icons.Default.Category)
     )
 
     fun isDebtSettlementCategory(categoryName: String): Boolean {
@@ -148,17 +150,21 @@ object CategoryCatalog {
         if (name.equals("Transporte y Gasolina", ignoreCase = true)) {
             return categories.first { it.name == "Transporte" }
         }
+        if (name.equals("Médicos", ignoreCase = true) || name.equals("Medicos", ignoreCase = true) || name.equals("Salud y Farmacia", ignoreCase = true)) {
+            return categories.firstOrNull { it.name.equals("Médicos", ignoreCase = true) }
+                ?: CategoryInfo("Médicos", "#EF4444", Color(0xFFEF4444), Icons.Default.MedicalServices)
+        }
+        if (name.equals("General", ignoreCase = true) || name.equals("General (Personalizable)", ignoreCase = true)) {
+            return categories.firstOrNull { it.name.startsWith("General", ignoreCase = true) }
+                ?: CategoryInfo("General (Personalizable)", "#64748B", Color(0xFF64748B), Icons.Default.Category)
+        }
         return categories.find { it.name.equals(name, ignoreCase = true) }
-            ?: if (name.equals("Salud y Farmacia", ignoreCase = true)) {
-                CategoryInfo("Salud y Farmacia", "#EF4444", Color(0xFFEF4444), Icons.Default.LocalHospital)
-            } else {
-                CategoryInfo(
-                    name = name.ifBlank { "General" },
-                    hexColor = "#64748B",
-                    color = Color(0xFF64748B),
-                    icon = Icons.Default.Category
-                )
-            }
+            ?: CategoryInfo(
+                name = name.ifBlank { "General (Personalizable)" },
+                hexColor = "#64748B",
+                color = Color(0xFF64748B),
+                icon = Icons.Default.Category
+            )
     }
 
     /**
@@ -195,6 +201,8 @@ object CategoryCatalog {
         return when (lang) {
             AppLanguage.ES -> when (norm) {
                 "transporte y gasolina" -> "Transporte"
+                "médicos", "medicos", "salud y farmacia" -> "Médicos"
+                "general", "general (personalizable)" -> "General (Personalizable)"
                 else -> rawCategoryName
             }
             AppLanguage.EN -> when (norm) {
@@ -206,8 +214,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Shopping & Grocery"
                 "cafés y snacks", "cafes y snacks" -> "Cafes & Snacks"
                 "vuelos", "vuelo" -> "Flights"
-                "salud y farmacia" -> "Health & Pharmacy"
-                "general" -> "General"
+                "médicos", "medicos", "salud y farmacia" -> "Medical"
+                "general", "general (personalizable)" -> "General (Customizable)"
                 else -> rawCategoryName
             }
             AppLanguage.FR -> when (norm) {
@@ -219,8 +227,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Achats et Supermarché"
                 "cafés y snacks", "cafes y snacks" -> "Cafés et Snacks"
                 "vuelos", "vuelo" -> "Vols"
-                "salud y farmacia" -> "Santé et Pharmacie"
-                "general" -> "Général"
+                "médicos", "medicos", "salud y farmacia" -> "Médical"
+                "general", "general (personalizable)" -> "Général (Personnalisable)"
                 else -> rawCategoryName
             }
             AppLanguage.IT -> when (norm) {
@@ -232,8 +240,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Spesa e Supermercato"
                 "cafés y snacks", "cafes y snacks" -> "Caffè e Snack"
                 "vuelos", "vuelo" -> "Voli"
-                "salud y farmacia" -> "Salute e Farmacia"
-                "general" -> "Generale"
+                "médicos", "medicos", "salud y farmacia" -> "Medico"
+                "general", "general (personalizable)" -> "Generale (Personalizzabile)"
                 else -> rawCategoryName
             }
             AppLanguage.ZH -> when (norm) {
@@ -245,8 +253,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "购物与超市"
                 "cafés y snacks", "cafes y snacks" -> "咖啡与小吃"
                 "vuelos", "vuelo" -> "航班"
-                "salud y farmacia" -> "健康与药房"
-                "general" -> "通用"
+                "médicos", "medicos", "salud y farmacia" -> "医疗"
+                "general", "general (personalizable)" -> "通用（可自定义）"
                 else -> rawCategoryName
             }
             AppLanguage.NL -> when (norm) {
@@ -258,8 +266,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Winkelen & Supermarkt"
                 "cafés y snacks", "cafes y snacks" -> "Cafés & Snacks"
                 "vuelos", "vuelo" -> "Vluchten"
-                "salud y farmacia" -> "Gezondheid & Apotheek"
-                "general" -> "Algemeen"
+                "médicos", "medicos", "salud y farmacia" -> "Medisch"
+                "general", "general (personalizable)" -> "Algemeen (Aanpasbaar)"
                 else -> rawCategoryName
             }
             AppLanguage.DE -> when (norm) {
@@ -271,8 +279,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Einkaufen & Supermarkt"
                 "cafés y snacks", "cafes y snacks" -> "Cafés & Snacks"
                 "vuelos", "vuelo" -> "Flüge"
-                "salud y farmacia" -> "Gesundheit & Apotheke"
-                "general" -> "Allgemein"
+                "médicos", "medicos", "salud y farmacia" -> "Ärztlich"
+                "general", "general (personalizable)" -> "Allgemein (Anpassbar)"
                 else -> rawCategoryName
             }
             AppLanguage.PL -> when (norm) {
@@ -284,8 +292,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Zakupy i Supermarket"
                 "cafés y snacks", "cafes y snacks" -> "Kawiarnie i Przekąski"
                 "vuelos", "vuelo" -> "Loty"
-                "salud y farmacia" -> "Zdrowie i Apteka"
-                "general" -> "Ogólne"
+                "médicos", "medicos", "salud y farmacia" -> "Medyczne"
+                "general", "general (personalizable)" -> "Ogólne (Dostosowywalne)"
                 else -> rawCategoryName
             }
             AppLanguage.PT -> when (norm) {
@@ -297,8 +305,8 @@ object CategoryCatalog {
                 "compras y supermercado" -> "Compras e Supermercado"
                 "cafés y snacks", "cafes y snacks" -> "Cafés e Snacks"
                 "vuelos", "vuelo" -> "Voos"
-                "salud y farmacia" -> "Saúde e Farmácia"
-                "general" -> "Geral"
+                "médicos", "medicos", "salud y farmacia" -> "Médicos"
+                "general", "general (personalizable)" -> "Geral (Personalizável)"
                 else -> rawCategoryName
             }
         }

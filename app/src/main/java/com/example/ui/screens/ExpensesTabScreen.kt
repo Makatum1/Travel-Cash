@@ -109,7 +109,7 @@ fun ExpensesTabScreen(
     val locale = currentLang.locale
     val participantMap = remember(participants) { participants.associateBy { it.id } }
 
-    val standardFirstEightNames = remember {
+    val standardNonGeneralNames = remember {
         CategoryCatalog.categories.dropLast(1).map { it.name.lowercase(Locale.ROOT) }.toSet()
     }
 
@@ -139,10 +139,11 @@ fun ExpensesTabScreen(
     // Contadores por categoría sobre los gastos reales del viaje
     val categoryCounts = remember(realExpenses) {
         realExpenses.groupingBy { exp ->
-            if (standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))) {
-                exp.category
+            val catName = exp.category.trim()
+            if (standardNonGeneralNames.contains(catName.lowercase(Locale.ROOT))) {
+                CategoryCatalog.categories.find { it.name.equals(catName, ignoreCase = true) }?.name ?: catName
             } else {
-                "General"
+                "General (Personalizable)"
             }
         }.eachCount()
     }
@@ -160,8 +161,9 @@ fun ExpensesTabScreen(
             realExpenses.filter { exp ->
                 val matchesCategory = when {
                     selectedCategoryFilter == null -> true
-                    selectedCategoryFilter.equals("General", ignoreCase = true) ->
-                        !standardFirstEightNames.contains(exp.category.lowercase(Locale.ROOT))
+                    selectedCategoryFilter.equals("General", ignoreCase = true) ||
+                    selectedCategoryFilter.equals("General (Personalizable)", ignoreCase = true) ->
+                        !standardNonGeneralNames.contains(exp.category.lowercase(Locale.ROOT))
                     else -> exp.category.equals(selectedCategoryFilter, ignoreCase = true)
                 }
 
@@ -477,13 +479,14 @@ fun ExpensesTabScreen(
                             fontSize = 11.sp,
                             fontWeight = if (selectedCategoryFilter == null) FontWeight.Bold else FontWeight.Medium,
                             color = if (selectedCategoryFilter == null) Color.White else Color(0xFF475569),
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                         )
                     }
 
                     CategoryCatalog.categories.forEach { cat ->
                         val count = categoryCounts[cat.name] ?: 0
-                        val isSelected = selectedCategoryFilter.equals(cat.name, ignoreCase = true)
+                        val isSelected = selectedCategoryFilter.equals(cat.name, ignoreCase = true) ||
+                            (cat.name.startsWith("General", ignoreCase = true) && selectedCategoryFilter?.startsWith("General", ignoreCase = true) == true)
                         val displayCatName = CategoryCatalog.displayName(cat.name, currentLang)
                         Surface(
                             onClick = { onCategoryFilterChange(cat.name) },
@@ -495,15 +498,15 @@ fun ExpensesTabScreen(
                             )
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                                modifier = Modifier.padding(horizontal = 13.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Icon(
                                     imageVector = cat.icon,
                                     contentDescription = null,
                                     tint = if (isSelected) Color.White else cat.color,
-                                    modifier = Modifier.size(12.dp)
+                                    modifier = Modifier.size(13.dp)
                                 )
                                 Text(
                                     text = "$displayCatName ($count)",
@@ -528,15 +531,15 @@ fun ExpensesTabScreen(
                         modifier = Modifier.testTag("filter_chip_settlements")
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Euro,
                                 contentDescription = null,
                                 tint = if (isSettlementsFilterSelected) Color.White else settlementChipColor,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(13.dp)
                             )
                             val totalSettlementsAndIncomes = settlementExpenses.size + incomes.size
                             Text(

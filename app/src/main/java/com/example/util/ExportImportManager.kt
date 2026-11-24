@@ -506,7 +506,7 @@ object ExportImportManager {
             val matchedCat = CategoryCatalog.categories.find {
                 it.name.equals(rawCat, ignoreCase = true) ||
                         (rawCat.isNotBlank() && it.name.lowercase(Locale.ROOT).contains(rawCat.lowercase(Locale.ROOT)))
-            }?.name ?: "General"
+            }?.name ?: "General (Personalizable)"
 
             val place = col(mapping.placeColIndex).ifEmpty {
                 col(mapping.notesColIndex).take(35).ifEmpty { matchedCat }

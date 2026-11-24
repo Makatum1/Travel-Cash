@@ -240,11 +240,12 @@ fun AddExpenseModal(
             !CategoryCatalog.isDebtSettlementCategory(existingCat) &&
             !standardNonGeneralNames.contains(existingCat.lowercase(Locale.ROOT)) &&
             !existingCat.equals("General", ignoreCase = true) &&
+            !existingCat.equals("General (Personalizable)", ignoreCase = true) &&
             !existingCat.equals("General & Otros", ignoreCase = true)
         ) {
             existingCat
         } else {
-            "General"
+            "General (Personalizable)"
         }
         mutableStateOf(initialCustom)
     }
@@ -255,8 +256,9 @@ fun AddExpenseModal(
         val existingCat = existingExpense?.category
         val initialCat = when {
             isSettlementEdit -> CategoryCatalog.DEBT_SETTLEMENT_CATEGORY
-            existingCat.equals("General & Otros", ignoreCase = true) -> "General"
-            else -> existingCat ?: CategoryCatalog.categories.first().name
+            existingCat.isNullOrBlank() -> CategoryCatalog.categories.first().name
+            existingCat.equals("General & Otros", ignoreCase = true) || existingCat.equals("General", ignoreCase = true) -> "General (Personalizable)"
+            else -> existingCat
         }
         mutableStateOf(initialCat)
     }
@@ -1150,10 +1152,12 @@ fun AddExpenseModal(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             CategoryCatalog.categories.forEach { cat ->
-                                val isGeneralButton = cat.name.equals("General", ignoreCase = true)
+                                val isGeneralButton = cat.name.startsWith("General", ignoreCase = true)
                                 val displayLabel = if (isGeneralButton) {
-                                    if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
-                                        CategoryCatalog.displayName("General", currentLang)
+                                    if (customGeneralButtonLabel.equals("General", ignoreCase = true) ||
+                                        customGeneralButtonLabel.equals("General (Personalizable)", ignoreCase = true)
+                                    ) {
+                                        CategoryCatalog.displayName(cat.name, currentLang)
                                     } else {
                                         customGeneralButtonLabel // Nombre personalizado puesto por el usuario: no se traduce
                                     }
@@ -1162,7 +1166,8 @@ fun AddExpenseModal(
                                 }
                                 val isSelected = if (isGeneralButton) {
                                     selectedCategory.equals(customGeneralButtonLabel, ignoreCase = true) ||
-                                            selectedCategory.equals("General", ignoreCase = true)
+                                            selectedCategory.equals("General", ignoreCase = true) ||
+                                            selectedCategory.equals("General (Personalizable)", ignoreCase = true)
                                 } else {
                                     selectedCategory.equals(cat.name, ignoreCase = true)
                                 }
@@ -1171,7 +1176,9 @@ fun AddExpenseModal(
                                     onClick = {
                                         if (isGeneralButton) {
                                             selectedCategory = customGeneralButtonLabel
-                                            tempGeneralNameInput = if (customGeneralButtonLabel.equals("General", ignoreCase = true)) {
+                                            tempGeneralNameInput = if (customGeneralButtonLabel.equals("General", ignoreCase = true) ||
+                                                customGeneralButtonLabel.equals("General (Personalizable)", ignoreCase = true)
+                                            ) {
                                                 ""
                                             } else {
                                                 customGeneralButtonLabel
@@ -1189,7 +1196,7 @@ fun AddExpenseModal(
                                     )
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.5.dp),
+                                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.5.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
@@ -1437,7 +1444,7 @@ fun AddExpenseModal(
                                     text = "$methodPrefix${PaymentMethodCatalog.displayName(method, currentLang)}",
                                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                                     color = if (isSelected) Color.White else Color(0xFF475569),
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    modifier = Modifier.padding(horizontal = 15.dp, vertical = 7.dp)
                                 )
                             }
                         }
@@ -2036,8 +2043,8 @@ fun AddExpenseModal(
             AppLanguage.PT -> "Personalizar botão Geral"
         }
         val renameDialogDesc = when (currentLang) {
-            AppLanguage.ES -> "Escribe un nombre para este botón en este gasto (para futuros gastos volverá a mostrarse como \"General\"):"
-            AppLanguage.EN -> "Enter a custom name for this button on this expense only (it will reset to \"General\" for future expenses):"
+            AppLanguage.ES -> "Escribe un nombre para este botón en este gasto (para futuros gastos volverá a mostrarse como \"General (Personalizable)\"):"
+            AppLanguage.EN -> "Enter a custom name for this button on this expense only (it will reset to \"General (Customizable)\" for future expenses):"
             AppLanguage.FR -> "Entrez un nom personnalisé pour ce bouton uniquement pour cette dépense (il sera réinitialisé à « Général » pour les prochaines dépenses) :"
             AppLanguage.IT -> "Inserisci un nome personalizzato per questo pulsante solo per questa spesa (tornerà a \"Generale\" per le spese future):"
             AppLanguage.ZH -> "仅为此项支出输入此按钮的自定义名称（后续支出将重置为“常规”）："
@@ -2069,18 +2076,18 @@ fun AddExpenseModal(
             AppLanguage.PT -> "Aplicar a esta despesa"
         }
         val keepGeneralLabel = when (currentLang) {
-            AppLanguage.ES -> "Dejar en General"
-            AppLanguage.EN -> "Keep as General"
-            AppLanguage.FR -> "Garder Général"
-            AppLanguage.IT -> "Mantieni Generale"
-            AppLanguage.ZH -> "保留为常规"
-            AppLanguage.NL -> "Als Algemeen behouden"
-            AppLanguage.DE -> "Als Allgemein belassen"
-            AppLanguage.PL -> "Pozostaw jako Ogólne"
-            AppLanguage.PT -> "Manter como Geral"
+            AppLanguage.ES -> "Dejar en General (Personalizable)"
+            AppLanguage.EN -> "Keep as General (Customizable)"
+            AppLanguage.FR -> "Garder Général (Personnalisable)"
+            AppLanguage.IT -> "Mantieni Generale (Personalizzabile)"
+            AppLanguage.ZH -> "保留为通用（可自定义）"
+            AppLanguage.NL -> "Als Algemeen (Aanpasbaar) behouden"
+            AppLanguage.DE -> "Als Allgemein (Anpassbar) belassen"
+            AppLanguage.PL -> "Pozostaw jako Ogólne (Dostosowywalne)"
+            AppLanguage.PT -> "Manter como Geral (Personalizável)"
         }
         val applyCustomGeneralName = {
-            val customName = tempGeneralNameInput.trim().ifEmpty { "General" }
+            val customName = tempGeneralNameInput.trim().ifEmpty { "General (Personalizable)" }
             customGeneralButtonLabel = customName
             selectedCategory = customName
             showRenameGeneralDialog = false
@@ -2174,8 +2181,8 @@ fun AddExpenseModal(
             dismissButton = {
                 OutlinedButton(
                     onClick = {
-                        customGeneralButtonLabel = "General"
-                        selectedCategory = "General"
+                        customGeneralButtonLabel = "General (Personalizable)"
+                        selectedCategory = "General (Personalizable)"
                         showRenameGeneralDialog = false
                     },
                     border = BorderStroke(1.dp, Color(0xFFCBD5E1)),

@@ -13,12 +13,14 @@ import com.example.domain.DebtCalculator
 import com.example.domain.MapPinInput
 import com.example.domain.MapWaypointOffsetCalculator
 import com.example.domain.ParticipantNetSpendCalculator
+import com.example.ui.theme.AppLanguage
 import com.example.util.CurrencyCatalog
 import com.example.util.DailyReminderScheduler
 import com.example.util.FormatUtils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
@@ -1169,5 +1171,30 @@ class TravelCashEnhancementsTest {
             fullAddress = "Asoc. Peregrinus Dezae, Rúa Banda do Río, 12, 36500 Lalín, España"
         )
         assertEquals("Rúa Banda do Río, 12, 36500 Lalín, España", address)
+    }
+
+    @Test
+    fun categoryCatalog_medicosAndGeneralPersonalizable_properlyConfigured() {
+        val medicos = CategoryCatalog.categories.find { it.name.equals("Médicos", ignoreCase = true) }
+        assertNotNull("La categoría Médicos debe existir en CategoryCatalog.categories", medicos)
+        assertEquals("#EF4444", medicos!!.hexColor)
+
+        val generalPersonalizable = CategoryCatalog.categories.find { it.name.startsWith("General", ignoreCase = true) }
+        assertNotNull("La categoría General (Personalizable) debe existir", generalPersonalizable)
+        assertEquals("General (Personalizable)", generalPersonalizable!!.name)
+
+        // Verificación de resolución y fallbacks
+        val catMedicos = CategoryCatalog.getCategory("Médicos")
+        assertEquals("Médicos", catMedicos.name)
+        assertEquals("#EF4444", catMedicos.hexColor)
+
+        val catGeneralLegacy = CategoryCatalog.getCategory("General")
+        assertEquals("General (Personalizable)", catGeneralLegacy.name)
+
+        // Verificación de displayName en español e inglés
+        assertEquals("Médicos", CategoryCatalog.displayName("Médicos", AppLanguage.ES))
+        assertEquals("Medical", CategoryCatalog.displayName("Médicos", AppLanguage.EN))
+        assertEquals("General (Personalizable)", CategoryCatalog.displayName("General", AppLanguage.ES))
+        assertEquals("General (Customizable)", CategoryCatalog.displayName("General", AppLanguage.EN))
     }
 }

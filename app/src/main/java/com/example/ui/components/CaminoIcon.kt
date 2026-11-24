@@ -598,7 +598,7 @@ fun createTravelMapPinDrawable(
             }
             canvas.drawLine(cx, cy - 3.5f * s, cx, cy + 3.5f * s, dashP)
         }
-        normCat.contains("salud") || normCat.contains("farmacia") -> {
+        normCat.contains("salud") || normCat.contains("farmacia") || normCat.contains("médic") || normCat.contains("medic") -> {
             // Cruz médica
             canvas.drawRoundRect(android.graphics.RectF(cx - 1.8f * s, cy - 5.5f * s, cx + 1.8f * s, cy + 5.5f * s), 1f * s, 1f * s, iconPaint)
             canvas.drawRoundRect(android.graphics.RectF(cx - 5.5f * s, cy - 1.8f * s, cx + 5.5f * s, cy + 1.8f * s), 1f * s, 1f * s, iconPaint)
