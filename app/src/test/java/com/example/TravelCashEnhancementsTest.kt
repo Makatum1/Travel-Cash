@@ -1199,7 +1199,7 @@ class TravelCashEnhancementsTest {
     }
 
     @Test
-    fun exportPdfFileNaming_generatesExpectedPatternForWholeTripAndSingleDay() {
+    fun exportFileNaming_generatesExpectedPatternForWholeTripSingleDayAndBackups() {
         val tripTitle = "Camino de Invierno"
         val cleanWholeTitle = "Gastos - ${tripTitle.trim()}"
         val wholePdfFileName = "${cleanWholeTitle}.pdf"
@@ -1210,5 +1210,11 @@ class TravelCashEnhancementsTest {
         assertEquals("010826", datePrefix)
         val dayPdfFileName = "${datePrefix}${tripTitle.trim()}.pdf"
         assertEquals("010826Camino de Invierno.pdf", dayPdfFileName)
+
+        val jsonFileName = "Travel - ${tripTitle.trim()}.json"
+        assertEquals("Travel - Camino de Invierno.json", jsonFileName)
+
+        val zipFileName = "Travel - ${tripTitle.trim()}.zip"
+        assertEquals("Travel - Camino de Invierno.zip", zipFileName)
     }
 }

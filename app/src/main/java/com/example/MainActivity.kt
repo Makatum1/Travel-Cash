@@ -560,7 +560,8 @@ fun TravelCashApp(
         try {
             val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
             val safeName = if (clean.isEmpty()) "Viaje" else clean
-            val targetFile = File(context.cacheDir, "Viaje_${safeName}.json")
+            val fileName = sanitizeTripFileName("Travel - $safeName", "json")
+            val targetFile = File(context.cacheDir, fileName)
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
             val incs = uiState.allIncomes.filter { it.tripId == trip.id }
@@ -607,8 +608,8 @@ fun TravelCashApp(
         try {
             val fileName = if (targetTrip != null) {
                 val clean = targetTrip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
-                val safeName = if (clean.isEmpty()) "viaje" else clean
-                "viaje_${safeName}.zip"
+                val safeName = if (clean.isEmpty()) "Viaje" else clean
+                sanitizeTripFileName("Travel - $safeName", "zip")
             } else {
                 "travel_cash_todos_los_viajes.zip"
             }
