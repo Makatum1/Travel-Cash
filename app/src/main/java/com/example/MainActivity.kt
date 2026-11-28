@@ -490,6 +490,97 @@ fun TravelCashApp(
         }
     }
 
+    fun exportAndShareDayPdf(trip: TripEntity, dateIso: String, dayExpenses: List<ExpenseEntity>) {
+        try {
+            val fileName = sanitizeTripFileName("${trip.title}_$dateIso", "pdf")
+            val targetFile = File(context.cacheDir, fileName)
+            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
+            val incs = uiState.allIncomes.filter { it.tripId == trip.id && it.date == dateIso }
+            FileOutputStream(targetFile).use { out ->
+                ExportImportManager.writeTripPdfReport(
+                    outputStream = out,
+                    trip = trip,
+                    participants = parts,
+                    expenses = dayExpenses,
+                    incomes = incs,
+                    context = context,
+                    language = language,
+                    dayFilterIso = dateIso
+                )
+            }
+            val dateFormatted = FormatUtils.formatShortDate(dateIso, language.locale)
+            val title = when (language) {
+                AppLanguage.ES -> "Compartir Reporte Diario PDF ($dateFormatted) - ${trip.title}"
+                AppLanguage.EN -> "Share Daily PDF Report ($dateFormatted) - ${trip.title}"
+                AppLanguage.FR -> "Partager le rapport quotidien PDF ($dateFormatted) - ${trip.title}"
+                AppLanguage.IT -> "Condividi report giornaliero PDF ($dateFormatted) - ${trip.title}"
+                AppLanguage.ZH -> "分享每日 PDF 报表 ($dateFormatted) - ${trip.title}"
+                AppLanguage.NL -> "Dagelijks PDF-rapport delen ($dateFormatted) - ${trip.title}"
+                AppLanguage.DE -> "Tagesbericht PDF teilen ($dateFormatted) - ${trip.title}"
+                AppLanguage.PL -> "Udostępnij raport dzienny PDF ($dateFormatted) - ${trip.title}"
+                AppLanguage.PT -> "Partilhar Relatório Diário PDF ($dateFormatted) - ${trip.title}"
+            }
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "application/pdf",
+                dialogTitle = title
+            )
+        } catch (e: Exception) {
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al generar el reporte diario en PDF"
+                AppLanguage.EN -> "Error generating daily PDF report"
+                AppLanguage.FR -> "Erreur lors de la génération du rapport quotidien PDF"
+                AppLanguage.IT -> "Errore durante la generación del report giornaliero PDF"
+                AppLanguage.ZH -> "生成每日 PDF 报表时出错"
+                AppLanguage.NL -> "Fout bij genereren van dagelijks PDF-rapport"
+                AppLanguage.DE -> "Fehler beim Erstellen des täglichen PDF-Berichts"
+                AppLanguage.PL -> "Błąd podczas generowania raportu dziennego PDF"
+                AppLanguage.PT -> "Erro ao gerar o relatório diário em PDF"
+            }
+            viewModel.showToast(errorMsg, isError = true)
+        }
+    }
+
+    fun exportAndShareDayCsv(trip: TripEntity, dateIso: String, dayExpenses: List<ExpenseEntity>) {
+        try {
+            val fileName = sanitizeTripFileName("${trip.title}_$dateIso", "csv")
+            val targetFile = File(context.cacheDir, fileName)
+            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
+            val csvStr = ExportImportManager.generateTripExpensesCsv(trip, parts, dayExpenses)
+            targetFile.writeText(csvStr, Charsets.UTF_8)
+            val dateFormatted = FormatUtils.formatShortDate(dateIso, language.locale)
+            val title = when (language) {
+                AppLanguage.ES -> "Compartir Gastos Diarios CSV ($dateFormatted) - ${trip.title}"
+                AppLanguage.EN -> "Share Daily CSV Expenses ($dateFormatted) - ${trip.title}"
+                AppLanguage.FR -> "Partager les dépenses quotidiennes CSV ($dateFormatted) - ${trip.title}"
+                AppLanguage.IT -> "Condividi spese giornaliere CSV ($dateFormatted) - ${trip.title}"
+                AppLanguage.ZH -> "分享每日 CSV 支出 ($dateFormatted) - ${trip.title}"
+                AppLanguage.NL -> "Dagelijkse CSV-uitgaven delen ($dateFormatted) - ${trip.title}"
+                AppLanguage.DE -> "Tägliche CSV-Ausgaben teilen ($dateFormatted) - ${trip.title}"
+                AppLanguage.PL -> "Udostępnij dzienne wydatki CSV ($dateFormatted) - ${trip.title}"
+                AppLanguage.PT -> "Partilhar Despesas Diárias CSV ($dateFormatted) - ${trip.title}"
+            }
+            shareGeneratedFile(
+                file = targetFile,
+                mimeType = "text/csv",
+                dialogTitle = title
+            )
+        } catch (e: Exception) {
+            val errorMsg = when (language) {
+                AppLanguage.ES -> "Error al exportar CSV diario"
+                AppLanguage.EN -> "Error exporting daily CSV"
+                AppLanguage.FR -> "Erreur lors de l'exportation CSV quotidienne"
+                AppLanguage.IT -> "Errore durante l'esportazione CSV giornaliera"
+                AppLanguage.ZH -> "导出每日 CSV 时出错"
+                AppLanguage.NL -> "Fout bij exporteren van dagelijkse CSV"
+                AppLanguage.DE -> "Fehler beim Exportieren von täglichem CSV"
+                AppLanguage.PL -> "Błąd podczas eksportowania dziennego CSV"
+                AppLanguage.PT -> "Erro ao exportar CSV diário"
+            }
+            viewModel.showToast(errorMsg, isError = true)
+        }
+    }
+
     fun exportAndShareTripJson(trip: TripEntity) {
         try {
             val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
@@ -831,6 +922,12 @@ fun TravelCashApp(
                                 onIncomeClick = { inc ->
                                     editingIncome = inc
                                     showIncomeModal = true
+                                },
+                                onExportDayPdfClick = { dateIso, dayExpenses ->
+                                    exportAndShareDayPdf(activeTrip, dateIso, dayExpenses)
+                                },
+                                onExportDayCsvClick = { dateIso, dayExpenses ->
+                                    exportAndShareDayCsv(activeTrip, dateIso, dayExpenses)
                                 },
                                 topHeader = activeTripHeaderContent
                             )

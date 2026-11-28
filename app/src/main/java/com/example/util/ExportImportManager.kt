@@ -599,7 +599,8 @@ object ExportImportManager {
         expenses: List<ExpenseEntity>,
         incomes: List<IncomeEntity>,
         context: Context? = null,
-        language: AppLanguage = AppLanguage.ES
+        language: AppLanguage = AppLanguage.ES,
+        dayFilterIso: String? = null
     ) {
         val pdfDocument = PdfDocument()
         val pageWidth = 595 // A4 standard points
@@ -700,7 +701,12 @@ object ExportImportManager {
 
         fun drawFooter() {
             val maxFooterTitleWidth = pageWidth - margin * 2 - 100f
-            var titleText = if (trip.title.isNotBlank()) trip.title.trim() else texts.defaultTripTitle
+            val baseTitle = if (trip.title.isNotBlank()) trip.title.trim() else texts.defaultTripTitle
+            var titleText = if (!dayFilterIso.isNullOrBlank()) {
+                "$baseTitle (${FormatUtils.formatShortDate(dayFilterIso, locale)})"
+            } else {
+                baseTitle
+            }
             var footerStr = String.format(locale, texts.pageFooterPattern, pageNumber, titleText)
             if (footerPaint.measureText(footerStr) > maxFooterTitleWidth) {
                 while (titleText.length > 3 && footerPaint.measureText(String.format(locale, texts.pageFooterPattern, pageNumber, "$titleText...")) > maxFooterTitleWidth) {
@@ -818,14 +824,31 @@ object ExportImportManager {
 
         // Textos del encabezado
         val textLeft = iconX + iconSize + 14f
-        canvas.drawText(texts.headerBadge, textLeft, y + 23f, headerBadgePaint)
+        val headerBadgeText = if (!dayFilterIso.isNullOrBlank()) {
+            val dateLabel = FormatUtils.formatShortDate(dayFilterIso, locale)
+            val dailyPrefix = when (language) {
+                AppLanguage.ES -> "REPORTE DIARIO"
+                AppLanguage.EN -> "DAILY REPORT"
+                AppLanguage.FR -> "RAPPORT QUOTIDIEN"
+                AppLanguage.DE -> "TAGESBERICHT"
+                AppLanguage.IT -> "RAPPORTO GIORNALIERO"
+                AppLanguage.PT -> "RELATÓRIO DIÁRIO"
+                AppLanguage.NL -> "DAGELIJKS RAPPORT"
+                AppLanguage.PL -> "RAPORT DZIENNY"
+                AppLanguage.ZH -> "每日报告"
+            }
+            "$dailyPrefix • $dateLabel"
+        } else {
+            texts.headerBadge
+        }
+        canvas.drawText(headerBadgeText, textLeft, y + 23f, headerBadgePaint)
         canvas.drawText(trip.title.take(36), textLeft, y + 44f, headerTitlePaint)
-        canvas.drawText(
-            "${texts.datesLabel} ${FormatUtils.formatShortDate(trip.startDate, locale)} - ${FormatUtils.formatShortDate(trip.endDate, locale)}   •   ${texts.baseCurrencyLabel} ${trip.baseCurrency}",
-            textLeft,
-            y + 61f,
-            headerSubPaint
-        )
+        val headerDatesSubtitle = if (!dayFilterIso.isNullOrBlank()) {
+            "${FormatUtils.formatLongDate(dayFilterIso, locale)}   •   ${texts.baseCurrencyLabel} ${trip.baseCurrency}"
+        } else {
+            "${texts.datesLabel} ${FormatUtils.formatShortDate(trip.startDate, locale)} - ${FormatUtils.formatShortDate(trip.endDate, locale)}   •   ${texts.baseCurrencyLabel} ${trip.baseCurrency}"
+        }
+        canvas.drawText(headerDatesSubtitle, textLeft, y + 61f, headerSubPaint)
         canvas.drawText(
             "${texts.generatedLabel} $genTime   •   ${texts.travelersLabel} ${participants.size}   •   ${texts.recordedExpensesLabel} ${expenses.size}",
             textLeft,

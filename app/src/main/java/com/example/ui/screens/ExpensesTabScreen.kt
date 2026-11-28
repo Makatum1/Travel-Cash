@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,17 +29,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Euro
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -47,6 +54,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -68,6 +76,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.data.model.CategoryCatalog
 import com.example.data.model.ExpenseEntity
 import com.example.data.model.IncomeEntity
@@ -76,6 +86,7 @@ import com.example.data.model.PaymentMethodCatalog
 import com.example.data.model.TripEntity
 import com.example.domain.DebtCalculator
 import com.example.ui.theme.AppLanguage
+import com.example.ui.theme.CoralRedDark
 import com.example.ui.theme.EmeraldGreenDark
 import com.example.ui.theme.LocalAppLanguage
 import com.example.ui.theme.OceanNavy
@@ -101,6 +112,8 @@ fun ExpensesTabScreen(
     onAddExpenseClick: () -> Unit,
     onExpenseClick: (ExpenseEntity) -> Unit,
     onIncomeClick: ((IncomeEntity) -> Unit)? = null,
+    onExportDayPdfClick: ((String, List<ExpenseEntity>) -> Unit)? = null,
+    onExportDayCsvClick: ((String, List<ExpenseEntity>) -> Unit)? = null,
     topHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -108,6 +121,8 @@ fun ExpensesTabScreen(
     val texts = UiTexts.get(currentLang)
     val locale = currentLang.locale
     val participantMap = remember(participants) { participants.associateBy { it.id } }
+
+    var selectedDayForDetail by remember { mutableStateOf<Pair<String, List<ExpenseEntity>>?>(null) }
 
     val standardNonGeneralNames = remember {
         CategoryCatalog.categories.dropLast(1).map { it.name.lowercase(Locale.ROOT) }.toSet()
@@ -626,7 +641,10 @@ fun ExpensesTabScreen(
                             expenseCount = dayExpenses.size,
                             dayTotal = dayTotal,
                             baseCurrency = trip.baseCurrency,
-                            currentLang = currentLang
+                            currentLang = currentLang,
+                            onClick = {
+                                selectedDayForDetail = Pair(dateIso, dayExpenses)
+                            }
                         )
                     }
                     items(dayExpenses, key = { it.id }) { expense ->
@@ -646,6 +664,27 @@ fun ExpensesTabScreen(
             }
         }
     }
+
+    selectedDayForDetail?.let { (dateIso, dayExps) ->
+        DayExpensesDetailModal(
+            dateIso = dateIso,
+            expenses = dayExps,
+            trip = trip,
+            participantMap = participantMap,
+            currentLang = currentLang,
+            onDismiss = { selectedDayForDetail = null },
+            onExpenseClick = { exp ->
+                selectedDayForDetail = null
+                onExpenseClick(exp)
+            },
+            onExportPdfClick = if (onExportDayPdfClick != null) {
+                { onExportDayPdfClick(dateIso, dayExps) }
+            } else null,
+            onExportCsvClick = if (onExportDayCsvClick != null) {
+                { onExportDayCsvClick(dateIso, dayExps) }
+            } else null
+        )
+    }
 }
 
 @Composable
@@ -654,15 +693,31 @@ private fun DayStickyHeader(
     expenseCount: Int,
     dayTotal: Double,
     baseCurrency: String,
-    currentLang: AppLanguage
+    currentLang: AppLanguage,
+    onClick: () -> Unit
 ) {
     val locale = currentLang.locale
+    val tapHint = when (currentLang) {
+        AppLanguage.ES -> "Toca para ver y exportar día"
+        AppLanguage.EN -> "Tap to view & export day"
+        AppLanguage.FR -> "Appuyez pour voir et exporter"
+        AppLanguage.IT -> "Tocca per vedere ed esportare"
+        AppLanguage.ZH -> "点击查看并导出单日"
+        AppLanguage.NL -> "Tik om te bekijken & exporteren"
+        AppLanguage.DE -> "Tippen zum Anzeigen & Exportieren"
+        AppLanguage.PL -> "Dotknij, aby zobaczyć i eksportować"
+        AppLanguage.PT -> "Toque para ver e exportar dia"
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 6.dp, bottom = 2.dp),
+            .padding(top = 6.dp, bottom = 2.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(10.dp),
-        color = Color(0xFFE2E8F0).copy(alpha = 0.7f)
+        color = Color(0xFFE2E8F0).copy(alpha = 0.85f),
+        border = BorderStroke(0.8.dp, Color(0xFFCBD5E1))
     ) {
         Row(
             modifier = Modifier
@@ -677,27 +732,313 @@ private fun DayStickyHeader(
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
                     color = OceanNavy
                 )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = when (currentLang) {
+                            AppLanguage.ES -> if (expenseCount == 1) "1 gasto registrado" else "$expenseCount gastos registrados"
+                            AppLanguage.EN -> if (expenseCount == 1) "1 expense recorded" else "$expenseCount expenses recorded"
+                            AppLanguage.FR -> if (expenseCount == 1) "1 dépense enregistrée" else "$expenseCount dépenses enregistrées"
+                            AppLanguage.IT -> if (expenseCount == 1) "1 spesa registrata" else "$expenseCount spese registrate"
+                            AppLanguage.ZH -> if (expenseCount == 1) "1 笔已记录支出" else "$expenseCount 笔已记录支出"
+                            AppLanguage.NL -> if (expenseCount == 1) "1 geregistreerde uitgave" else "$expenseCount geregistreerde uitgaven"
+                            AppLanguage.DE -> if (expenseCount == 1) "1 erfasste Ausgabe" else "$expenseCount erfasste Ausgaben"
+                            AppLanguage.PL -> if (expenseCount == 1) "1 zarejestrowany wydatek" else "$expenseCount zarejestrowanych wydatków"
+                            AppLanguage.PT -> if (expenseCount == 1) "1 despesa registada" else "$expenseCount despesas registadas"
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF475569)
+                    )
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Text(
+                        text = tapHint,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold, fontSize = 10.sp),
+                        color = TravelBlue
+                    )
+                }
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
-                    text = when (currentLang) {
-                        AppLanguage.ES -> if (expenseCount == 1) "1 gasto registrado" else "$expenseCount gastos registrados"
-                        AppLanguage.EN -> if (expenseCount == 1) "1 expense recorded" else "$expenseCount expenses recorded"
-                        AppLanguage.FR -> if (expenseCount == 1) "1 dépense enregistrée" else "$expenseCount dépenses enregistrées"
-                        AppLanguage.IT -> if (expenseCount == 1) "1 spesa registrata" else "$expenseCount spese registrate"
-                        AppLanguage.ZH -> if (expenseCount == 1) "1 笔已记录支出" else "$expenseCount 笔已记录支出"
-                        AppLanguage.NL -> if (expenseCount == 1) "1 geregistreerde uitgave" else "$expenseCount geregistreerde uitgaven"
-                        AppLanguage.DE -> if (expenseCount == 1) "1 erfasste Ausgabe" else "$expenseCount erfasste Ausgaben"
-                        AppLanguage.PL -> if (expenseCount == 1) "1 zarejestrowany wydatek" else "$expenseCount zarejestrowanych wydatków"
-                        AppLanguage.PT -> if (expenseCount == 1) "1 despesa registada" else "$expenseCount despesas registadas"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF475569)
+                    text = FormatUtils.formatCurrency(dayTotal, baseCurrency, locale),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
+                    color = OceanNavy
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = OceanNavy.copy(alpha = 0.5f),
+                    modifier = Modifier.size(12.dp)
                 )
             }
-            Text(
-                text = FormatUtils.formatCurrency(dayTotal, baseCurrency, locale),
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Black),
-                color = OceanNavy
-            )
+        }
+    }
+}
+
+@Composable
+private fun DayExpensesDetailModal(
+    dateIso: String,
+    expenses: List<ExpenseEntity>,
+    trip: TripEntity,
+    participantMap: Map<String, ParticipantEntity>,
+    currentLang: AppLanguage,
+    onDismiss: () -> Unit,
+    onExpenseClick: (ExpenseEntity) -> Unit,
+    onExportPdfClick: (() -> Unit)?,
+    onExportCsvClick: (() -> Unit)?
+) {
+    val locale = currentLang.locale
+    val texts = UiTexts.get(currentLang)
+    val dayTotal = expenses.sumOf { it.amountInBaseCurrency }
+    val formattedDateLong = FormatUtils.formatLongDate(dateIso, locale)
+
+    val modalSubtitle = when (currentLang) {
+        AppLanguage.ES -> "Total del día: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 gasto" else "${expenses.size} gastos"}"
+        AppLanguage.EN -> "Day total: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 expense" else "${expenses.size} expenses"}"
+        AppLanguage.FR -> "Total du jour : ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 dépense" else "${expenses.size} dépenses"}"
+        AppLanguage.IT -> "Totale del giorno: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 spesa" else "${expenses.size} spese"}"
+        AppLanguage.ZH -> "当日总计：${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${expenses.size} 笔支出"
+        AppLanguage.NL -> "Dag totaal: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 uitgave" else "${expenses.size} uitgaven"}"
+        AppLanguage.DE -> "Tagessumme: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 Ausgabe" else "${expenses.size} Ausgaben"}"
+        AppLanguage.PL -> "Suma dnia: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 wydatek" else "${expenses.size} wydatków"}"
+        AppLanguage.PT -> "Total do dia: ${FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale)} • ${if (expenses.size == 1) "1 despesa" else "${expenses.size} despesas"}"
+    }
+
+    val exportPdfBtnText = when (currentLang) {
+        AppLanguage.ES -> "Exportar Día a PDF"
+        AppLanguage.EN -> "Export Day to PDF"
+        AppLanguage.FR -> "Exporter Jour en PDF"
+        AppLanguage.IT -> "Esporta Giorno in PDF"
+        AppLanguage.ZH -> "导出单日 PDF 报表"
+        AppLanguage.NL -> "Exporteer dag naar PDF"
+        AppLanguage.DE -> "Tag als PDF exportieren"
+        AppLanguage.PL -> "Eksportuj dzień do PDF"
+        AppLanguage.PT -> "Exportar Dia para PDF"
+    }
+
+    val exportCsvBtnText = when (currentLang) {
+        AppLanguage.ES -> "Exportar Día a CSV"
+        AppLanguage.EN -> "Export Day to CSV"
+        AppLanguage.FR -> "Exporter Jour en CSV"
+        AppLanguage.IT -> "Esporta Giorno in CSV"
+        AppLanguage.ZH -> "导出单日 CSV"
+        AppLanguage.NL -> "Exporteer dag naar CSV"
+        AppLanguage.DE -> "Tag als CSV exportieren"
+        AppLanguage.PL -> "Eksportuj dzień do CSV"
+        AppLanguage.PT -> "Exportar Dia para CSV"
+    }
+
+    val exportDesc = when (currentLang) {
+        AppLanguage.ES -> "Genera el reporte ejecutivo completo de este día con el mismo formato, gráficos y reglas que el viaje completo."
+        AppLanguage.EN -> "Generates the complete executive report for this day with the same layout, charts and rules as the full trip."
+        AppLanguage.FR -> "Génère le rapport exécutif complet de cette journée avec le même format, graphiques et règles que le voyage complet."
+        AppLanguage.IT -> "Genera il report esecutivo completo di questo giorno con lo stesso formato, grafici e regole del viaggio completo."
+        AppLanguage.ZH -> "生成包含相同格式、图表与规则的该日完整执行报表。"
+        AppLanguage.NL -> "Genereert het volledige leidinggevende rapport voor deze dag met dezelfde opmaak, grafieken en regels als de hele reis."
+        AppLanguage.DE -> "Erstellt den vollständigen Managementbericht für diesen Tag mit demselben Format, Diagrammen und Regeln wie die gesamte Reise."
+        AppLanguage.PL -> "Generuje pełny raport wykonawczy z tego dnia z tym samym formatem, wykresami i regułami co cała podróż."
+        AppLanguage.PT -> "Gera o relatório executivo completo deste dia com o mesmo formato, gráficos e regras da viagem completa."
+    }
+
+    val dayExpensesListTitle = when (currentLang) {
+        AppLanguage.ES -> "Gastos registrados en esta fecha"
+        AppLanguage.EN -> "Expenses recorded on this date"
+        AppLanguage.FR -> "Dépenses enregistrées à cette date"
+        AppLanguage.IT -> "Spese registrate in questa data"
+        AppLanguage.ZH -> "该日期记录的支出"
+        AppLanguage.NL -> "Op deze datum geregistreerde uitgaven"
+        AppLanguage.DE -> "An diesem Datum erfasste Ausgaben"
+        AppLanguage.PL -> "Wydatki zarejestrowane w tym dniu"
+        AppLanguage.PT -> "Despesas registadas nesta data"
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.90f)
+                .padding(vertical = 12.dp),
+            shape = RoundedCornerShape(22.dp),
+            color = Color(0xFFF8FAFC),
+            shadowElevation = 8.dp,
+            border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Cabecera superior elegante en OceanNavy
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(OceanNavy)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = formattedDateLong,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp
+                            ),
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = modalSubtitle,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = Color(0xFF93C5FD)
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = texts.closeBtn,
+                            tint = Color.White
+                        )
+                    }
+                }
+
+                // Zona de exportación destacada ARRIBA DEL TODO
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = exportDesc,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = Color(0xFF475569)
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            if (onExportPdfClick != null) {
+                                Button(
+                                    onClick = onExportPdfClick,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = CoralRedDark,
+                                        contentColor = Color.White
+                                    ),
+                                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PictureAsPdf,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = exportPdfBtnText,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        )
+                                    )
+                                }
+                            }
+                            if (onExportCsvClick != null) {
+                                OutlinedButton(
+                                    onClick = onExportCsvClick,
+                                    modifier = if (onExportPdfClick != null) Modifier.weight(0.7f) else Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = OceanNavy),
+                                    border = BorderStroke(1.2.dp, OceanNavy),
+                                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FileDownload,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Text(
+                                        text = if (onExportPdfClick != null) "CSV" else exportCsvBtnText,
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Cabecera de la lista de gastos
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = dayExpensesListTitle,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 13.sp
+                        ),
+                        color = OceanNavy
+                    )
+                    Text(
+                        text = FormatUtils.formatCurrency(dayTotal, trip.baseCurrency, locale),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            fontSize = 13.5.sp
+                        ),
+                        color = OceanNavy
+                    )
+                }
+
+                // Listado con scroll de los gastos del día
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(top = 4.dp, bottom = 16.dp)
+                ) {
+                    items(expenses, key = { it.id }) { expense ->
+                        ExpenseItemCard(
+                            expense = expense,
+                            baseCurrency = trip.baseCurrency,
+                            payerName = if (expense.paidById == DebtCalculator.BOTE_COMUN_ID) {
+                                texts.commonPotName
+                            } else {
+                                participantMap[expense.paidById]?.name ?: texts.defaultTravelerName
+                            },
+                            currentLang = currentLang,
+                            onClick = { onExpenseClick(expense) }
+                        )
+                    }
+                }
+            }
         }
     }
 }
