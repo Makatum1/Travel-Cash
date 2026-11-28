@@ -1197,4 +1197,18 @@ class TravelCashEnhancementsTest {
         assertEquals("General (Personalizable)", CategoryCatalog.displayName("General", AppLanguage.ES))
         assertEquals("General (Customizable)", CategoryCatalog.displayName("General", AppLanguage.EN))
     }
+
+    @Test
+    fun exportPdfFileNaming_generatesExpectedPatternForWholeTripAndSingleDay() {
+        val tripTitle = "Camino de Invierno"
+        val cleanWholeTitle = "Gastos - ${tripTitle.trim()}"
+        val wholePdfFileName = "${cleanWholeTitle}.pdf"
+        assertEquals("Gastos - Camino de Invierno.pdf", wholePdfFileName)
+
+        val dateIso = "2026-08-01"
+        val datePrefix = java.time.LocalDate.parse(dateIso).format(java.time.format.DateTimeFormatter.ofPattern("ddMMyy"))
+        assertEquals("010826", datePrefix)
+        val dayPdfFileName = "${datePrefix}${tripTitle.trim()}.pdf"
+        assertEquals("010826Camino de Invierno.pdf", dayPdfFileName)
+    }
 }

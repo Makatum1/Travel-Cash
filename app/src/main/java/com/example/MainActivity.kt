@@ -110,6 +110,8 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -410,7 +412,8 @@ fun TravelCashApp(
 
     fun exportAndShareTripPdf(trip: TripEntity) {
         try {
-            val fileName = sanitizeTripFileName(trip.title, "pdf")
+            val cleanTitle = trip.title.ifBlank { "Viaje" }.trim()
+            val fileName = sanitizeTripFileName("Gastos - $cleanTitle", "pdf")
             val targetFile = File(context.cacheDir, fileName)
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val exps = uiState.allExpenses.filter { it.tripId == trip.id }
@@ -492,7 +495,19 @@ fun TravelCashApp(
 
     fun exportAndShareDayPdf(trip: TripEntity, dateIso: String, dayExpenses: List<ExpenseEntity>) {
         try {
-            val fileName = sanitizeTripFileName("${trip.title}_$dateIso", "pdf")
+            val datePrefix = try {
+                val cleanDate = if (dateIso.length >= 10) dateIso.take(10) else dateIso
+                LocalDate.parse(cleanDate).format(DateTimeFormatter.ofPattern("ddMMyy"))
+            } catch (_: Exception) {
+                val digits = dateIso.filter { it.isDigit() }
+                if (digits.length >= 8) {
+                    "${digits.substring(6, 8)}${digits.substring(4, 6)}${digits.substring(2, 4)}"
+                } else {
+                    digits
+                }
+            }
+            val cleanTitle = trip.title.ifBlank { "Viaje" }.trim()
+            val fileName = sanitizeTripFileName("${datePrefix}${cleanTitle}", "pdf")
             val targetFile = File(context.cacheDir, fileName)
             val parts = uiState.allParticipants.filter { it.tripId == trip.id }
             val incs = uiState.allIncomes.filter { it.tripId == trip.id && it.date == dateIso }
