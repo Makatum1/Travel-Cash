@@ -174,20 +174,4 @@ class ExportImportManagerTest {
         assertEquals("malaga", ExportImportManager.normalizeTripName("Málaga"))
         assertEquals("Viaje a roma", ExportImportManager.capitalizeTripName("  viaje a roma "))
     }
-
-    @Test
-    fun `generateTripExpensesCsv with day expenses generates correct CSV`() {
-        val (trips, parts, expsAndIncs) = sampleData()
-        val trip1 = trips.first()
-        val dayExpenses = expsAndIncs.first.filter { it.date == "2026-05-02" }
-        val csv = ExportImportManager.generateTripExpensesCsv(
-            trip = trip1,
-            participants = parts.filter { it.tripId == trip1.id },
-            expenses = dayExpenses
-        )
-        assertTrue(csv.contains("Fecha,Lugar,Categoria,Notas,Importe,Moneda"))
-        assertTrue(csv.contains("2026-05-02"))
-        assertTrue(csv.contains("Bistro"))
-        assertTrue(csv.contains("Metro"))
-    }
 }

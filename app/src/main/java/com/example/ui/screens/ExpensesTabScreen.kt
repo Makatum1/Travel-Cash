@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Euro
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
@@ -113,7 +112,6 @@ fun ExpensesTabScreen(
     onExpenseClick: (ExpenseEntity) -> Unit,
     onIncomeClick: ((IncomeEntity) -> Unit)? = null,
     onExportDayPdfClick: ((String, List<ExpenseEntity>) -> Unit)? = null,
-    onExportDayCsvClick: ((String, List<ExpenseEntity>) -> Unit)? = null,
     topHeader: (@Composable () -> Unit)? = null
 ) {
     val context = LocalContext.current
@@ -679,9 +677,6 @@ fun ExpensesTabScreen(
             },
             onExportPdfClick = if (onExportDayPdfClick != null) {
                 { onExportDayPdfClick(dateIso, dayExps) }
-            } else null,
-            onExportCsvClick = if (onExportDayCsvClick != null) {
-                { onExportDayCsvClick(dateIso, dayExps) }
             } else null
         )
     }
@@ -792,8 +787,7 @@ private fun DayExpensesDetailModal(
     currentLang: AppLanguage,
     onDismiss: () -> Unit,
     onExpenseClick: (ExpenseEntity) -> Unit,
-    onExportPdfClick: (() -> Unit)?,
-    onExportCsvClick: (() -> Unit)?
+    onExportPdfClick: (() -> Unit)?
 ) {
     val locale = currentLang.locale
     val texts = UiTexts.get(currentLang)
@@ -822,18 +816,6 @@ private fun DayExpensesDetailModal(
         AppLanguage.DE -> "Tag als PDF exportieren"
         AppLanguage.PL -> "Eksportuj dzień do PDF"
         AppLanguage.PT -> "Exportar Dia para PDF"
-    }
-
-    val exportCsvBtnText = when (currentLang) {
-        AppLanguage.ES -> "Exportar Día a CSV"
-        AppLanguage.EN -> "Export Day to CSV"
-        AppLanguage.FR -> "Exporter Jour en CSV"
-        AppLanguage.IT -> "Esporta Giorno in CSV"
-        AppLanguage.ZH -> "导出单日 CSV"
-        AppLanguage.NL -> "Exporteer dag naar CSV"
-        AppLanguage.DE -> "Tag als CSV exportieren"
-        AppLanguage.PL -> "Eksportuj dzień do CSV"
-        AppLanguage.PT -> "Exportar Dia para CSV"
     }
 
     val exportDesc = when (currentLang) {
@@ -931,59 +913,30 @@ private fun DayExpensesDetailModal(
                             color = Color(0xFF475569)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (onExportPdfClick != null) {
-                                Button(
-                                    onClick = onExportPdfClick,
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = CoralRedDark,
-                                        contentColor = Color.White
-                                    ),
-                                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 12.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PictureAsPdf,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(17.dp)
+                        if (onExportPdfClick != null) {
+                            Button(
+                                onClick = onExportPdfClick,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CoralRedDark,
+                                    contentColor = Color.White
+                                ),
+                                contentPadding = PaddingValues(vertical = 10.dp, horizontal = 14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PictureAsPdf,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = exportPdfBtnText,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = exportPdfBtnText,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp
-                                        )
-                                    )
-                                }
-                            }
-                            if (onExportCsvClick != null) {
-                                OutlinedButton(
-                                    onClick = onExportCsvClick,
-                                    modifier = if (onExportPdfClick != null) Modifier.weight(0.7f) else Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = OceanNavy),
-                                    border = BorderStroke(1.2.dp, OceanNavy),
-                                    contentPadding = PaddingValues(vertical = 10.dp, horizontal = 10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.FileDownload,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(17.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(5.dp))
-                                    Text(
-                                        text = if (onExportPdfClick != null) "CSV" else exportCsvBtnText,
-                                        style = MaterialTheme.typography.labelMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp
-                                        )
-                                    )
-                                }
+                                )
                             }
                         }
                     }

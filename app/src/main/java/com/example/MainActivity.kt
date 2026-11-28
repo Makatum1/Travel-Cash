@@ -556,46 +556,6 @@ fun TravelCashApp(
         }
     }
 
-    fun exportAndShareDayCsv(trip: TripEntity, dateIso: String, dayExpenses: List<ExpenseEntity>) {
-        try {
-            val fileName = sanitizeTripFileName("${trip.title}_$dateIso", "csv")
-            val targetFile = File(context.cacheDir, fileName)
-            val parts = uiState.allParticipants.filter { it.tripId == trip.id }
-            val csvStr = ExportImportManager.generateTripExpensesCsv(trip, parts, dayExpenses)
-            targetFile.writeText(csvStr, Charsets.UTF_8)
-            val dateFormatted = FormatUtils.formatShortDate(dateIso, language.locale)
-            val title = when (language) {
-                AppLanguage.ES -> "Compartir Gastos Diarios CSV ($dateFormatted) - ${trip.title}"
-                AppLanguage.EN -> "Share Daily CSV Expenses ($dateFormatted) - ${trip.title}"
-                AppLanguage.FR -> "Partager les dépenses quotidiennes CSV ($dateFormatted) - ${trip.title}"
-                AppLanguage.IT -> "Condividi spese giornaliere CSV ($dateFormatted) - ${trip.title}"
-                AppLanguage.ZH -> "分享每日 CSV 支出 ($dateFormatted) - ${trip.title}"
-                AppLanguage.NL -> "Dagelijkse CSV-uitgaven delen ($dateFormatted) - ${trip.title}"
-                AppLanguage.DE -> "Tägliche CSV-Ausgaben teilen ($dateFormatted) - ${trip.title}"
-                AppLanguage.PL -> "Udostępnij dzienne wydatki CSV ($dateFormatted) - ${trip.title}"
-                AppLanguage.PT -> "Partilhar Despesas Diárias CSV ($dateFormatted) - ${trip.title}"
-            }
-            shareGeneratedFile(
-                file = targetFile,
-                mimeType = "text/csv",
-                dialogTitle = title
-            )
-        } catch (e: Exception) {
-            val errorMsg = when (language) {
-                AppLanguage.ES -> "Error al exportar CSV diario"
-                AppLanguage.EN -> "Error exporting daily CSV"
-                AppLanguage.FR -> "Erreur lors de l'exportation CSV quotidienne"
-                AppLanguage.IT -> "Errore durante l'esportazione CSV giornaliera"
-                AppLanguage.ZH -> "导出每日 CSV 时出错"
-                AppLanguage.NL -> "Fout bij exporteren van dagelijkse CSV"
-                AppLanguage.DE -> "Fehler beim Exportieren von täglichem CSV"
-                AppLanguage.PL -> "Błąd podczas eksportowania dziennego CSV"
-                AppLanguage.PT -> "Erro ao exportar CSV diário"
-            }
-            viewModel.showToast(errorMsg, isError = true)
-        }
-    }
-
     fun exportAndShareTripJson(trip: TripEntity) {
         try {
             val clean = trip.title.replace(Regex("[\\\\/:*?\"<>|]"), "_").trim()
@@ -940,9 +900,6 @@ fun TravelCashApp(
                                 },
                                 onExportDayPdfClick = { dateIso, dayExpenses ->
                                     exportAndShareDayPdf(activeTrip, dateIso, dayExpenses)
-                                },
-                                onExportDayCsvClick = { dateIso, dayExpenses ->
-                                    exportAndShareDayCsv(activeTrip, dateIso, dayExpenses)
                                 },
                                 topHeader = activeTripHeaderContent
                             )
